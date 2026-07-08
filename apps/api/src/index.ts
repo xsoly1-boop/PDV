@@ -1,7 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import { prisma } from './prisma.js';
-import { TipoMovimiento, EstadoReserva } from '@punto-de-venta/shared-types';
+import { TipoMovimiento, EstadoReserva } from './types.js';
 
 const app = express();
 app.use(cors());
