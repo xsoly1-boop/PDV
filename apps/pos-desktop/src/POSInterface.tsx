@@ -424,7 +424,7 @@ export default function POSInterface() {
 
 
         {/* Omnibox */}
-        <div className="flex-1 max-w-lg px-2 mr-auto relative">
+        <div className="flex-1 max-w-2xl px-2 mr-auto relative">
           <div className="relative group">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-500 w-4 h-4 group-focus-within:text-amber-500 transition-colors" />
             <input
