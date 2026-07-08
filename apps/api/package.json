@@ -10,7 +10,7 @@
   },
   "dependencies": {
     "@prisma/client": "^5.10.2",
-    "@punto-de-venta/shared-types": "file:../packages/shared-types/dist",
+    "@punto-de-venta/shared-types": "file:../../packages/shared-types",
     "cors": "^2.8.5",
     "express": "^4.18.3"
   },
