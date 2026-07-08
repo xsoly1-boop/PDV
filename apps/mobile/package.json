@@ -1,0 +1,8 @@
+{
+  "name": "@punto-de-venta/mobile",
+  "version": "1.0.0",
+  "private": true,
+  "dependencies": {
+    "@punto-de-venta/shared-types": "*"
+  }
+}

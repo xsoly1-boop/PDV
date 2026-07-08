@@ -1,0 +1,26 @@
+services:
+  - type: web
+    name: apex-pos-api
+    env: node
+    repo: https://github.com/xsoly1-boop/PDV.git
+    region: oregon
+    branch: main
+    buildCommand: npm install && npx prisma generate && npm run build
+    startCommand: npm run start
+    envVars:
+      - key: DATABASE_URL
+        fromSecret: DATABASE_URL
+      - key: DIRECT_URL
+        fromSecret: DIRECT_URL
+    plan: starter
+
+  - type: static
+    name: apex-pos-web
+    env: node
+    repo: https://github.com/xsoly1-boop/PDV.git
+    region: oregon
+    branch: main
+    staticPublishPath: apps/pos-web/dist  # adjust if your web build dir differs
+    buildCommand: npm install && npm run build
+    envVars: []
+    plan: starter

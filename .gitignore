@@ -1,0 +1,25 @@
+node_modules/
+dist/
+.env
+.env.local
+.env.*.local
+*.log
+.DS_Store
+.vscode/
+
+# API build
+apps/api/dist/
+
+# Electron build artifacts (too large for GitHub)
+apps/pos-desktop/dist/
+apps/pos-desktop/dist-electron/
+apps/pos-desktop/release/
+*.dmg
+*.zip
+*.AppImage
+*.exe
+*.deb
+*.rpm
+
+# Shared types build
+packages/shared-types/dist/

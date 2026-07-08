@@ -1,0 +1,256 @@
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum Giro {
+  ABARROTES
+  FARMACIA
+  FERRETERIA
+  REFACCIONARIA
+}
+
+model ConfiguracionEmpresa {
+  id            String   @id @default(uuid())
+  nombreEmpresa String
+  giro          Giro     @default(ABARROTES)
+  rfc           String?
+  logoUrl       String?
+  formatoTicket Json?    // Configuración visual del ticket (secciones, fuentes, logos)
+  creadoAt      DateTime @default(now())
+  actualizadoAt DateTime @updatedAt
+}
+
+
+
+enum Rol {
+  ADMINISTRADOR
+  GERENTE
+  CAJERO
+  VENDEDOR_MOVIL
+}
+
+enum TipoMovimiento {
+  ENTRADA_COMPRA
+  ENTRADA_TRASPASO
+  ENTRADA_DEVOLUCION
+  ENTRADA_AJUSTE
+  SALIDA_VENTA
+  SALIDA_TRASPASO
+  SALIDA_MERMA
+  SALIDA_AJUSTE
+}
+
+enum EstadoReserva {
+  ACTIVA
+  COMPLETADA
+  EXPIRADA
+  CANCELADA
+}
+
+enum EstadoTraspaso {
+  EN_TRANSITO
+  COMPLETADO
+  COMPLETADO_PARCIAL
+  CANCELADO
+}
+
+model Usuario {
+  id                 String              @id @default(uuid())
+  nombre             String
+  pin                String              // Hash para autorizaciones rápidas en caja
+  rol                Rol
+  activo             Boolean             @default(true)
+  movimientos        KardexMovimiento[]
+  ventas             Venta[]
+  cotizaciones       Cotizacion[]
+  traspasosEnviados  TraspasoMercancia[] @relation("UsuarioEnvia")
+  traspasosRecibidos TraspasoMercancia[] @relation("UsuarioRecibe")
+}
+
+model Sucursal {
+  id               String              @id @default(uuid())
+  nombre           String
+  direccion        String?
+  balances         InventarioBalance[]
+  movimientos      KardexMovimiento[]
+  reservas         ReservaTemporal[]
+  ventas           Venta[]
+  cotizaciones     Cotizacion[]
+  traspasosOrigen  TraspasoMercancia[] @relation("SucursalOrigen")
+  traspasosDestino TraspasoMercancia[] @relation("SucursalDestino")
+}
+
+model Producto {
+  id                 String              @id @default(uuid())
+  sku                String              @unique // Código interno único de catálogo
+  nombre             String
+  descripcion        String?
+  costo              Decimal             @db.Decimal(10, 2)
+  precio             Decimal             @db.Decimal(10, 2)
+  permiteFracciones  Boolean             @default(false)
+  metadatos          Json?
+  codigos            CodigoBarras[]
+  balances           InventarioBalance[]
+  movimientos        KardexMovimiento[]
+  reservas           ReservaTemporal[]
+  detallesVenta      DetalleVenta[]
+  detallesCotizacion DetalleCotizacion[]
+  detallesTraspaso   DetalleTraspaso[]
+}
+
+model CodigoBarras {
+  id         String   @id @default(uuid())
+  codigo     String   @unique // Código escaneable (EAN, UPC, código de proveedor)
+  productoId String
+  producto   Producto @relation(fields: [productoId], references: [id], onDelete: Cascade)
+}
+
+// Tabla de agregación para consultas rápidas de stock por sucursal
+model InventarioBalance {
+  id         String   @id @default(uuid())
+  sucursalId String
+  productoId String
+  stockReal  Decimal  @default(0) @db.Decimal(10, 3) // Stock físico en tienda
+  reservado  Decimal  @default(0) @db.Decimal(10, 3) // Stock comprometido en cotizaciones móviles
+  sucursal   Sucursal @relation(fields: [sucursalId], references: [id])
+  producto   Producto @relation(fields: [productoId], references: [id])
+
+  @@unique([sucursalId, productoId])
+}
+
+// El Kardex: Registro inmutable de transacciones de inventario
+model KardexMovimiento {
+  id          String         @id @default(uuid())
+  sucursalId  String
+  productoId  String
+  usuarioId   String
+  tipo        TipoMovimiento
+  cantidad    Decimal        @db.Decimal(10, 3) // Valores siempre positivos. El tipo determina si suma o resta.
+  referencia  String?        // ID del ticket de venta, ID de orden de compra, etc.
+  observacion String?
+  creadoAt    DateTime       @default(now())
+  
+  sucursal    Sucursal       @relation(fields: [sucursalId], references: [id])
+  producto    Producto       @relation(fields: [productoId], references: [id])
+  usuario     Usuario        @relation(fields: [usuarioId], references: [id])
+
+  @@index([sucursalId, productoId])
+  @@index([creadoAt])
+}
+
+// Reservas temporales generadas desde la app Android
+model ReservaTemporal {
+  id           String        @id @default(uuid())
+  sucursalId   String
+  productoId   String
+  cantidad     Decimal       @db.Decimal(10, 3)
+  estado       EstadoReserva @default(ACTIVA)
+  expiraAt     DateTime
+  creadoAt     DateTime      @default(now())
+  
+  sucursal     Sucursal      @relation(fields: [sucursalId], references: [id])
+  producto     Producto      @relation(fields: [productoId], references: [id])
+  cotizacionId String?
+  cotizacion   Cotizacion?   @relation(fields: [cotizacionId], references: [id], onDelete: Cascade)
+
+  @@index([expiraAt, estado])
+}
+
+// Ventas / Tickets de cobro
+model Venta {
+  id              String         @id @default(uuid())
+  folio           String         @unique
+  sucursalId      String
+  usuarioId       String
+  total           Decimal        @db.Decimal(10, 2)
+  subtotal        Decimal        @db.Decimal(10, 2)
+  descuento       Decimal        @db.Decimal(10, 2) @default(0)
+  esOffline       Boolean        @default(false)
+  offlineCreadoAt DateTime?
+  creadoAt        DateTime       @default(now())
+  
+  sucursal        Sucursal       @relation(fields: [sucursalId], references: [id])
+  usuario         Usuario        @relation(fields: [usuarioId], references: [id])
+  detalles        DetalleVenta[]
+}
+
+model DetalleVenta {
+  id             String   @id @default(uuid())
+  ventaId        String
+  productoId     String
+  cantidad       Decimal  @db.Decimal(10, 3)
+  precioUnitario Decimal  @db.Decimal(10, 2)
+  subtotal       Decimal  @db.Decimal(10, 2)
+  
+  venta          Venta    @relation(fields: [ventaId], references: [id], onDelete: Cascade)
+  producto       Producto @relation(fields: [productoId], references: [id])
+}
+
+// Cotizaciones / Pedidos móviles de vendedores en piso
+model Cotizacion {
+  id            String            @id @default(uuid())
+  folio         String            @unique
+  codigoCorto   String            // 4 dígitos para jalar en caja rápida
+  sucursalId    String
+  usuarioId     String
+  clienteNombre String?
+  total         Decimal           @db.Decimal(10, 2)
+  subtotal      Decimal           @db.Decimal(10, 2)
+  estado        EstadoReserva     @default(ACTIVA)
+  expiraAt      DateTime
+  creadoAt      DateTime          @default(now())
+  
+  sucursal      Sucursal          @relation(fields: [sucursalId], references: [id])
+  usuario       Usuario           @relation(fields: [usuarioId], references: [id])
+  detalles      DetalleCotizacion[]
+  reservas      ReservaTemporal[]
+
+  @@index([codigoCorto, estado])
+}
+
+model DetalleCotizacion {
+  id             String     @id @default(uuid())
+  cotizacionId   String
+  productoId     String
+  cantidad       Decimal    @db.Decimal(10, 3)
+  precioUnitario Decimal    @db.Decimal(10, 2)
+  subtotal       Decimal    @db.Decimal(10, 2)
+  
+  cotizacion     Cotizacion @relation(fields: [cotizacionId], references: [id], onDelete: Cascade)
+  producto       Producto   @relation(fields: [productoId], references: [id])
+}
+
+// Traspasos de mercancía entre sucursales
+model TraspasoMercancia {
+  id                String            @id @default(uuid())
+  origenSucursalId  String
+  destinoSucursalId String
+  usuarioEnviaId    String
+  usuarioRecibeId   String?
+  estado            EstadoTraspaso    @default(EN_TRANSITO)
+  creadoAt          DateTime          @default(now())
+  recibidoAt        DateTime?
+  
+  origen            Sucursal          @relation("SucursalOrigen", fields: [origenSucursalId], references: [id])
+  destino           Sucursal          @relation("SucursalDestino", fields: [destinoSucursalId], references: [id])
+  usuarioEnvia      Usuario           @relation("UsuarioEnvia", fields: [usuarioEnviaId], references: [id])
+  usuarioRecibe     Usuario?          @relation("UsuarioRecibe", fields: [usuarioRecibeId], references: [id])
+  detalles          DetalleTraspaso[]
+}
+
+model DetalleTraspaso {
+  id               String            @id @default(uuid())
+  traspasoId       String
+  productoId       String
+  cantidadEnviada  Decimal           @db.Decimal(10, 3)
+  cantidadRecibida Decimal?          @db.Decimal(10, 3)
+  
+  traspaso         TraspasoMercancia @relation(fields: [traspasoId], references: [id], onDelete: Cascade)
+  producto         Producto          @relation(fields: [productoId], references: [id])
+}
