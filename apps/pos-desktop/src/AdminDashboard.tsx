@@ -22,11 +22,14 @@ interface AdminDashboardProps {
   onClose: () => void;
   config: CompanyConfig;
   onConfigChange: (newConfig: CompanyConfig) => void;
+  products: Product[];
+  onProductsChange: (newProducts: Product[]) => void;
 }
 
 interface Product {
   id: string;
   sku: string;
+  codigoBarras?: string;
   nombre: string;
   categoria: string;
   precio: number;
@@ -43,18 +46,10 @@ interface Employee {
   activo: boolean;
 }
 
-export default function AdminDashboard({ currentUser, theme, onClose, config: initialConfig, onConfigChange }: AdminDashboardProps) {
+export default function AdminDashboard({ currentUser, theme, onClose, config: initialConfig, onConfigChange, products, onProductsChange }: AdminDashboardProps) {
   const [activeTab, setActiveTab] = useState<'summary' | 'products' | 'employees' | 'sales' | 'config'>('summary');
   const [searchQuery, setSearchQuery] = useState('');
 
-  // 1. Mock Data for Products
-  const [products, setProducts] = useState<Product[]>([
-    { id: '1', sku: 'AUT-881', nombre: 'Balatas Delanteras Cerámicas de Alto Rendimiento', categoria: 'Automotriz', precio: 340.00, costo: 180.00, stock: 15, unidad: 'pieza' },
-    { id: '2', sku: 'FER-092', nombre: 'Cable de Cobre Calibre 12 THW Aislamiento Extra', categoria: 'Ferretería', precio: 18.00, costo: 9.50, stock: 240, unidad: 'metros' },
-    { id: '3', sku: 'FER-114', nombre: 'Disco Abrasivo Corte Metal 4.5" Extra Fino', categoria: 'Ferretería', precio: 45.50, costo: 22.00, stock: 85, unidad: 'piezas' },
-    { id: '4', sku: 'REF-001', nombre: 'Coca Cola 600ml', categoria: 'Abarrotes', precio: 18.50, costo: 12.00, stock: 50, unidad: 'piezas' },
-    { id: '5', sku: 'PAN-001', nombre: 'Pan Dulce (Concha)', categoria: 'Panadería', precio: 15.00, costo: 8.00, stock: 45, unidad: 'piezas' },
-  ]);
 
   // 2. Mock Data for Employees
   const [employees, setEmployees] = useState<Employee[]>([
@@ -111,7 +106,8 @@ export default function AdminDashboard({ currentUser, theme, onClose, config: in
     e.preventDefault();
     if (currentProduct.id) {
       // Edit
-      setProducts(prev => prev.map(p => p.id === currentProduct.id ? (currentProduct as Product) : p));
+      const updated = products.map(p => p.id === currentProduct.id ? (currentProduct as Product) : p);
+      onProductsChange(updated);
       alert('Producto actualizado con éxito.');
     } else {
       // Add
@@ -120,7 +116,7 @@ export default function AdminDashboard({ currentUser, theme, onClose, config: in
         id: (products.length + 1).toString(),
         sku: currentProduct.sku || `SKU-${Math.floor(100 + Math.random() * 900)}`,
       } as Product;
-      setProducts(prev => [...prev, newP]);
+      onProductsChange([...products, newP]);
       alert('Producto agregado al catálogo.');
     }
     setShowProductModal(false);
@@ -130,7 +126,8 @@ export default function AdminDashboard({ currentUser, theme, onClose, config: in
   // Delete Product
   const handleDeleteProduct = (id: string) => {
     if (confirm('¿Estás seguro de eliminar este producto?')) {
-      setProducts(prev => prev.filter(p => p.id !== id));
+      const updated = products.filter(p => p.id !== id);
+      onProductsChange(updated);
     }
   };
 
@@ -165,7 +162,8 @@ export default function AdminDashboard({ currentUser, theme, onClose, config: in
   const filteredProducts = products.filter(p => 
     p.nombre.toLowerCase().includes(searchQuery.toLowerCase()) || 
     p.sku.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    p.categoria.toLowerCase().includes(searchQuery.toLowerCase())
+    p.categoria.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (p.codigoBarras && p.codigoBarras.toLowerCase().includes(searchQuery.toLowerCase()))
   );
 
   return (
@@ -402,6 +400,7 @@ export default function AdminDashboard({ currentUser, theme, onClose, config: in
                       theme === 'dark' ? 'bg-[#1c1e27] border-[#20222b]' : 'bg-slate-50 border-slate-200'
                     }`}>
                       <th className="py-4 px-6">SKU</th>
+                      <th className="py-4 px-6">Cód. Barras</th>
                       <th className="py-4 px-6">Descripción</th>
                       <th className="py-4 px-6">Categoría</th>
                       <th className="py-4 px-6 text-right">Costo</th>
@@ -417,6 +416,7 @@ export default function AdminDashboard({ currentUser, theme, onClose, config: in
                         theme === 'dark' ? 'border-[#20222b]' : 'border-slate-150'
                       }`}>
                         <td className="py-3 px-6 font-mono font-bold text-amber-500">{p.sku}</td>
+                        <td className="py-3 px-6 font-mono text-xs text-slate-400">{p.codigoBarras || '—'}</td>
                         <td className="py-3 px-6 font-medium">{p.nombre}</td>
                         <td className="py-3 px-6">{p.categoria}</td>
                         <td className="py-3 px-6 text-right font-mono text-slate-500">${p.costo.toFixed(2)}</td>
@@ -709,9 +709,9 @@ export default function AdminDashboard({ currentUser, theme, onClose, config: in
             </h3>
 
             <form onSubmit={handleProductSubmit} className="space-y-5">
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-3 gap-4">
                 <div>
-                  <label className="block text-[10px] font-bold uppercase text-slate-500 mb-1.5">SKU</label>
+                  <label className="block text-[10px] font-bold uppercase text-slate-550 mb-1.5">SKU</label>
                   <input
                     type="text"
                     required
@@ -724,7 +724,20 @@ export default function AdminDashboard({ currentUser, theme, onClose, config: in
                 </div>
 
                 <div>
-                  <label className="block text-[10px] font-bold uppercase text-slate-500 mb-1.5">Categoría</label>
+                  <label className="block text-[10px] font-bold uppercase text-slate-550 mb-1.5">Cód. Barras</label>
+                  <input
+                    type="text"
+                    placeholder="EAN, UPC, etc."
+                    className={`w-full rounded-xl p-3 border focus:outline-none focus:ring-1 focus:ring-amber-500 ${
+                      theme === 'dark' ? 'bg-[#0d0e12] border-[#20222b]' : 'bg-slate-50 border-slate-250 shadow-sm'
+                    }`}
+                    value={currentProduct.codigoBarras || ''}
+                    onChange={e => setCurrentProduct({ ...currentProduct, codigoBarras: e.target.value })}
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[10px] font-bold uppercase text-slate-550 mb-1.5">Categoría</label>
                   <input
                     type="text"
                     required

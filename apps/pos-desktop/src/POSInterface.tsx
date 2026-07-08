@@ -35,6 +35,18 @@ export default function POSInterface() {
     };
   });
 
+  const [products, setProducts] = useState(() => {
+    const saved = localStorage.getItem('pos_products');
+    return saved ? JSON.parse(saved) : [
+      { id: '1', sku: 'AUT-881', codigoBarras: '7501006598214', nombre: 'Balatas Delanteras Cerámicas de Alto Rendimiento', categoria: 'Automotriz', precio: 340.00, costo: 180.00, stock: 15, unidad: 'pieza', metadata: { oem: 'D-1092', compatible: 'Vento 250 / Honda CGL', garantia: '6 Meses' } },
+      { id: '2', sku: 'FER-092', codigoBarras: '7501006598221', nombre: 'Cable de Cobre Calibre 12 THW Aislamiento Extra', categoria: 'Ferretería', precio: 18.00, costo: 9.50, stock: 240, unidad: 'metros', metadata: { marca: 'Condumex', ubicacion: 'Pasillo 4, Anaquel B', amperaje_max: '25A' } },
+      { id: '3', sku: 'FER-114', codigoBarras: '7501006598238', nombre: 'Disco Abrasivo Corte Metal 4.5" Extra Fino', categoria: 'Ferretería', precio: 45.50, costo: 22.00, stock: 85, unidad: 'piezas', metadata: { marca: 'Dewalt', rpm_max: '13300', uso: 'Industrial' } },
+      { id: '4', sku: 'REF-001', codigoBarras: '7501011302722', nombre: 'Coca Cola 600ml', categoria: 'Abarrotes', precio: 18.50, costo: 12.00, stock: 50, unidad: 'piezas', metadata: { marca: 'Coca-Cola' } },
+      { id: '5', sku: 'PAN-001', codigoBarras: '7501011302739', nombre: 'Pan Dulce (Concha)', categoria: 'Panadería', precio: 15.00, costo: 8.00, stock: 45, unidad: 'piezas', metadata: { tipo: 'Repostería' } }
+    ];
+  });
+
+
 
   // Simulamos un carrito EXCLUSIVO del giro Ferretería/Refaccionaria (Tema Oscuro/Industrial premium con la paleta de colores del portal)
   const [cart, setCart] = useState([
@@ -93,6 +105,43 @@ export default function POSInterface() {
 
   const handleRemove = (id: number) => {
     setCart(prev => prev.filter(item => item.id !== id));
+  };
+
+  const handleAddToCart = (product: any) => {
+    setCart(prev => {
+      const existing = prev.find(item => item.sku === product.sku);
+      if (existing) {
+        const step = product.unidad === 'metros' ? 0.5 : 1;
+        return prev.map(item => item.sku === product.sku ? { ...item, cantidad: parseFloat((item.cantidad + step).toFixed(3)) } : item);
+      }
+      return [...prev, {
+        id: prev.length + 1,
+        sku: product.sku,
+        nombre: product.nombre,
+        tipo: product.categoria.toLowerCase(),
+        metadata: product.metadata || { marca: 'Genérica', ubicacion: 'Mostrador' },
+        precio: product.precio,
+        cantidad: 1,
+        unidad: product.unidad
+      }];
+    });
+  };
+
+  const handleSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter' && searchQuery.trim()) {
+      const query = searchQuery.trim().toLowerCase();
+      const exactMatch = products.find((p: any) => 
+        (p.codigoBarras && p.codigoBarras.toLowerCase() === query) ||
+        (p.sku.toLowerCase() === query)
+      ) || products.find((p: any) => p.nombre.toLowerCase().includes(query));
+
+      if (exactMatch) {
+        handleAddToCart(exactMatch);
+        setSearchQuery('');
+      } else {
+        alert('Ningún producto coincide con el código de barras o SKU ingresado.');
+      }
+    }
   };
 
   const forceSync = async () => {
@@ -375,24 +424,71 @@ export default function POSInterface() {
 
 
         {/* Omnibox */}
-        <div className="flex-1 max-w-lg px-2 mr-auto">
+        <div className="flex-1 max-w-lg px-2 mr-auto relative">
           <div className="relative group">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-500 w-4 h-4 group-focus-within:text-amber-500 transition-colors" />
             <input
               type="text"
-              placeholder="Buscar SKU, nombre..."
-              className={`flex-grow rounded-md py-2 pl-8 pr-3 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-all shadow-inner ${
+              placeholder="Escanear código de barras o escribir SKU/Nombre... (Enter para agregar)"
+              className={`w-full rounded-md py-2 pl-8 pr-10 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-all shadow-inner ${
                 theme === 'dark'
                   ? 'bg-[#090a0d] text-white placeholder-slate-650 border-[#242732]'
                   : 'bg-slate-100 text-slate-900 placeholder-slate-400 border-slate-200'
               }`}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
+              onKeyDown={handleSearchKeyDown}
             />
             <div className={`absolute right-2 top-1/2 transform -translate-y-1/2 text-xs px-1 py-0.5 rounded font-mono border ${
               theme === 'dark' ? 'bg-[#1b1c24] text-slate-400 border-[#2b2d3a]' : 'bg-white text-slate-500 border-slate-200 shadow-sm'
-            }`}>F1</div>
+            }`}>Enter</div>
           </div>
+
+          {/* Autocomplete Dropdown Search Results */}
+          {searchQuery.trim() && (
+            <div className={`absolute left-2 right-2 mt-1 max-h-60 overflow-y-auto rounded-xl border shadow-2xl z-50 ${
+              theme === 'dark' ? 'bg-[#13151b] border-[#262836]' : 'bg-white border-slate-250'
+            }`}>
+              {products
+                .filter((p: any) => 
+                  p.nombre.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                  p.sku.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                  (p.codigoBarras && p.codigoBarras.includes(searchQuery))
+                )
+                .map((product: any) => (
+                  <div 
+                    key={product.id}
+                    onClick={() => {
+                      handleAddToCart(product);
+                      setSearchQuery('');
+                    }}
+                    className={`flex items-center justify-between px-4 py-2.5 cursor-pointer text-xs transition-colors border-b last:border-b-0 ${
+                      theme === 'dark' 
+                        ? 'border-[#1e202b] hover:bg-slate-800 text-slate-300' 
+                        : 'border-slate-100 hover:bg-slate-50 text-slate-700'
+                    }`}
+                  >
+                    <div>
+                      <p className={`font-bold ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>{product.nombre}</p>
+                      <p className="text-[10px] text-slate-500 font-mono mt-0.5">
+                        SKU: <span className="text-amber-500 font-bold">{product.sku}</span>
+                        {product.codigoBarras && (
+                          <span className="ml-3">Cód. Barras: <span className="text-slate-400 font-bold">{product.codigoBarras}</span></span>
+                        )}
+                      </p>
+                    </div>
+                    <span className="font-mono font-bold text-sm text-amber-500">${product.precio.toFixed(2)}</span>
+                  </div>
+                ))}
+              {products.filter((p: any) => 
+                p.nombre.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                p.sku.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                (p.codigoBarras && p.codigoBarras.includes(searchQuery))
+              ).length === 0 && (
+                <div className="p-4 text-center text-xs text-slate-500">Ningún artículo coincide con tu búsqueda</div>
+              )}
+            </div>
+          )}
         </div>
 
         <div className="flex items-center justify-end gap-6 w-1/4">
@@ -737,6 +833,11 @@ export default function POSInterface() {
           onConfigChange={(newConfig) => {
             setConfig(newConfig);
             localStorage.setItem('pos_config', JSON.stringify(newConfig));
+          }}
+          products={products}
+          onProductsChange={(newProducts) => {
+            setProducts(newProducts);
+            localStorage.setItem('pos_products', JSON.stringify(newProducts));
           }}
         />
       )}
