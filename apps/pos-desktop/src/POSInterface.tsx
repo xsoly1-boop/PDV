@@ -408,7 +408,7 @@ export default function POSInterface() {
       <header className={`flex items-center justify-between px-6 py-4 border-b shadow-xl z-10 ${
         theme === 'dark' ? 'bg-[#13151b] border-[#20222b]' : 'bg-white border-slate-200'
       }`}>
-        <div className="flex items-center gap-4 w-1/4">
+        <div className="flex items-center gap-4 w-fit mr-8">
           {config.logoUrl ? (
             <img src={config.logoUrl} alt="Logo" className="w-11 h-11 object-contain rounded-xl bg-white p-1 shadow-sm border border-slate-200" />
           ) : (
