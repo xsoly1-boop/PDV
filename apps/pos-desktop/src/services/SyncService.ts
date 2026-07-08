@@ -1,6 +1,9 @@
 import { LocalDb, LocalKardexMovimiento } from '../db/localDb';
 
-const CENTRAL_API_URL = 'http://localhost:3001/api/v1';
+import { API_V1 } from '../config.js';
+
+const CENTRAL_API_URL = API_V1;
+
 
 export const SyncService = {
   // Envía los movimientos no sincronizados al servidor central

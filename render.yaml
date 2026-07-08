@@ -20,7 +20,8 @@ services:
     repo: https://github.com/xsoly1-boop/PDV.git
     region: oregon
     branch: main
-    staticPublishPath: apps/pos-web/dist  # adjust if your web build dir differs
+    rootDir: apps/pos-desktop
     buildCommand: npm install && npm run build
+    staticPublishPath: dist
     envVars: []
     plan: starter
