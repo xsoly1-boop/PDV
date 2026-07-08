@@ -3,10 +3,11 @@ import {
   Search, Wifi, User, Clock, 
   Trash2, Plus, Minus, AlertCircle, 
   Wrench, CarFront, PackageOpen, Zap, Printer,
-  Sun, Moon
+  Sun, Moon, LayoutDashboard
 } from 'lucide-react';
 import { LocalDb } from './db/localDb';
 import { SyncService } from './services/SyncService';
+import AdminDashboard from './AdminDashboard';
 
 export default function POSInterface() {
   const [time, setTime] = useState(new Date().toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' }));
@@ -20,6 +21,20 @@ export default function POSInterface() {
   const [pin, setPin] = useState('');
   const [loginError, setLoginError] = useState('');
   const [theme, setTheme] = useState<'dark' | 'light'>('dark');
+  const [currentView, setCurrentView] = useState<'pos' | 'admin'>('pos');
+  const [config, setConfig] = useState(() => {
+    const saved = localStorage.getItem('pos_config');
+    return saved ? JSON.parse(saved) : {
+      businessName: 'Ferretería y Refaccionaria El Mazo',
+      rfc: 'MAZO890412H34',
+      currency: 'MXN ($)',
+      taxRate: 16,
+      address: 'Av. Industrial 405, Zona Centro',
+      phone: '449-123-4567',
+      logoUrl: '',
+    };
+  });
+
 
   // Simulamos un carrito EXCLUSIVO del giro Ferretería/Refaccionaria (Tema Oscuro/Industrial premium con la paleta de colores del portal)
   const [cart, setCart] = useState([
@@ -345,14 +360,19 @@ export default function POSInterface() {
         theme === 'dark' ? 'bg-[#13151b] border-[#20222b]' : 'bg-white border-slate-200'
       }`}>
         <div className="flex items-center gap-4 w-1/4">
-          <div className="bg-amber-500 text-slate-950 font-black px-3 py-2 rounded-lg flex items-center gap-2 shadow-[0_0_15px_rgba(245,158,11,0.35)] border-0">
-            <Wrench className="w-5 h-5 text-slate-955" /> POS
-          </div>
+          {config.logoUrl ? (
+            <img src={config.logoUrl} alt="Logo" className="w-11 h-11 object-contain rounded-xl bg-white p-1 shadow-sm border border-slate-200" />
+          ) : (
+            <div className="bg-amber-500 text-slate-950 font-black px-3 py-2 rounded-lg flex items-center gap-2 shadow-[0_0_15px_rgba(245,158,11,0.35)] border-0">
+              <Wrench className="w-5 h-5 text-slate-955" /> POS
+            </div>
+          )}
           <div>
-            <h1 className={`font-bold text-sm tracking-wide uppercase ${theme === 'dark' ? 'text-slate-100' : 'text-slate-900'}`}>Ferretería El Mazo</h1>
+            <h1 className={`font-bold text-sm tracking-wide uppercase ${theme === 'dark' ? 'text-slate-100' : 'text-slate-900'}`}>{config.businessName}</h1>
             <p className="text-xs text-amber-500/80 font-medium">Suc. Norte - Caja 01</p>
           </div>
         </div>
+
 
         {/* Omnibox */}
         <div className="flex-1 max-w-lg px-2 mr-auto">
@@ -377,6 +397,17 @@ export default function POSInterface() {
 
         <div className="flex items-center justify-end gap-6 w-1/4">
           
+          {/* Botón de Administración */}
+          {currentUser && currentUser.rol === 'Administrador' && (
+            <button 
+              onClick={() => setCurrentView('admin')}
+              className="bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-all text-xs border-0 cursor-pointer shadow-md shadow-amber-500/10 active:scale-95"
+              title="Ir al Panel de Administración"
+            >
+              <LayoutDashboard className="w-4 h-4" /> Admin
+            </button>
+          )}
+
           {/* Toggle de Tema */}
           <button 
             onClick={handleThemeToggle}
@@ -387,6 +418,7 @@ export default function POSInterface() {
           >
             {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
           </button>
+
 
           <div 
             onClick={() => setIsOnline(!isOnline)}
@@ -694,6 +726,20 @@ export default function POSInterface() {
 
         </section>
       </main>
+
+      {/* Panel de Administración (Overlay de Pantalla Completa) */}
+      {currentView === 'admin' && currentUser && (
+        <AdminDashboard 
+          currentUser={currentUser} 
+          theme={theme} 
+          onClose={() => setCurrentView('pos')} 
+          config={config}
+          onConfigChange={(newConfig) => {
+            setConfig(newConfig);
+            localStorage.setItem('pos_config', JSON.stringify(newConfig));
+          }}
+        />
+      )}
     </div>
   );
 }
