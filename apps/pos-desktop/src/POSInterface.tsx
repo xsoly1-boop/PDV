@@ -288,7 +288,7 @@ export default function POSInterface() {
   if (!currentUser) {
     return (
       <div className={`flex flex-col items-center justify-center h-screen font-sans ${
-        theme === 'dark' ? 'bg-[#0d0e12] text-slate-350' : 'bg-slate-50 text-slate-700'
+        theme === 'dark' ? 'bg-[#0d0e12] text-slate-300' : 'bg-slate-50 text-slate-700'
       }`}>
         
         {/* Toggle de Tema en Login */}
@@ -318,7 +318,7 @@ export default function POSInterface() {
           </div>
 
           <h2 className={`text-xl font-bold uppercase tracking-wider ${theme === 'dark' ? 'text-slate-100' : 'text-slate-900'}`}>APEX POS</h2>
-          <p className="text-xs text-slate-550 mt-1 mb-6">Ingresar PIN de Acceso Rápido</p>
+          <p className="text-xs text-slate-400 mt-1 mb-6">Ingresar PIN de Acceso Rápido</p>
 
           {/* Círculos del PIN */}
           <div className="flex gap-4 mb-6">
@@ -401,7 +401,7 @@ export default function POSInterface() {
   // 2. RENDER DE LA PANTALLA PRINCIPAL DEL POS
   return (
     <div className={`flex flex-col h-screen font-sans selection:bg-amber-500/30 transition-colors ${
-      theme === 'dark' ? 'bg-[#0d0e12] text-slate-350' : 'bg-slate-50 text-slate-700'
+      theme === 'dark' ? 'bg-[#0d0e12] text-slate-300' : 'bg-slate-50 text-slate-700'
     }`}>
       
       {/* 1. TOPBAR (Telemetría y Búsqueda) */}
@@ -432,7 +432,7 @@ export default function POSInterface() {
               placeholder="Escanear código de barras o escribir SKU/Nombre... (Enter para agregar)"
               className={`w-full rounded-md py-2 pl-8 pr-10 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-all shadow-inner ${
                 theme === 'dark'
-                  ? 'bg-[#090a0d] text-white placeholder-slate-650 border-[#242732]'
+                  ? 'bg-[#090a0d] text-white placeholder-slate-400 border-[#242732]'
                   : 'bg-slate-100 text-slate-900 placeholder-slate-400 border-slate-200'
               }`}
               value={searchQuery}
@@ -550,10 +550,10 @@ export default function POSInterface() {
           {/* Cajero Activo y Botón de Bloqueo */}
           <div className="flex items-center gap-3">
             <div className={`flex items-center gap-2 text-sm border-r pr-3 ${
-              theme === 'dark' ? 'text-slate-450 border-[#20222b]' : 'text-slate-600 border-slate-200'
+              theme === 'dark' ? 'text-slate-300 border-[#20222b]' : 'text-slate-600 border-slate-200'
             }`}>
               <User className="w-4 h-4 text-amber-500" /> 
-              <span>{currentUser.nombre} <span className="text-[10px] text-slate-550">({currentUser.rol})</span></span>
+              <span>{currentUser.nombre} <span className="text-[10px] text-slate-400">({currentUser.rol})</span></span>
             </div>
             <button 
               onClick={() => { setCurrentUser(null); setPin(''); setLoginError(''); }}
@@ -565,7 +565,7 @@ export default function POSInterface() {
           </div>
 
           <div className={`flex items-center gap-2 font-mono text-sm border px-3 py-1.5 rounded-lg ${
-            theme === 'dark' ? 'bg-[#090a0d] border-[#20222b] text-slate-355' : 'bg-slate-100 border-slate-200 text-slate-600'
+            theme === 'dark' ? 'bg-[#090a0d] border-[#20222b] text-slate-300' : 'bg-slate-100 border-slate-200 text-slate-600'
           }`}>
             <Clock className="w-4 h-4 text-slate-500" /> {time}
           </div>
@@ -585,7 +585,7 @@ export default function POSInterface() {
           }`}>
             <div>
               <h2 className={`font-bold text-xl ${theme === 'dark' ? 'text-slate-100' : 'text-slate-900'}`}>Ticket #14092</h2>
-              <p className="text-sm text-slate-455">Cliente: Público General</p>
+              <p className="text-sm text-slate-400">Cliente: Público General</p>
             </div>
             <button className="text-amber-500 hover:text-amber-400 font-semibold flex items-center gap-1.5 hover:bg-amber-500/10 px-3 py-1.5 rounded-lg transition-colors border border-transparent hover:border-amber-500/20 text-xs bg-transparent cursor-pointer">
               <User className="w-4 h-4" /> Asignar Cliente / RFC
@@ -600,7 +600,7 @@ export default function POSInterface() {
                 className={`flex gap-4 py-2.5 px-4 border cursor-pointer rounded-xl transition-all group ${
                   selectedItemId === item.id 
                     ? 'border-amber-500 bg-amber-500/5 shadow-sm' 
-                    : theme === 'dark' ? 'bg-[#1a1c24] border-[#262836] hover:border-[#383b4f]' : 'bg-white border-slate-200 hover:border-slate-350 shadow-sm'
+                    : theme === 'dark' ? 'bg-[#1a1c24] border-[#262836] hover:border-[#383b4f]' : 'bg-white border-slate-200 hover:border-slate-300 shadow-sm'
                 }`}
               >
                 
@@ -611,7 +611,7 @@ export default function POSInterface() {
                   <button 
                     onClick={() => handleIncrement(item.id)}
                     className={`w-6.5 h-6.5 rounded-full flex items-center justify-center transition-colors shadow-sm border-0 cursor-pointer ${
-                      theme === 'dark' ? 'bg-[#252837] text-slate-350 hover:bg-amber-500 hover:text-slate-950' : 'bg-slate-100 text-slate-600 hover:bg-amber-100 hover:text-amber-800'
+                      theme === 'dark' ? 'bg-[#252837] text-slate-300 hover:bg-amber-500 hover:text-slate-950' : 'bg-slate-100 text-slate-600 hover:bg-amber-100 hover:text-amber-800'
                     }`}
                   >
                     <Plus className="w-3 h-3" />
@@ -620,7 +620,7 @@ export default function POSInterface() {
                   <button 
                     onClick={() => handleDecrement(item.id)}
                     className={`w-6.5 h-6.5 rounded-full flex items-center justify-center transition-colors shadow-sm border-0 cursor-pointer ${
-                      theme === 'dark' ? 'bg-[#252837] text-slate-355 hover:bg-amber-500 hover:text-slate-950' : 'bg-slate-100 text-slate-600 hover:bg-amber-100 hover:text-amber-800'
+                      theme === 'dark' ? 'bg-[#252837] text-slate-300 hover:bg-amber-500 hover:text-slate-950' : 'bg-slate-100 text-slate-600 hover:bg-amber-100 hover:text-amber-800'
                     }`}
                   >
                     <Minus className="w-3 h-3" />
@@ -640,7 +640,7 @@ export default function POSInterface() {
                     </div>
                     <div className="text-right">
                       <p className={`font-black text-xl ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>${(item.precio * item.cantidad).toFixed(2)}</p>
-                      <p className="text-xs text-slate-450 line-through mt-0.5">${((item.precio * item.cantidad) * 1.15).toFixed(2)}</p>
+                      <p className="text-xs text-slate-400 line-through mt-0.5">${((item.precio * item.cantidad) * 1.15).toFixed(2)}</p>
                     </div>
                   </div>
 
@@ -679,11 +679,11 @@ export default function POSInterface() {
           }`}>
             <div className="flex justify-between items-end mb-6">
               <div className="space-y-2 w-1/3">
-                <div className="flex justify-between text-slate-455 text-base">
+                <div className="flex justify-between text-slate-400 text-base">
                   <span>Subtotal</span>
                   <span>${subtotal.toFixed(2)}</span>
                 </div>
-                <div className="flex justify-between text-slate-455 text-base">
+                <div className="flex justify-between text-slate-400 text-base">
                   <span>IVA (16%)</span>
                   <span>${iva.toFixed(2)}</span>
                 </div>
@@ -697,7 +697,7 @@ export default function POSInterface() {
             <button 
               onClick={handleCheckout}
               disabled={cart.length === 0}
-              className="w-full bg-emerald-600 hover:bg-emerald-500 text-white text-lg font-black py-3.5 rounded-xl shadow-lg shadow-emerald-900/50 active:scale-[0.98] transition-all flex items-center justify-center gap-3 border-0 disabled:bg-slate-800 disabled:text-slate-550 disabled:cursor-not-allowed cursor-pointer"
+              className="w-full bg-emerald-600 hover:bg-emerald-500 text-white text-lg font-black py-3.5 rounded-xl shadow-lg shadow-emerald-900/50 active:scale-[0.98] transition-all flex items-center justify-center gap-3 border-0 disabled:bg-slate-800 disabled:text-slate-400 disabled:cursor-not-allowed cursor-pointer"
             >
               COBRAR TICKET
               <span className="text-emerald-100 font-mono text-xs bg-emerald-800/50 px-2 py-1 rounded border border-emerald-500/30">F12</span>
@@ -735,7 +735,7 @@ export default function POSInterface() {
                       <span className="font-black text-amber-400 text-lg">145 {selectedItem.unidad}</span>
                     </div>
                     <div className={`flex justify-between items-center p-3 border rounded-lg text-sm ${
-                      theme === 'dark' ? 'border-[#20222b] text-slate-400 bg-[#0d0e12]' : 'border-slate-200 text-slate-650 bg-slate-50'
+                      theme === 'dark' ? 'border-[#20222b] text-slate-400 bg-[#0d0e12]' : 'border-slate-200 text-slate-500 bg-slate-50'
                     }`}>
                       <span>Bodega Central</span>
                       <span className={`font-bold ${theme === 'dark' ? 'text-slate-200' : 'text-slate-800'}`}>850 {selectedItem.unidad}</span>
@@ -795,7 +795,7 @@ export default function POSInterface() {
               }`}>
                 <div className="flex justify-between items-start mb-2">
                   <span className="text-[10px] font-bold text-slate-500 group-hover:text-amber-500/70">#COT-0921</span>
-                  <span className={`text-[9px] px-1.5 py-0.5 rounded ${theme === 'dark' ? 'bg-[#252837] text-slate-400' : 'bg-slate-200 text-slate-650'}`}>2m</span>
+                  <span className={`text-[9px] px-1.5 py-0.5 rounded ${theme === 'dark' ? 'bg-[#252837] text-slate-400' : 'bg-slate-200 text-slate-600'}`}>2m</span>
                 </div>
                 <div>
                   <p className={`text-xs font-bold truncate ${theme === 'dark' ? 'text-slate-200' : 'text-slate-850'}`}>Mecánico Taller Hnos.</p>
@@ -809,11 +809,11 @@ export default function POSInterface() {
               }`}>
                 <div className="flex justify-between items-start mb-2">
                   <span className="text-[10px] font-bold text-slate-500 group-hover:text-amber-500/70">#COT-0922</span>
-                  <span className={`text-[9px] px-1.5 py-0.5 rounded ${theme === 'dark' ? 'bg-[#252837] text-slate-400' : 'bg-slate-200 text-slate-650'}`}>5m</span>
+                  <span className={`text-[9px] px-1.5 py-0.5 rounded ${theme === 'dark' ? 'bg-[#252837] text-slate-400' : 'bg-slate-200 text-slate-600'}`}>5m</span>
                 </div>
                 <div>
                   <p className={`text-xs font-bold truncate ${theme === 'dark' ? 'text-slate-200' : 'text-slate-850'}`}>Público General</p>
-                  <p className="text-[10px] text-slate-550 mt-1">1 art. • Vend: Ana</p>
+                  <p className="text-[10px] text-slate-400 mt-1">1 art. • Vend: Ana</p>
                 </div>
                 <p className="text-sm font-black text-amber-500 mt-2">$85.00</p>
               </div>
