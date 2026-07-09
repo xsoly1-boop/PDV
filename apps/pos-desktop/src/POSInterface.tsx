@@ -59,7 +59,8 @@ export default function POSInterface() {
         cart: [],
         ticketNumber: startTicket,
         selectedItemId: null,
-        discount: 0
+        discount: 0,
+        clienteNombre: ''
       }
     ];
   });
@@ -81,7 +82,8 @@ export default function POSInterface() {
     cart: [],
     ticketNumber: 1,
     selectedItemId: null,
-    discount: 0
+    discount: 0,
+    clienteNombre: ''
   };
 
   const cart = activeTab.cart;
@@ -129,7 +131,7 @@ export default function POSInterface() {
     }));
   };
 
-  const handleAddTab = () => {
+  const handleAddTab = (clienteNombre?: string) => {
     const nextTicketNum = Math.max(...tabs.map(t => t.ticketNumber), 0) + 1;
     const newTabId = `tab-${Date.now()}`;
     const newTab = {
@@ -138,7 +140,8 @@ export default function POSInterface() {
       cart: [],
       ticketNumber: nextTicketNum,
       selectedItemId: null,
-      discount: 0
+      discount: 0,
+      clienteNombre: clienteNombre || ''
     };
     setTabs(prev => [...prev, newTab]);
     setActiveTabId(newTabId);
@@ -154,7 +157,8 @@ export default function POSInterface() {
           cart: [],
           ticketNumber: 1,
           selectedItemId: null,
-          discount: 0
+          discount: 0,
+          clienteNombre: ''
         }
       ]);
       setActiveTabId('tab-default');
@@ -574,6 +578,13 @@ export default function POSInterface() {
         e.preventDefault();
         setShowImportQuote(true);
       }
+      if (e.key === 'F6') {
+        e.preventDefault();
+        const inputName = prompt("¿Desea asignar un nombre de cliente al nuevo ticket?\n\nEscribe el nombre del cliente (o presiona Aceptar para Público General, o Cancelar para no abrir el ticket):");
+        if (inputName !== null) {
+          handleAddTab(inputName.trim());
+        }
+      }
     };
     window.addEventListener('keydown', handleGlobalKeyDown);
 
@@ -581,7 +592,7 @@ export default function POSInterface() {
       clearInterval(interval);
       window.removeEventListener('keydown', handleGlobalKeyDown);
     };
-  }, []);
+  }, [tabs]);
 
   const checkPermissionAndExecute = (actionName: string, actionCallback: () => void) => {
     console.log(`Verificando permisos para: ${actionName}`);
@@ -697,7 +708,7 @@ export default function POSInterface() {
         tipo: 'SALIDA_VENTA',
         cantidad: item.cantidad,
         referencia: ticketRef,
-        observacion: 'Venta mostrador (' + finalMetodo + ')'
+        observacion: 'Venta mostrador (' + finalMetodo + ')' + (activeTab.clienteNombre ? ' - Cliente: ' + activeTab.clienteNombre : '')
       });
     }
 
@@ -1309,7 +1320,7 @@ export default function POSInterface() {
                 {/* Botón Nueva Pestaña */}
                 <button
                   type="button"
-                  onClick={handleAddTab}
+                  onClick={() => handleAddTab()}
                   className="px-3 py-1.5 rounded-t-xl text-xs font-bold transition-colors cursor-pointer border border-transparent bg-transparent hover:bg-amber-500/10 text-amber-500 flex items-center gap-1"
                   title="Abrir nuevo Ticket"
                 >
@@ -1330,7 +1341,7 @@ export default function POSInterface() {
                 <span className="mx-2">•</span>
                 <span>Artículos: {cart.reduce((sum: number, item: any) => sum + Number(item.cantidad), 0)}</span>
               </div>
-              <span className="italic">Cliente: Público General</span>
+              <span className="italic">Cliente: {activeTab.clienteNombre || 'Público General'}</span>
             </div>
           </div>
 
