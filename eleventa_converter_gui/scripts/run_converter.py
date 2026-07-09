@@ -1,4 +1,15 @@
 #!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Conversor Completo Eleventa → Apex POS
+Extrae TODOS los datos necesarios para migración:
+  - Productos (catálogo)
+  - Clientes (con datos fiscales SAT)
+  - Categorías (departamentos)
+  - Proveedores
+  - Ventas históricas + artículos
+  - Inventario (stock real)
+"""
 import os
 import sys
 from pathlib import Path
@@ -79,7 +90,10 @@ def export_fdb_to_json(fdb_path, out_path):
             "limite_credito": ["LIMITE_CREDITO"]
         }
         
-        # 1. Map Products
+        # ══════════════════════════════════════════
+        # 1. PRODUCTOS
+        # ══════════════════════════════════════════
+        print("[1/6] Extrayendo productos...")
         productos_list = []
         try:
             cur.execute('SELECT * FROM PRODUCTOS')
@@ -107,11 +121,16 @@ def export_fdb_to_json(fdb_path, out_path):
                     "proveedor_id": prov_id,
                     "permiteFracciones": "." in str(stock) or stock % 1 != 0
                 })
+            print(f"   ✔ {len(productos_list)} productos extraídos")
         except Exception as pe:
-            print(f"Error reading PRODUCTOS: {pe}", file=sys.stderr)
+            print(f"   ✘ Error leyendo PRODUCTOS: {pe}", file=sys.stderr)
             
-        # 2. Map Clients (Version-independent fallback with billing details)
+        # ══════════════════════════════════════════
+        # 2. CLIENTES
+        # ══════════════════════════════════════════
+        print("[2/6] Extrayendo clientes...")
         clientes_list = []
+        client_map = {}  # ID -> nombre (para vincular ventas)
         try:
             # Try CLIENTESV2, CLIENTESV2_CREDITO & CLIENTESV2_FACTURACION first (newer Eleventa versions)
             cur.execute("""
@@ -130,10 +149,9 @@ def export_fdb_to_json(fdb_path, out_path):
                 FROM CLIENTESV2 c
                 JOIN CLIENTESV2_CREDITO cr ON c.ID = cr.CLIENTESV2_ID
                 LEFT JOIN CLIENTESV2_FACTURACION f ON c.ID = f.CLIENTESV2_ID
-                WHERE cr.SALDO_ACTUAL > 0
             """)
             for row in cur.fetchall():
-                cid = str(row[0]).strip()
+                cid = row[0]
                 nombres = str(row[1]).strip() if row[1] else ""
                 apellidos = str(row[2]).strip() if row[2] else ""
                 nombre_completo = f"{nombres} {apellidos}".strip()
@@ -146,8 +164,11 @@ def export_fdb_to_json(fdb_path, out_path):
                 cp = str(row[9]).strip() if row[9] else None
                 calle = str(row[10]).strip() if row[10] else None
                 
+                if nombre_completo:
+                    client_map[cid] = nombre_completo
+                
                 clientes_list.append({
-                    "cliente_id": cid,
+                    "cliente_id": str(cid),
                     "nombre": nombre_completo,
                     "telefono": telefono,
                     "saldo_deudor": saldo,
@@ -158,40 +179,37 @@ def export_fdb_to_json(fdb_path, out_path):
                     "codigo_postal": cp,
                     "direccion_fiscal": calle
                 })
-            print(f"Successfully loaded {len(clientes_list)} clients from CLIENTESV2 with billing details.")
+            print(f"   ✔ {len(clientes_list)} clientes extraídos (CLIENTESV2)")
         except Exception as e2:
-            print(f"CLIENTESV2 query failed, falling back to legacy CLIENTES table. Error: {e2}", file=sys.stderr)
-            # Legacy CLIENTES fallback (older Eleventa versions)
+            print(f"   ⚠ CLIENTESV2 no disponible, usando tabla CLIENTES legacy...", file=sys.stderr)
             try:
                 cur.execute('SELECT * FROM CLIENTES')
                 cols = [desc[0].upper() for desc in cur.description]
                 for row in cur.fetchall():
                     row_dict = dict(zip(cols, row))
                     mapped = map_row(row_dict, client_mapping)
-                    
                     cid = str(mapped["cliente_id"]).strip() if mapped["cliente_id"] is not None else ""
                     nombre = str(mapped["nombre"]).strip() if mapped["nombre"] is not None else ""
                     saldo = float(mapped["saldo_deudor"]) if mapped["saldo_deudor"] is not None else 0.0
                     limite = float(mapped["limite_credito"]) if mapped["limite_credito"] is not None else 0.0
                     
-                    if saldo > 0:
-                        clientes_list.append({
-                            "cliente_id": cid,
-                            "nombre": nombre,
-                            "telefono": "",
-                            "saldo_deudor": saldo,
-                            "limite_credito": limite,
-                            "rfc": None,
-                            "razon_social": None,
-                            "regimen_fiscal": None,
-                            "codigo_postal": None,
-                            "direccion_fiscal": None
-                        })
-                print(f"Successfully loaded {len(clientes_list)} clients from legacy CLIENTES.")
+                    clientes_list.append({
+                        "cliente_id": cid,
+                        "nombre": nombre,
+                        "telefono": "",
+                        "saldo_deudor": saldo,
+                        "limite_credito": limite,
+                        "rfc": None, "razon_social": None, "regimen_fiscal": None,
+                        "codigo_postal": None, "direccion_fiscal": None
+                    })
+                print(f"   ✔ {len(clientes_list)} clientes extraídos (legacy)")
             except Exception as ce:
-                print(f"Error reading legacy CLIENTES: {ce}", file=sys.stderr)
+                print(f"   ✘ Error leyendo CLIENTES: {ce}", file=sys.stderr)
             
-        # 3. Map Departments (Categories)
+        # ══════════════════════════════════════════
+        # 3. CATEGORÍAS (Departamentos)
+        # ══════════════════════════════════════════
+        print("[3/6] Extrayendo categorías...")
         categorias_list = []
         try:
             cur.execute('SELECT ID, TRIM(NOMBRE) FROM DEPARTAMENTOS')
@@ -203,11 +221,14 @@ def export_fdb_to_json(fdb_path, out_path):
                         "id": cat_id,
                         "nombre": nombre
                     })
-            print(f"Successfully loaded {len(categorias_list)} departments from DEPARTAMENTOS.")
+            print(f"   ✔ {len(categorias_list)} categorías extraídas")
         except Exception as de:
-            print(f"Error reading DEPARTAMENTOS: {de}", file=sys.stderr)
+            print(f"   ✘ Error leyendo DEPARTAMENTOS: {de}", file=sys.stderr)
 
-        # 4. Map Suppliers (Proveedores)
+        # ══════════════════════════════════════════
+        # 4. PROVEEDORES
+        # ══════════════════════════════════════════
+        print("[4/6] Extrayendo proveedores...")
         proveedores_list = []
         try:
             cur.execute('SELECT ID, TRIM(NOMBRE), TRIM(REPRESENTANTE), TRIM(TELEFONOS), TRIM(CORREOS), TRIM(PAGINA_WEB), TRIM(NOTAS) FROM PROVEEDORES WHERE BORRADO_EN IS NULL')
@@ -230,20 +251,135 @@ def export_fdb_to_json(fdb_path, out_path):
                         "pagina_web": web,
                         "notas": notas
                     })
-            print(f"Successfully loaded {len(proveedores_list)} suppliers from PROVEEDORES.")
+            print(f"   ✔ {len(proveedores_list)} proveedores extraídos")
         except Exception as pre:
-            print(f"Error reading PROVEEDORES: {pre}", file=sys.stderr)
+            print(f"   ✘ Error leyendo PROVEEDORES: {pre}", file=sys.stderr)
+
+        # ══════════════════════════════════════════
+        # 5. VENTAS HISTÓRICAS + ARTÍCULOS
+        # ══════════════════════════════════════════
+        print("[5/6] Extrayendo ventas históricas...")
+        ventas_list = []
+        try:
+            cur.execute("""
+                SELECT ID, FOLIO, CREADO_EN, SUBTOTAL, IMPUESTOS, TOTAL, GANANCIA, CLIENTESV2_ID, FORMA_PAGO
+                FROM VENTATICKETS
+                WHERE ESTA_CANCELADO = 'f' AND ACTIVO = 't'
+                ORDER BY ID ASC
+            """)
+            cols = [desc[0].upper() for desc in cur.description]
+            ticket_rows = cur.fetchall()
+            
+            ticket_id_set = set()
+            for row in ticket_rows:
+                r = dict(zip(cols, row))
+                tid = r["ID"]
+                ticket_id_set.add(tid)
+                
+                client_name = client_map.get(r.get("CLIENTESV2_ID"), None)
+                
+                ventas_list.append({
+                    "id": f"elev_t_{tid}",
+                    "folio": f"ELEV-{r['FOLIO'] or tid}-{tid}",
+                    "total": float(r["TOTAL"]) if r["TOTAL"] else 0,
+                    "subtotal": float(r["SUBTOTAL"]) if r["SUBTOTAL"] else 0,
+                    "descuento": 0.0,
+                    "creadoAt": r["CREADO_EN"].isoformat() if isinstance(r["CREADO_EN"], datetime.datetime) else serialize_val(r["CREADO_EN"]),
+                    "clienteNombre": client_name,
+                    "detalles": []
+                })
+            
+            print(f"   ✔ {len(ventas_list)} tickets de venta extraídos")
+            
+            # Now fetch line items
+            print("   → Extrayendo artículos de tickets...")
+            cur.execute("""
+                SELECT TICKET_ID, PRODUCTO_CODIGO, CANTIDAD, PRECIO_USADO, TOTAL_ARTICULO
+                FROM VENTATICKETS_ARTICULOS
+                WHERE FUE_DEVUELTO = 'f'
+            """)
+            cols_art = [desc[0].upper() for desc in cur.description]
+            art_rows = cur.fetchall()
+            
+            items_by_ticket = {}
+            for row in art_rows:
+                r = dict(zip(cols_art, row))
+                tid = r["TICKET_ID"]
+                if tid not in ticket_id_set:
+                    continue
+                item = {
+                    "productoId": str(r["PRODUCTO_CODIGO"]).strip(),
+                    "cantidad": float(r["CANTIDAD"]) if r["CANTIDAD"] else 0,
+                    "precioUnitario": float(r["PRECIO_USADO"]) if r["PRECIO_USADO"] else 0,
+                    "subtotal": float(r["TOTAL_ARTICULO"]) if r["TOTAL_ARTICULO"] else 0
+                }
+                if tid not in items_by_ticket:
+                    items_by_ticket[tid] = []
+                items_by_ticket[tid].append(item)
+            
+            linked_count = 0
+            for t in ventas_list:
+                raw_tid = int(t["id"].split('_')[-1])
+                if raw_tid in items_by_ticket:
+                    t["detalles"] = items_by_ticket[raw_tid]
+                    linked_count += len(t["detalles"])
+            
+            print(f"   ✔ {len(art_rows)} artículos extraídos, {linked_count} vinculados a tickets")
+        except Exception as ve:
+            print(f"   ⚠ Error leyendo ventas: {ve}", file=sys.stderr)
+            print(f"   → Continuando sin ventas históricas...")
+
+        # ══════════════════════════════════════════
+        # 6. INVENTARIO (Stock Real)
+        # ══════════════════════════════════════════
+        print("[6/6] Extrayendo inventario...")
+        stock_list = []
+        try:
+            cur.execute("""
+                SELECT TRIM(p.CODIGO), ib.CANTIDAD_ACTUAL 
+                FROM INVENTARIO_BALANCES ib 
+                JOIN PRODUCTOS p ON ib.PRODUCTO_ID = p.ID
+                WHERE ib.CANTIDAD_ACTUAL IS NOT NULL
+            """)
+            for row in cur.fetchall():
+                sku = row[0]
+                qty = float(row[1]) if row[1] else 0
+                if sku:
+                    stock_list.append({
+                        "sku": sku,
+                        "stock": qty
+                    })
+            print(f"   ✔ {len(stock_list)} registros de inventario extraídos")
+        except Exception as se:
+            print(f"   ⚠ Error leyendo inventario: {se}", file=sys.stderr)
+            print(f"   → Continuando sin datos de inventario...")
 
         cur.close()
         conn.close()
         
-        # Output structure required by AdminDashboard.tsx
+        # ══════════════════════════════════════════
+        # GENERAR JSON FINAL
+        # ══════════════════════════════════════════
         data_final = {
+            "version": "2.0",
+            "origen": "Eleventa",
+            "fecha_exportacion": datetime.datetime.now().isoformat(),
             "productos": productos_list,
             "clientes": clientes_list,
-            "clientes_deudores": clientes_list,
+            "clientes_deudores": [c for c in clientes_list if c.get("saldo_deudor", 0) > 0],
             "categorias": categorias_list,
-            "proveedores": proveedores_list
+            "proveedores": proveedores_list,
+            "ventas": ventas_list,
+            "inventario": stock_list,
+            "resumen": {
+                "total_productos": len(productos_list),
+                "total_clientes": len(clientes_list),
+                "total_categorias": len(categorias_list),
+                "total_proveedores": len(proveedores_list),
+                "total_ventas": len(ventas_list),
+                "total_articulos_vendidos": sum(len(v["detalles"]) for v in ventas_list),
+                "total_inventario": len(stock_list)
+            }
         }
         
         # Ensure the output directory exists
@@ -252,7 +388,18 @@ def export_fdb_to_json(fdb_path, out_path):
         with open(out_path, "w", encoding="utf-8") as fp:
             json.dump(data_final, fp, ensure_ascii=False, indent=2)
             
-        print(f"✅ Conversion complete. JSON written to {out_path}")
+        print(f"\n{'='*50}")
+        print(f"✅ MIGRACIÓN COMPLETA")
+        print(f"{'='*50}")
+        print(f"  Productos:     {len(productos_list):>8,}")
+        print(f"  Clientes:      {len(clientes_list):>8,}")
+        print(f"  Categorías:    {len(categorias_list):>8,}")
+        print(f"  Proveedores:   {len(proveedores_list):>8,}")
+        print(f"  Ventas:        {len(ventas_list):>8,}")
+        print(f"  Artículos:     {sum(len(v['detalles']) for v in ventas_list):>8,}")
+        print(f"  Inventario:    {len(stock_list):>8,}")
+        print(f"{'='*50}")
+        print(f"  Archivo: {out_path}")
         return True
     except Exception as e:
         print(f"Error converting database: {e}", file=sys.stderr)

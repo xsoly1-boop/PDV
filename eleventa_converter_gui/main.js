@@ -4,8 +4,9 @@ const path = require('path');
 
 function createWindow() {
   const win = new BrowserWindow({
-    width: 800,
-    height: 600,
+    width: 680,
+    height: 480,
+    title: 'Conversor Eleventa → Apex POS',
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
@@ -38,12 +39,14 @@ ipcMain.handle('select-fdb', async () => {
 });
 
 ipcMain.handle('select-output', async () => {
-  const { canceled, filePath } = await dialog.showSaveDialog({
-    defaultPath: 'apex_import_eleventa.json',
-    filters: [{ name: 'JSON', extensions: ['json'] }],
+  // Let the user pick a FOLDER only — the filename is always apex_import_eleventa.json
+  const { canceled, filePaths } = await dialog.showOpenDialog({
+    properties: ['openDirectory', 'createDirectory'],
+    title: 'Selecciona carpeta de destino',
+    buttonLabel: 'Guardar aquí',
   });
-  if (canceled) return null;
-  return filePath;
+  if (canceled || !filePaths || filePaths.length === 0) return null;
+  return path.join(filePaths[0], 'apex_import_eleventa.json');
 });
 
 ipcMain.handle('run-conversion', async (event, fdbPath, outPath) => {
