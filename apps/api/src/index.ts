@@ -132,7 +132,7 @@ app.post('/api/v1/productos', async (req, res) => {
       const sucursal = await prisma.sucursal.findFirst();
       if (sucursal) {
         await prisma.inventarioBalance.create({
-          data: { productoId: producto.id, sucursalId: sucursal.id, cantidad: stock }
+          data: { productoId: producto.id, sucursalId: sucursal.id, stockReal: stock }
         });
       }
     }
@@ -199,7 +199,7 @@ app.post('/api/v1/usuarios', async (req, res) => {
   const { nombre, pin, rol } = req.body;
   try {
     const usuario = await prisma.usuario.create({
-      data: { nombre, pin, rol: rol === 'Administrador' ? Rol.ADMINISTRADOR : rol === 'Agente Ventas' ? Rol.AGENTE_VENTAS : Rol.CAJERO, activo: true }
+      data: { nombre, pin, rol: rol === 'Administrador' ? Rol.ADMINISTRADOR : rol === 'Agente Ventas' ? Rol.VENDEDOR_MOVIL : Rol.CAJERO, activo: true }
     });
     res.status(201).json(usuario);
   } catch (error: any) {
@@ -216,7 +216,7 @@ app.put('/api/v1/usuarios/:id', async (req, res) => {
       where: { id },
       data: {
         nombre, pin,
-        rol: rol === 'Administrador' ? Rol.ADMINISTRADOR : rol === 'Agente Ventas' ? Rol.AGENTE_VENTAS : Rol.CAJERO,
+        rol: rol === 'Administrador' ? Rol.ADMINISTRADOR : rol === 'Agente Ventas' ? Rol.VENDEDOR_MOVIL : Rol.CAJERO,
         activo: activo !== undefined ? activo : true
       }
     });
@@ -1815,7 +1815,8 @@ app.get('/api/v1/ventas', async (req, res) => {
           }
         },
         usuario: true,
-        cliente: true
+        cliente: true,
+        sucursal: true
       },
       orderBy: { creadoAt: 'desc' }
     });
