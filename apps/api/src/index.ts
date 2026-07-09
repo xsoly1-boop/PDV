@@ -1807,7 +1807,11 @@ app.post('/api/v1/business/reset', async (req, res) => {
 // GET /api/v1/ventas — Listar todas las ventas mapeadas
 app.get('/api/v1/ventas', async (req, res) => {
   try {
+    const limit = req.query.limit ? parseInt(req.query.limit as string) : 100;
+    const offset = req.query.offset ? parseInt(req.query.offset as string) : 0;
     const ventas = await prisma.venta.findMany({
+      take: limit,
+      skip: offset,
       include: {
         detalles: {
           include: {
