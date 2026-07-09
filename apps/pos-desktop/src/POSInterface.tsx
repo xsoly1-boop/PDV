@@ -370,29 +370,62 @@ export default function POSInterface() {
     });
   };
 
-  const handleSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+  const handleSearchKeyDown = async (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter' && searchQuery.trim()) {
       const query = searchQuery.trim().toLowerCase();
-      const exactMatch = products.find((p: any) => 
+      
+      // 1. Buscar en la lista local de productos ya cargados
+      let exactMatch = products.find((p: any) => 
         (p.codigoBarras && p.codigoBarras.toLowerCase() === query) ||
         (p.sku.toLowerCase() === query)
       ) || products.find((p: any) => p.nombre.toLowerCase().includes(query));
+
+      // 2. Si no se encuentra en el estado local, buscar directamente en el servidor
+      if (!exactMatch) {
+        try {
+          const url = `${API_V1}/productos/buscar?q=${encodeURIComponent(query)}`;
+          console.log(`[API Instant Search] Buscando en: ${url}`);
+          const response = await fetch(url);
+          if (response.ok) {
+            const data = await response.json();
+            if (Array.isArray(data) && data.length > 0) {
+              const p = data[0];
+              exactMatch = {
+                id: String(p.id),
+                sku: String(p.sku),
+                codigoBarras: p.codigos?.[0]?.codigo || '',
+                nombre: String(p.nombre),
+                categoria: p.metadatos?.categoria || 'General',
+                precio: Number(p.precio) || 0,
+                costo: Number(p.costo) || 0,
+                stock: p.balances ? p.balances.reduce((sum: number, b: any) => sum + Number(b.stockReal), 0) : 0,
+                unidad: p.metadatos?.unidad || 'pieza',
+                metadata: p.metadatos || {}
+              };
+            }
+          }
+        } catch (err) {
+          console.warn('Error en búsqueda instantánea por Enter:', err);
+        }
+      }
 
       if (exactMatch) {
         handleAddToCart(exactMatch);
         setSearchQuery('');
       } else {
-        alert('Ningún producto coincide con el código de barras o SKU ingresado.');
+        alert('Ningún producto coincide con el código de barras, SKU o nombre ingresado.');
       }
     }
   };
 
-  const fetchProducts = async () => {
+  const fetchProducts = async (query = '') => {
     try {
-      const response = await fetch(`${API_V1}/productos/buscar?q=`);
+      const url = `${API_V1}/productos/buscar?q=${encodeURIComponent(query)}`;
+      console.log(`[API Debounced Search] Buscando en: ${url}`);
+      const response = await fetch(url);
       if (response.ok) {
         const data = await response.json();
-        if (Array.isArray(data) && data.length > 0) {
+        if (Array.isArray(data)) {
           const mapped = data.map((p: any) => ({
             id: String(p.id),
             sku: String(p.sku),
@@ -402,17 +435,32 @@ export default function POSInterface() {
             precio: Number(p.precio) || 0,
             costo: Number(p.costo) || 0,
             stock: p.balances ? p.balances.reduce((sum: number, b: any) => sum + Number(b.stockReal), 0) : 0,
-            unidad: p.unidad || 'pieza',
+            unidad: p.metadatos?.unidad || 'pieza',
             metadata: p.metadatos || {}
           }));
           setProducts(mapped);
-          localStorage.setItem('pos_products', JSON.stringify(mapped));
+          if (query === '') {
+            localStorage.setItem('pos_products', JSON.stringify(mapped));
+          }
         }
       }
     } catch (e) {
       console.warn('Error fetching products from API:', e);
     }
   };
+
+  useEffect(() => {
+    if (searchQuery.trim() === '') {
+      fetchProducts('');
+      return;
+    }
+
+    const delayDebounceFn = setTimeout(() => {
+      fetchProducts(searchQuery.trim());
+    }, 300);
+
+    return () => clearTimeout(delayDebounceFn);
+  }, [searchQuery]);
 
   const fetchActiveQuotes = async () => {
     setLoadingQuotes(true);
@@ -483,19 +531,26 @@ export default function POSInterface() {
         const updated = [...prev];
         quote.detalles.forEach((detail: any) => {
           const prod = detail.producto;
+          if (!prod) return;
+
+          const qty = Number(detail.cantidad);
           const idx = updated.findIndex((item: any) => item.sku === prod.sku);
           if (idx > -1) {
-            updated[idx].cantidad += detail.cantidad;
+            updated[idx].cantidad += qty;
           } else {
+            const metadatos = prod.metadatos || {};
+            const categoria = metadatos.categoria || 'General';
+            const unidad = metadatos.unidad || 'pieza';
+
             updated.push({
               id: updated.length + 1,
               sku: prod.sku,
               nombre: prod.nombre,
-              tipo: prod.categoria.toLowerCase(),
-              metadata: prod.metadata || { marca: 'Genérica', ubicacion: 'Mostrador' },
+              tipo: categoria.toLowerCase(),
+              metadata: metadatos,
               precio: Number(prod.precio),
-              cantidad: detail.cantidad,
-              unidad: prod.unidad
+              cantidad: qty,
+              unidad: unidad
             });
           }
         });
@@ -922,7 +977,6 @@ export default function POSInterface() {
     };
 
     checkCompanyConfig();
-    fetchProducts();
     fetchActiveQuotes();
     const timer = setInterval(() => {
       setTime(new Date().toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' }));
