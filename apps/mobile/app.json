@@ -25,7 +25,11 @@
       },
       "package": "com.apex.posmobile",
       "versionCode": 2,
-      "permissions": ["CAMERA", "READ_EXTERNAL_STORAGE"]
+      "permissions": [
+        "CAMERA",
+        "READ_EXTERNAL_STORAGE",
+        "android.permission.CAMERA"
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -42,9 +46,9 @@
     ],
     "extra": {
       "eas": {
-        "projectId": "a64dc81c-009b-4658-9c3f-26c2e4234f42"
+        "projectId": "9c4f5f3b-f024-4673-9fba-62496e82157f"
       }
     },
-    "owner": "anifilms"
+    "owner": "miyagi1"
   }
 }
