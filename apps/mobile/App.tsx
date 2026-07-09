@@ -115,10 +115,11 @@ function LoginScreen({ onLogin }: { onLogin: (user: AuthUser) => void }) {
       });
       if (!resp.ok) { shake(); setPin(''); throw new Error('PIN incorrecto'); }
       const data = await resp.json();
+      const u = data.usuario || data;
       const user: AuthUser = {
-        id: String(data.id ?? data.userId ?? 'unknown'),
-        nombre: String(data.nombre ?? data.name ?? 'Vendedor'),
-        role: data.role ?? 'vendedor',
+        id: String(u.id ?? u.userId ?? 'unknown'),
+        nombre: String(u.nombre ?? u.name ?? 'Vendedor'),
+        role: u.rol ?? u.role ?? 'vendedor',
         token: data.token ?? '',
       };
       await AsyncStorage.setItem(STORAGE_USER_KEY, JSON.stringify(user));
