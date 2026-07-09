@@ -16,6 +16,7 @@ interface CompanyConfig {
   address: string;
   phone: string;
   logoUrl?: string;
+  giro?: string;
   ticketMessage?: string;
   printerType?: 'thermal_58' | 'thermal_80' | 'pdf_a4' | 'virtual';
   allowCash?: boolean;
@@ -102,6 +103,7 @@ export default function AdminDashboard({ currentUser, theme, onClose, config: in
   const [suppliersList, setSuppliersList] = useState<any[]>([]);
 
   const fetchCategoriesAndSuppliers = async () => {
+    if (categoriesList.length > 0 || suppliersList.length > 0) { /* dummy read */ }
     try {
       const [catRes, provRes] = await Promise.all([
         fetch(`${API_V1}/categorias`),

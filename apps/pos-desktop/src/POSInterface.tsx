@@ -3,13 +3,46 @@ import {
   Search, Wifi, User, Clock, 
   Trash2, Plus, Minus, AlertCircle, 
   Wrench, CarFront, PackageOpen, Printer, Zap,
-  Sun, Moon, LayoutDashboard, Bookmark, RotateCw, MessageCircle, CheckCircle2, X
+  Sun, Moon, LayoutDashboard, Bookmark, RotateCw, MessageCircle, CheckCircle2, X, DollarSign
 } from 'lucide-react';
 import { LocalDb } from './db/localDb';
 import { SyncService } from './services/SyncService';
 import AdminDashboard from './AdminDashboard';
 import { API_V1, API_BASE_URL } from './config';
 import OnboardingWizard from './OnboardingWizard';
+interface CompanyConfig {
+  businessName: string;
+  rfc: string;
+  currency: string;
+  taxRate: number;
+  address: string;
+  phone: string;
+  logoUrl?: string;
+  giro?: string;
+  ticketMessage?: string;
+  printerType?: 'thermal_58' | 'thermal_80' | 'pdf_a4' | 'virtual';
+  allowCash?: boolean;
+  allowCard?: boolean;
+  allowTransfer?: boolean;
+  allowDrawer?: boolean;
+  drawerCommand?: string;
+  allowScale?: boolean;
+  scalePort?: string;
+  scaleBaudRate?: number;
+  scaleModel?: string;
+  sessionTimeout?: number;
+  businessStartHour?: string;
+  businessEndHour?: string;
+  allowGerenteLogin?: boolean;
+  allowCajeroLogin?: boolean;
+  allowVendedorMovilLogin?: boolean;
+  restrictGerenteSchedule?: boolean;
+  restrictCajeroSchedule?: boolean;
+  restrictVendedorMovilSchedule?: boolean;
+  allowGerenteCheckout?: boolean;
+  allowCajeroCheckout?: boolean;
+  allowVendedorMovilCheckout?: boolean;
+}
 
 export default function POSInterface() {
   const [time, setTime] = useState(new Date().toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' }));
@@ -203,7 +236,7 @@ export default function POSInterface() {
   const [mixedCash, setMixedCash] = useState('');
   const [mixedCard, setMixedCard] = useState('');
   const [mixedTransfer, setMixedTransfer] = useState('');
-  const [config, setConfig] = useState(() => {
+  const [config, setConfig] = useState<CompanyConfig>(() => {
     const saved = localStorage.getItem('pos_config');
     return saved ? JSON.parse(saved) : {
       businessName: 'Ferretería y Refaccionaria El Mazo',
@@ -213,6 +246,7 @@ export default function POSInterface() {
       address: 'Av. Industrial 405, Zona Centro',
       phone: '449-123-4567',
       logoUrl: '',
+      giro: 'ferreteria',
       ticketMessage: '¡Gracias por su compra!',
       printerType: 'thermal_80',
       allowCash: true,
@@ -288,7 +322,7 @@ export default function POSInterface() {
 
 
   const handleIncrement = (id: number) => {
-    setCart(prev => prev.map(item => {
+    setCart((prev: any[]) => prev.map((item: any) => {
       if (item.id === id) {
         const step = item.unidad === 'metros' ? 0.5 : 1;
         return { ...item, cantidad: parseFloat((item.cantidad + step).toFixed(3)) };
@@ -298,26 +332,26 @@ export default function POSInterface() {
   };
 
   const handleDecrement = (id: number) => {
-    setCart(prev => prev.map(item => {
+    setCart((prev: any[]) => prev.map((item: any) => {
       if (item.id === id) {
         const step = item.unidad === 'metros' ? 0.5 : 1;
         const newQty = item.cantidad - step;
         return { ...item, cantidad: newQty > 0 ? parseFloat(newQty.toFixed(3)) : 0 };
       }
       return item;
-    }).filter(item => item.cantidad > 0));
+    }).filter((item: any) => item.cantidad > 0));
   };
 
   const handleRemove = (id: number) => {
-    setCart(prev => prev.filter(item => item.id !== id));
+    setCart((prev: any[]) => prev.filter((item: any) => item.id !== id));
   };
 
   const handleAddToCart = (product: any) => {
-    setCart(prev => {
-      const existing = prev.find(item => item.sku === product.sku);
+    setCart((prev: any[]) => {
+      const existing = prev.find((item: any) => item.sku === product.sku);
       if (existing) {
         const step = product.unidad === 'metros' ? 0.5 : 1;
-        return prev.map(item => item.sku === product.sku ? { ...item, cantidad: parseFloat((item.cantidad + step).toFixed(3)) } : item);
+        return prev.map((item: any) => item.sku === product.sku ? { ...item, cantidad: parseFloat((item.cantidad + step).toFixed(3)) } : item);
       }
       return [...prev, {
         id: prev.length + 1,
@@ -441,11 +475,11 @@ export default function POSInterface() {
       }
       const quote = await response.json();
       
-      setCart(prev => {
+      setCart((prev: any[]) => {
         const updated = [...prev];
         quote.detalles.forEach((detail: any) => {
           const prod = detail.producto;
-          const idx = updated.findIndex(item => item.sku === prod.sku);
+          const idx = updated.findIndex((item: any) => item.sku === prod.sku);
           if (idx > -1) {
             updated[idx].cantidad += detail.cantidad;
           } else {
@@ -483,7 +517,7 @@ export default function POSInterface() {
           sucursalId: 'suc-norte',
           usuarioId: currentUser ? currentUser.nombre : 'cajero-principal',
           clienteNombre: quoteClientName || 'Público General',
-          items: cart.map(item => {
+          items: cart.map((item: any) => {
             const dbProd = products.find((p: any) => p.sku === item.sku);
             return {
               productoId: dbProd ? dbProd.id : item.id.toString(),
@@ -659,7 +693,7 @@ export default function POSInterface() {
       SyncService.registrarMovimientoLocal({
         sucursalId: 'suc-norte',
         productoId: item.sku,
-        usuarioId: currentUser ? (currentUser.id || currentUser.nombre) : 'usr-desconocido',
+        usuarioId: currentUser ? ((currentUser as any).id || currentUser.nombre) : 'usr-desconocido',
         tipo: 'SALIDA_VENTA',
         cantidad: item.cantidad,
         referencia: ticketRef,
@@ -675,12 +709,12 @@ export default function POSInterface() {
         body: JSON.stringify({
           folio: ticketRef,
           sucursalId: 'suc-norte',
-          usuarioId: currentUser ? (currentUser.id || currentUser.nombre) : 'ADMIN',
+          usuarioId: currentUser ? ((currentUser as any).id || currentUser.nombre) : 'ADMIN',
           total: total,
           subtotal: subtotal,
           descuento: discount,
           metodo: finalMetodo,
-          detalles: cart.map(item => ({
+          detalles: cart.map((item: any) => ({
             productoId: item.sku,
             cantidad: item.cantidad,
             precioUnitario: item.precio,
@@ -885,12 +919,12 @@ export default function POSInterface() {
     return () => clearInterval(timer);
   }, []);
 
-  const totalBeforeDiscount = cart.reduce((acc, item) => acc + (item.precio * item.cantidad), 0);
+  const totalBeforeDiscount = cart.reduce((acc: number, item: any) => acc + (item.precio * item.cantidad), 0);
   const total = Math.max(0, totalBeforeDiscount - discount);
   const subtotal = total * 0.84; 
   const iva = total * 0.16;
 
-  const selectedItem = cart.find(item => item.id === selectedItemId);
+  const selectedItem = cart.find((item: any) => item.id === selectedItemId);
 
   // 1. RENDER DE PANTALLA DE INGRESO (LOGIN POR PIN)
   if (!currentUser) {
@@ -1294,7 +1328,7 @@ export default function POSInterface() {
               <div>
                 <span>Atendiendo Ticket #{ticketNumber}</span>
                 <span className="mx-2">•</span>
-                <span>Artículos: {cart.reduce((sum, item) => sum + Number(item.cantidad), 0)}</span>
+                <span>Artículos: {cart.reduce((sum: number, item: any) => sum + Number(item.cantidad), 0)}</span>
               </div>
               <span className="italic">Cliente: Público General</span>
             </div>
@@ -1308,7 +1342,7 @@ export default function POSInterface() {
                 <p className="text-xs opacity-30">Escanea un código o busca un producto</p>
               </div>
             ) : null}
-            {cart.map((item) => (
+            {cart.map((item: any) => (
               <div 
                 key={item.id} 
                 onClick={() => setSelectedItemId(item.id)}
@@ -1541,7 +1575,7 @@ export default function POSInterface() {
                       }`}>
                         <p className="text-[11px] text-slate-500 capitalize">{key.replace('_', ' ')}</p>
                         <p className={`text-sm font-medium mt-0.5 ${theme === 'dark' ? 'text-slate-200' : 'text-slate-700'}`}>
-                          {typeof value === 'boolean' ? (value ? 'Sí' : 'No') : value}
+                          {typeof value === 'boolean' ? (value ? 'Sí' : 'No') : String(value)}
                         </p>
                       </div>
                     ))}
