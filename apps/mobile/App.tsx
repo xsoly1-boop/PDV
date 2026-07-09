@@ -4,7 +4,7 @@ import {
   FlatList, ScrollView, SafeAreaView, ActivityIndicator, Alert 
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
-import { Camera } from 'expo-camera';
+import { CameraView, useCameraPermissions } from 'expo-camera';
 
 // API Central en producción
 const API_URL = 'https://pdventa.onrender.com/api/v1';
@@ -43,19 +43,19 @@ export default function App() {
   const [quoteResult, setQuoteResult] = useState<{ codigoCorto: string; folio: string } | null>(null);
 
   // Cámara para escaneo de códigos de barra
-  const [hasPermission, setHasPermission] = useState<boolean | null>(null);
+  const [permission, requestPermission] = useCameraPermissions();
   const [scanned, setScanned] = useState(false);
 
   useEffect(() => {
     // Pedir permisos de cámara
-    (async () => {
-      const { status } = await Camera.requestCameraPermissionsAsync();
-      setHasPermission(status === 'granted');
-    })();
-
+    if (!permission || !permission.granted) {
+      requestPermission();
+    }
     // Cargar productos actualizados de la API central
     fetchProducts();
-  }, []);
+  }, [permission]);
+
+  const hasPermission = permission ? permission.granted : null;
 
   const fetchProducts = async () => {
     try {
@@ -215,9 +215,10 @@ export default function App() {
           ) : hasPermission === false ? (
             <Text style={styles.emptyText}>Sin acceso a la cámara. Habilita permisos en ajustes.</Text>
           ) : (
-            <Camera
+            <CameraView
               style={StyleSheet.absoluteFillObject}
-              onBarCodeScanned={scanned ? undefined : handleBarCodeScanned}
+              facing="back"
+              onBarcodeScanned={scanned ? undefined : handleBarCodeScanned}
             />
           )}
 
