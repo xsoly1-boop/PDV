@@ -5,7 +5,8 @@ import { TipoMovimiento, EstadoReserva, EstadoTraspaso, EstadoCFDI, Rol } from '
 
 const app = express();
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
 const PORT = process.env.PORT || 3001;
 app.get('/health', (_, res) => res.json({ status: 'ok' }));
@@ -1172,76 +1173,70 @@ app.post('/api/v1/productos/migrar', async (req, res) => {
     return res.status(400).json({ error: 'Formato de productos inválido' });
   }
   try {
-    const importados = [];
-    
-    // Fetch all categories and suppliers to map name/id if needed
+    // Fetch category and supplier maps for linking
     const allCats = await prisma.categoria.findMany();
     const allProvs = await prisma.proveedor.findMany();
-    
-    // Map of name -> ID
-    const catMap = new Map(allCats.map(c => [c.nombre.toLowerCase().trim(), c.id]));
-    const provMap = new Map(allProvs.map(p => [p.nombre.toLowerCase().trim(), p.id]));
-    
-    for (const p of productos) {
-      const sku = (p.sku || '').trim();
-      const nombre = (p.nombre || '').trim();
-      if (!sku || !nombre) continue;
-      
-      const costo = Number(p.costo) || 0;
-      const precio = Number(p.precio) || 0;
-      const permiteFracciones = !!p.permiteFracciones;
-      
-      // Determine category ID
-      let categoriaId: string | null = null;
-      if (p.categoria) {
-        const catName = p.categoria.toLowerCase().trim();
-        categoriaId = catMap.get(catName) || null;
-      }
-      
-      // Determine supplier ID (match by Eleventa supplier name if possible, or link by prov_id)
-      let proveedorId: string | null = null;
-      if (p.proveedor_nombre) {
-        proveedorId = provMap.get(p.proveedor_nombre.toLowerCase().trim()) || null;
-      }
-      
-      const existente = await prisma.producto.findUnique({
-        where: { sku }
+    const catMap = new Map(allCats.map((c: any) => [c.nombre.toLowerCase().trim(), c.id]));
+    const provMap = new Map(allProvs.map((p: any) => [p.nombre.toLowerCase().trim(), p.id]));
+
+    // Get default branch
+    const sucursal = await prisma.sucursal.findFirst();
+    const sucursalId = sucursal?.id || 'suc-norte';
+
+    // Prepare product records (without stock — stock goes to InventarioBalance)
+    const registros = productos
+      .map((p: any) => {
+        const sku = (p.sku || '').trim();
+        const nombre = (p.nombre || '').trim();
+        if (!sku || !nombre) return null;
+        const categoriaId = p.categoria ? (catMap.get(String(p.categoria).toLowerCase().trim()) || null) : null;
+        const proveedorId = p.proveedor_nombre ? (provMap.get(p.proveedor_nombre.toLowerCase().trim()) || null) : null;
+        return {
+          id: sku,
+          sku,
+          nombre,
+          costo: Number(p.costo) || 0,
+          precio: Number(p.precio) || 0,
+          permiteFracciones: !!p.permiteFracciones,
+          categoriaId,
+          proveedorId,
+          metadatos: { procedencia: 'Eleventa', categoria_original: p.categoria || null }
+        };
+      })
+      .filter(Boolean) as any[];
+
+    // Batch insert products — skip duplicates
+    const resultado = await prisma.producto.createMany({
+      data: registros,
+      skipDuplicates: true
+    });
+
+    // Create InventarioBalance records for initial stock
+    const balances = productos
+      .map((p: any) => {
+        const sku = (p.sku || '').trim();
+        const stock = Number(p.stock) || 0;
+        if (!sku || stock <= 0) return null;
+        return { productoId: sku, sucursalId, stockReal: stock };
+      })
+      .filter(Boolean) as any[];
+
+    let stockCount = 0;
+    if (balances.length > 0) {
+      const balResult = await prisma.inventarioBalance.createMany({
+        data: balances,
+        skipDuplicates: true
       });
-      
-      if (existente) {
-        const up = await prisma.producto.update({
-          where: { id: existente.id },
-          data: {
-            nombre,
-            costo,
-            precio,
-            permiteFracciones,
-            categoriaId: categoriaId || existente.categoriaId,
-            proveedorId: proveedorId || existente.proveedorId
-          }
-        });
-        importados.push(up);
-      } else {
-        const nuevo = await prisma.producto.create({
-          data: {
-            id: sku, // Use SKU as ID for simplicity
-            sku,
-            nombre,
-            costo,
-            precio,
-            permiteFracciones,
-            categoriaId,
-            proveedorId
-          }
-        });
-        importados.push(nuevo);
-      }
+      stockCount = balResult.count;
     }
-    res.json({ success: true, count: importados.length });
+
+    res.json({ success: true, count: resultado.count, total_enviados: registros.length, stock_registros: stockCount });
   } catch (error: any) {
+    console.error('[MIGRAR-PRODUCTOS] Error:', error.message);
     res.status(500).json({ error: error.message });
   }
 });
+
 
 // Migrar clientes desde Eleventa (masivo con campos fiscales SAT)
 app.post('/api/v1/clientes/migrar', async (req, res) => {
@@ -1303,6 +1298,152 @@ app.post('/api/v1/clientes/migrar', async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 });
+
+// Migrar inventario físico (stock) en lote
+app.post('/api/v1/inventario/migrar', async (req, res) => {
+  const { inventario } = req.body;
+  if (!inventario || !Array.isArray(inventario)) {
+    return res.status(400).json({ error: 'Formato de inventario inválido' });
+  }
+  try {
+    const sucursal = await prisma.sucursal.findFirst();
+    const sucursalId = sucursal?.id || 'suc-norte';
+
+    const dbProducts = await prisma.producto.findMany({ select: { sku: true } });
+    const existingSkus = new Set(dbProducts.map(p => p.sku));
+
+    // Clear previous balances
+    await prisma.inventarioBalance.deleteMany({});
+
+    const balances = inventario
+      .map((item: any) => {
+        const sku = String(item.sku).trim();
+        const stock = Number(item.stock) || 0;
+        if (!sku || !existingSkus.has(sku)) return null;
+        return {
+          productoId: sku,
+          sucursalId,
+          stockReal: stock
+        };
+      })
+      .filter(Boolean) as any[];
+
+    let count = 0;
+    if (balances.length > 0) {
+      const result = await prisma.inventarioBalance.createMany({
+        data: balances,
+        skipDuplicates: true
+      });
+      count = result.count;
+    }
+
+    res.json({ success: true, count });
+  } catch (error: any) {
+    console.error('[MIGRAR-INVENTARIO] Error:', error.message);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Migrar ventas históricas y detalles en lote
+app.post('/api/v1/ventas/migrar', async (req, res) => {
+  const { ventas } = req.body;
+  if (!ventas || !Array.isArray(ventas)) {
+    return res.status(400).json({ error: 'Formato de ventas inválido' });
+  }
+  try {
+    const sucursal = await prisma.sucursal.findFirst();
+    const sucursalId = sucursal?.id || 'suc-norte';
+
+    // Map clients
+    const dbClients = await prisma.cliente.findMany({ select: { id: true, nombre: true } });
+    const clientMap = new Map(dbClients.map(c => [c.nombre.toLowerCase().trim(), c.id]));
+
+    // Map products to make sure they exist
+    const dbProducts = await prisma.producto.findMany({ select: { sku: true } });
+    const existingSkus = new Set(dbProducts.map(p => p.sku));
+
+    // Ensure ADMIN user exists
+    const adminUser = await prisma.usuario.findFirst({ where: { id: 'ADMIN' } });
+    const usuarioId = adminUser?.id || 'ADMIN';
+    if (!adminUser) {
+      await prisma.usuario.create({
+        data: {
+          id: 'ADMIN',
+          nombre: 'Admin',
+          pin: '8888',
+          rol: 'ADMINISTRADOR',
+          activo: true
+        }
+      });
+    }
+
+    const batchSize = 1000;
+    let salesCount = 0;
+    let detailsCount = 0;
+
+    for (let i = 0; i < ventas.length; i += batchSize) {
+      const chunk = ventas.slice(i, i + batchSize);
+      const salesToInsert: any[] = [];
+      const detailsToInsert: any[] = [];
+
+      for (const v of chunk) {
+        let clienteId: string | null = null;
+        if (v.clienteNombre) {
+          clienteId = clientMap.get(v.clienteNombre.toLowerCase().trim()) || null;
+        }
+
+        salesToInsert.push({
+          id: v.id,
+          folio: v.folio,
+          sucursalId,
+          usuarioId,
+          clienteId,
+          total: v.total,
+          subtotal: v.subtotal,
+          descuento: v.descuento || 0,
+          esOffline: false,
+          creadoAt: new Date(v.creadoAt)
+        });
+
+        if (v.detalles && Array.isArray(v.detalles)) {
+          for (const d of v.detalles) {
+            if (existingSkus.has(d.productoId)) {
+              detailsToInsert.push({
+                ventaId: v.id,
+                productoId: d.productoId,
+                cantidad: d.cantidad,
+                precioUnitario: d.precioUnitario,
+                subtotal: d.subtotal
+              });
+            }
+          }
+        }
+      }
+
+      await prisma.$transaction(async (tx) => {
+        const sRes = await tx.venta.createMany({
+          data: salesToInsert,
+          skipDuplicates: true
+        });
+        salesCount += sRes.count;
+
+        if (detailsToInsert.length > 0) {
+          const dRes = await tx.detalleVenta.createMany({
+            data: detailsToInsert,
+            skipDuplicates: true
+          });
+          detailsCount += dRes.count;
+        }
+      });
+    }
+
+    res.json({ success: true, sales_count: salesCount, details_count: detailsCount });
+  } catch (error: any) {
+    console.error('[MIGRAR-VENTAS] Error:', error.message);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 
 // Limpiar base de datos (Datos Demo)
 app.post('/api/v1/mantenimiento/limpiar-datos-demo', async (req, res) => {

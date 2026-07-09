@@ -500,7 +500,7 @@ export default function AdminDashboard({ currentUser, theme, onClose, config: in
 
         addLog(`✔ Procesados ${mappedProducts.length} productos de Eleventa.`);
         
-        // Sincronizar catálogos y clientes en Supabase
+        // Sincronizar catálogos, clientes, existencias y ventas en Supabase
         const runMigration = async () => {
           try {
             if (data.categorias && data.categorias.length > 0) {
@@ -551,13 +551,43 @@ export default function AdminDashboard({ currentUser, theme, onClose, config: in
               });
               if (r.ok) {
                 const res = await r.json();
-                addLog(`✔ ${res.count} productos sincronizados en la nube.`);
+                addLog(`✔ ${res.count} productos cargados.`);
+              }
+            }
+
+            if (data.inventario && data.inventario.length > 0) {
+              addLog(`Enviando existencias de inventario (${data.inventario.length} registros)...`);
+              const r = await fetch(`${API_V1}/inventario/migrar`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ inventario: data.inventario })
+              });
+              if (r.ok) {
+                const res = await r.json();
+                addLog(`✔ ${res.count} registros de stock inicial sincronizados.`);
+              }
+            }
+
+            if (data.ventas && data.ventas.length > 0) {
+              addLog(`Enviando historial de ventas (${data.ventas.length} tickets - esto puede tomar unos segundos)...`);
+              const r = await fetch(`${API_V1}/ventas/migrar`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ ventas: data.ventas })
+              });
+              if (r.ok) {
+                const res = await r.json();
+                addLog(`✔ ${res.sales_count} tickets y ${res.details_count} artículos importados con éxito.`);
               }
             }
             
-            addLog(`✔ Catálogo unificado: ahora tienes un total de ${combinedProducts.length} productos.`);
-            addLog('✔ Migración de Eleventa completada exitosamente.');
-            alert('Migración completada con éxito:\n- ' + mappedProducts.length + ' productos cargados localmente.\n- Catálogos y saldos sincronizados con Supabase.');
+            addLog(`✔ Catálogo y registros sincronizados de manera unificada.`);
+            addLog('✔ Migración completa de Eleventa finalizada exitosamente.');
+            alert('¡Migración completa exitosa!\n\nSe cargaron productos, clientes, stock de inventario y todo el historial de ventas en Supabase.');
+            
+            // Reload local views
+            fetchProducts();
+            fetchSales();
           } catch (err: any) {
             addLog('Error en sincronización remota: ' + err.message);
             alert('Migración local completada, pero falló la sincronización con Supabase: ' + err.message);
@@ -654,7 +684,19 @@ export default function AdminDashboard({ currentUser, theme, onClose, config: in
     try {
       const resp = await fetch(`${API_V1}/productos`);
       const data = await resp.json();
-      onProductsChange(data);
+      // Map raw API response to Product interface
+      const mapped = data.map((p: any) => ({
+        id: String(p.id),
+        sku: String(p.sku),
+        codigoBarras: p.codigos?.[0]?.codigo || '',
+        nombre: String(p.nombre),
+        categoria: p.categoria?.nombre || p.metadatos?.categoria || 'General',
+        precio: Number(p.precio) || 0,
+        costo: Number(p.costo) || 0,
+        stock: p.balances ? p.balances.reduce((sum: number, b: any) => sum + Number(b.stockReal || 0), 0) : 0,
+        unidad: p.metadatos?.unidad || 'pieza',
+      }));
+      onProductsChange(mapped);
     } catch (e) {
       console.error('Error loading products', e);
     }
