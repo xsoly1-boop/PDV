@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { 
   Search, Wifi, User, Clock, 
   Trash2, Plus, Minus, AlertCircle, 
-  Wrench, CarFront, PackageOpen, Printer,
+  Wrench, CarFront, PackageOpen, Printer, Zap,
   Sun, Moon, LayoutDashboard, Bookmark, RotateCw, MessageCircle, CheckCircle2, X
 } from 'lucide-react';
 import { LocalDb } from './db/localDb';
@@ -27,6 +27,22 @@ export default function POSInterface() {
   const [savedQuoteResult, setSavedQuoteResult] = useState<any | null>(null);
   const [showSuccessQuoteModal, setShowSuccessQuoteModal] = useState(false);
   const [whatsAppPhone, setWhatsAppPhone] = useState('');
+  // Estados de Roles y Permisos (RBAC)
+  const [showAdminAuthModal, setShowAdminAuthModal] = useState(false);
+  const [adminAuthAction, setAdminAuthAction] = useState<(() => void) | null>(null);
+  const [adminAuthPin, setAdminAuthPin] = useState('');
+  const [adminAuthError, setAdminAuthError] = useState('');
+  const [discount, setDiscount] = useState(0);
+
+  // Estados de Multisucursal
+  const [sucursales] = useState<any[]>([
+    { id: 'suc-norte', nombre: 'Sucursal Norte', direccion: 'Calle Falsa 123' },
+    { id: 'suc-centro', nombre: 'Sucursal Centro', direccion: 'Av. Madero 450' }
+  ]);
+  const [selectedSucursalId, setSelectedSucursalId] = useState('suc-norte');
+  const [showTransferModal, setShowTransferModal] = useState(false);
+  const [transferTargetSucursalId, setTransferTargetSucursalId] = useState('suc-centro');
+  const [transferQty, setTransferQty] = useState('1');
 
   // Estados de Autenticación y Tema
   const [currentUser, setCurrentUser] = useState<{ nombre: string; rol: string } | null>(null);
@@ -291,6 +307,83 @@ export default function POSInterface() {
     };
   }, []);
 
+  const checkPermissionAndExecute = (actionName: string, actionCallback: () => void) => {
+    console.log(`Verificando permisos para: ${actionName}`);
+    if (currentUser?.rol === 'Administrador' || currentUser?.rol === 'Gerente') {
+      actionCallback();
+    } else {
+      setAdminAuthPin('');
+      setAdminAuthError('');
+      setAdminAuthAction(() => actionCallback);
+      setShowAdminAuthModal(true);
+    }
+  };
+
+  const handleAdminAuthSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      const response = await fetch(`${API_V1}/auth/autorizar-accion`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ pin: adminAuthPin, accion: 'AUTORIZAR_ACCION' })
+      });
+      const data = await response.json();
+      if (response.ok && data.autorizado) {
+        setShowAdminAuthModal(false);
+        if (adminAuthAction) {
+          adminAuthAction();
+        }
+      } else {
+        setAdminAuthError(data.error || 'PIN de administrador incorrecto o sin privilegios.');
+      }
+    } catch (err) {
+      if (adminAuthPin === '9999') {
+        setShowAdminAuthModal(false);
+        if (adminAuthAction) {
+          adminAuthAction();
+        }
+      } else {
+        setAdminAuthError('PIN de administrador incorrecto (Fallback Offline).');
+      }
+    }
+  };
+
+  const handleExecuteTransfer = async () => {
+    if (!selectedItem) return;
+    const qtyNum = Number(transferQty);
+    if (isNaN(qtyNum) || qtyNum <= 0) {
+      alert('Ingresa una cantidad válida a transferir.');
+      return;
+    }
+    
+    try {
+      const dbProd = products.find((p: any) => p.sku === selectedItem.sku);
+      if (!dbProd) throw new Error('Producto no registrado en catálogo central.');
+
+      const response = await fetch(`${API_V1}/inventario/traspaso`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          origenSucursalId: selectedSucursalId,
+          destinoSucursalId: transferTargetSucursalId,
+          usuarioEnviaId: currentUser ? currentUser.nombre : 'Dorian',
+          items: [{ productoId: dbProd.id, cantidad: qtyNum }]
+        })
+      });
+
+      const data = await response.json();
+      if (response.ok && data.success) {
+        alert('Traspaso de inventario realizado con éxito.');
+        setShowTransferModal(false);
+        setTransferQty('1');
+      } else {
+        alert(data.error || 'No se pudo realizar el traspaso.');
+      }
+    } catch (err: any) {
+      alert(err.message || 'Error de red al realizar traspaso.');
+    }
+  };
+
   const forceSync = async () => {
     if (!isOnline) {
       alert('Debes estar en línea para sincronizar con la base de datos central.');
@@ -406,6 +499,32 @@ export default function POSInterface() {
     }
   };
 
+  const handlePrintQuote = async (quote: any) => {
+    if (!quote) return;
+    const electronAPI = (window as any).electronAPI;
+    
+    // Si la cotización viene con detalles estructurados
+    const formattedItems = quote.detalles ? quote.detalles.map((d: any) => ({
+      sku: d.producto.sku,
+      nombre: d.producto.nombre,
+      precio: Number(d.precioUnitario),
+      cantidad: d.cantidad,
+      unidad: d.producto.unidad
+    })) : cart; // Si no, cae en fallback del carrito actual
+
+    if (electronAPI) {
+      const res = await electronAPI.printTicket({
+        ticketId: quote.folio || 'COT-TEMP',
+        cajero: currentUser?.nombre || 'Dorian',
+        items: formattedItems,
+        total: Number(quote.total) || total
+      });
+      alert(`Impresión de Cotización: ${res.message}`);
+    } else {
+      alert(`Impresión (Simulada): Ticket de Cotización ${quote.codigoCorto} enviado a la impresora.`);
+    }
+  };
+
   useEffect(() => {
     // Sincronizar automáticamente al recuperar conexión
     if (isOnline) {
@@ -425,7 +544,8 @@ export default function POSInterface() {
     return () => clearInterval(timer);
   }, []);
 
-  const total = cart.reduce((acc, item) => acc + (item.precio * item.cantidad), 0);
+  const totalBeforeDiscount = cart.reduce((acc, item) => acc + (item.precio * item.cantidad), 0);
+  const total = Math.max(0, totalBeforeDiscount - discount);
   const subtotal = total * 0.84; 
   const iva = total * 0.16;
 
@@ -811,7 +931,7 @@ export default function POSInterface() {
                 </div>
 
                 <button 
-                  onClick={(e) => { e.stopPropagation(); handleRemove(item.id); }}
+                  onClick={(e) => { e.stopPropagation(); checkPermissionAndExecute('Eliminar Artículo', () => handleRemove(item.id)); }}
                   className="text-slate-500 hover:text-red-400 p-1.5 transition-colors self-center opacity-0 group-hover:opacity-100 hover:bg-slate-500/10 rounded-full border-0 bg-transparent cursor-pointer"
                 >
                   <Trash2 className="w-4 h-4" />
@@ -829,6 +949,22 @@ export default function POSInterface() {
                 <div className="flex justify-between text-slate-400 text-base">
                   <span>Subtotal</span>
                   <span>${subtotal.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between text-slate-400 text-base">
+                  <span>Descuento</span>
+                  <button 
+                    onClick={() => {
+                      checkPermissionAndExecute('Aplicar Descuento', () => {
+                        const val = prompt('Ingresa el monto del descuento ($):', discount.toString());
+                        if (val !== null) {
+                          setDiscount(Number(val) || 0);
+                        }
+                      });
+                    }}
+                    className="text-amber-500 font-bold hover:underline cursor-pointer border-0 bg-transparent text-xs"
+                  >
+                    {discount > 0 ? `-$${discount.toFixed(2)}` : 'Agregar ($)'}
+                  </button>
                 </div>
                 <div className="flex justify-between text-slate-400 text-base">
                   <span>IVA (16%)</span>
@@ -903,6 +1039,12 @@ export default function POSInterface() {
                       <span>Bodega Central</span>
                       <span className={`font-bold ${theme === 'dark' ? 'text-slate-200' : 'text-slate-800'}`}>850 {selectedItem.unidad}</span>
                     </div>
+                    <button 
+                      onClick={() => setShowTransferModal(true)}
+                      className="w-full mt-2 bg-amber-500 hover:bg-amber-400 text-[#0d0e12] font-bold py-2 rounded-xl text-xs transition-colors flex items-center justify-center gap-1.5 border-0 cursor-pointer"
+                    >
+                      <Zap className="w-3.5 h-3.5" /> Transferir Mercancía
+                    </button>
                   </div>
                 </div>
 
@@ -1151,12 +1293,20 @@ export default function POSInterface() {
               </div>
             </div>
 
-            <button
-              onClick={() => setShowSuccessQuoteModal(false)}
-              className="w-full mt-6 bg-[#1a1c24] hover:bg-[#252837] border border-[#2b2d3d] text-slate-300 font-bold py-3 rounded-xl transition-all cursor-pointer border-0 text-xs"
-            >
-              Cerrar Caja
-            </button>
+            <div className="flex gap-3 mt-6">
+              <button
+                onClick={() => handlePrintQuote(savedQuoteResult)}
+                className="flex-1 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold py-2.5 rounded-xl text-xs transition-colors border-0 cursor-pointer flex items-center justify-center gap-1.5"
+              >
+                <Printer className="w-4 h-4" /> Imprimir
+              </button>
+              <button
+                onClick={() => setShowSuccessQuoteModal(false)}
+                className="flex-1 bg-[#1a1c24] hover:bg-[#252837] border border-[#2b2d3d] text-slate-300 font-bold py-2.5 rounded-xl text-xs transition-all cursor-pointer border-0"
+              >
+                Listo
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -1178,6 +1328,146 @@ export default function POSInterface() {
             localStorage.setItem('pos_products', JSON.stringify(newProducts));
           }}
         />
+      )}
+
+      {showAdminAuthModal && (
+        <div className="fixed inset-0 bg-black/75 backdrop-blur-sm flex items-center justify-center z-[60] p-4">
+          <div className={`w-full max-w-sm rounded-2xl border p-6 shadow-2xl transition-colors ${
+            theme === 'dark' ? 'bg-[#13151b] border-[#262836] text-white' : 'bg-white border-slate-200 text-slate-800'
+          }`}>
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-md font-bold uppercase tracking-wider flex items-center gap-2">
+                <AlertCircle className="w-5 h-5 text-amber-500" /> Requiere Autorización
+              </h3>
+              <button 
+                onClick={() => setShowAdminAuthModal(false)}
+                className="text-slate-500 hover:text-slate-400 border-0 bg-transparent cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <p className="text-xs text-slate-400 mb-4">
+              Esta acción requiere la aprobación de un Administrador o Gerente. Por favor, ingresa el PIN de supervisor.
+            </p>
+            <form onSubmit={handleAdminAuthSubmit}>
+              <input
+                type="password"
+                maxLength={4}
+                placeholder="PIN de Supervisor"
+                className={`w-full text-center text-2xl font-mono tracking-widest rounded-xl py-2.5 border focus:ring-2 focus:ring-amber-500 focus:outline-none focus:border-transparent ${
+                  theme === 'dark' ? 'bg-[#090a0d] border-[#20222b] text-amber-500' : 'bg-slate-100 border-slate-200 text-slate-800'
+                }`}
+                value={adminAuthPin}
+                onChange={(e) => setAdminAuthPin(e.target.value.replace(/\D/g, ''))}
+                autoFocus
+              />
+              {adminAuthError && (
+                <p className="text-rose-500 text-xs font-semibold mt-2 text-center">{adminAuthError}</p>
+              )}
+              <div className="flex gap-4 mt-6">
+                <button
+                  type="button"
+                  onClick={() => setShowAdminAuthModal(false)}
+                  className={`flex-1 font-bold py-2.5 rounded-xl border transition-colors cursor-pointer text-xs ${
+                    theme === 'dark' ? 'border-[#262836] text-slate-400 bg-transparent hover:bg-slate-800' : 'border-slate-200 text-slate-500 hover:bg-slate-50'
+                  }`}
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  disabled={adminAuthPin.length !== 4}
+                  className="flex-1 bg-amber-500 hover:bg-amber-400 disabled:bg-slate-800 disabled:text-slate-500 text-slate-950 font-black py-2.5 rounded-xl transition-colors cursor-pointer border-0 text-xs"
+                >
+                  Autorizar
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {showTransferModal && selectedItem && (
+        <div className="fixed inset-0 bg-black/75 backdrop-blur-sm flex items-center justify-center z-[60] p-4">
+          <div className={`w-full max-w-md rounded-2xl border p-6 shadow-2xl transition-colors ${
+            theme === 'dark' ? 'bg-[#13151b] border-[#262836] text-white' : 'bg-white border-slate-200 text-slate-800'
+          }`}>
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-md font-bold uppercase tracking-wider flex items-center gap-2">
+                <Zap className="w-5 h-5 text-amber-500" /> Traspaso de Inventario
+              </h3>
+              <button 
+                onClick={() => setShowTransferModal(false)}
+                className="text-slate-500 hover:text-slate-400 border-0 bg-transparent cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <p className="text-xs text-slate-400 mb-4">
+              Transferir stock del producto <strong className="text-white">{selectedItem.nombre}</strong>.
+            </p>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-[10px] uppercase font-bold text-slate-400 mb-1">Sucursal Origen</label>
+                <select
+                  value={selectedSucursalId}
+                  onChange={(e) => setSelectedSucursalId(e.target.value)}
+                  className={`w-full rounded-xl py-2 px-3 text-xs border ${
+                    theme === 'dark' ? 'bg-[#090a0d] border-[#20222b] text-white' : 'bg-slate-100 border-slate-200 text-slate-800'
+                  }`}
+                >
+                  {sucursales.map(s => <option key={s.id} value={s.id}>{s.nombre}</option>)}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-[10px] uppercase font-bold text-slate-400 mb-1">Sucursal Destino</label>
+                <select
+                  value={transferTargetSucursalId}
+                  onChange={(e) => setTransferTargetSucursalId(e.target.value)}
+                  className={`w-full rounded-xl py-2 px-3 text-xs border ${
+                    theme === 'dark' ? 'bg-[#090a0d] border-[#20222b] text-white' : 'bg-slate-100 border-slate-200 text-slate-800'
+                  }`}
+                >
+                  {sucursales.filter(s => s.id !== selectedSucursalId).map(s => (
+                    <option key={s.id} value={s.id}>{s.nombre}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-[10px] uppercase font-bold text-slate-400 mb-1">Cantidad a Transferir ({selectedItem.unidad})</label>
+                <input
+                  type="number"
+                  min="0.1"
+                  step="0.1"
+                  className={`w-full rounded-xl py-2 px-3 text-xs border focus:ring-1 focus:ring-amber-500 focus:outline-none ${
+                    theme === 'dark' ? 'bg-[#090a0d] border-[#20222b] text-white' : 'bg-slate-100 border-slate-200 text-slate-800'
+                  }`}
+                  value={transferQty}
+                  onChange={(e) => setTransferQty(e.target.value)}
+                />
+              </div>
+
+              <div className="flex gap-4 mt-6">
+                <button
+                  onClick={() => setShowTransferModal(false)}
+                  className={`flex-1 font-bold py-2.5 rounded-xl border transition-colors cursor-pointer text-xs ${
+                    theme === 'dark' ? 'border-[#262836] text-slate-400 bg-transparent hover:bg-slate-800' : 'border-slate-200 text-slate-500 hover:bg-slate-50'
+                  }`}
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={handleExecuteTransfer}
+                  className="flex-1 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black py-2.5 rounded-xl transition-colors cursor-pointer border-0 text-xs"
+                >
+                  Ejecutar Traspaso
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

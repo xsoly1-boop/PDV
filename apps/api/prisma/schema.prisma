@@ -178,6 +178,7 @@ model Venta {
   sucursal        Sucursal       @relation(fields: [sucursalId], references: [id])
   usuario         Usuario        @relation(fields: [usuarioId], references: [id])
   detalles        DetalleVenta[]
+  factura         FacturaCFDI?
 }
 
 model DetalleVenta {
@@ -253,4 +254,27 @@ model DetalleTraspaso {
   
   traspaso         TraspasoMercancia @relation(fields: [traspasoId], references: [id], onDelete: Cascade)
   producto         Producto          @relation(fields: [productoId], references: [id])
+}
+
+enum EstadoCFDI {
+  PENDIENTE
+  TIMBRADA
+  CANCELADA
+  FALLIDA
+}
+
+model FacturaCFDI {
+  id           String     @id @default(uuid())
+  ventaId      String     @unique
+  venta        Venta      @relation(fields: [ventaId], references: [id], onDelete: Cascade)
+  uuidSat      String?    @unique // UUID retornado por el PAC
+  rfcReceptor  String
+  razonSocial  String
+  usoCFDI      String
+  xmlUrl       String?
+  pdfUrl       String?
+  estado       EstadoCFDI @default(PENDIENTE)
+  errorPac     String?
+  timbradaAt   DateTime?
+  creadoAt     DateTime   @default(now())
 }

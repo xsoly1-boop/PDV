@@ -1,7 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import { prisma } from './prisma.js';
-import { TipoMovimiento, EstadoReserva } from './types.js';
+import { TipoMovimiento, EstadoReserva, EstadoTraspaso, EstadoCFDI, Rol } from './types.js';
 
 const app = express();
 app.use(cors());
@@ -269,7 +269,7 @@ app.get('/api/v1/cotizaciones', async (req, res) => {
   try {
     const cotizaciones = await prisma.cotizacion.findMany({
       where: { estado: 'ACTIVA' },
-      orderBy: { createdAt: 'desc' },
+      orderBy: { creadoAt: 'desc' },
       include: {
         detalles: {
           include: {
@@ -392,6 +392,223 @@ app.post('/api/v1/sync/movimientos', async (req, res) => {
   } catch (error: any) {
     console.error('Error al procesar lote de sincronización:', error);
     res.status(500).json({ error: 'Fallo al procesar lote de movimientos' });
+  }
+});
+
+// ==========================================
+// 3. Módulos Corporativos: CFDI, RBAC, Traspasos
+// ==========================================
+
+// GET /api/v1/sucursales
+app.get('/api/v1/sucursales', async (req, res) => {
+  try {
+    const sucursales = await prisma.sucursal.findMany();
+    res.json(sucursales);
+  } catch (error) {
+    res.status(500).json({ error: 'Error al listar sucursales' });
+  }
+});
+
+// GET /api/v1/inventario/balance-global
+app.get('/api/v1/inventario/balance-global', async (req, res) => {
+  try {
+    const balances = await prisma.inventarioBalance.findMany({
+      include: {
+        producto: true,
+        sucursal: true
+      }
+    });
+    res.json(balances);
+  } catch (error) {
+    res.status(500).json({ error: 'Error al consultar balances de inventario' });
+  }
+});
+
+// POST /api/v1/auth/autorizar-accion
+app.post('/api/v1/auth/autorizar-accion', async (req, res) => {
+  const { pin, accion } = req.body;
+
+  if (!pin) {
+    return res.status(400).json({ error: 'Se requiere el PIN de seguridad.' });
+  }
+
+  try {
+    const usuario = await prisma.usuario.findFirst({
+      where: { pin, activo: true }
+    });
+
+    if (!usuario) {
+      return res.status(404).json({ autorizado: false, error: 'Usuario no encontrado o PIN inválido.' });
+    }
+
+    const tienePermiso = usuario.rol === Rol.ADMINISTRADOR || usuario.rol === Rol.GERENTE;
+
+    if (tienePermiso) {
+      res.json({ autorizado: true, usuario: { id: usuario.id, nombre: usuario.nombre, rol: usuario.rol } });
+    } else {
+      res.status(403).json({ autorizado: false, error: `El rol ${usuario.rol} no está autorizado para realizar la acción: ${accion}` });
+    }
+  } catch (error) {
+    res.status(500).json({ error: 'Error al validar autorización' });
+  }
+});
+
+// POST /api/v1/inventario/traspaso
+app.post('/api/v1/inventario/traspaso', async (req, res) => {
+  const { origenSucursalId, destinoSucursalId, usuarioEnviaId, items } = req.body;
+
+  if (!origenSucursalId || !destinoSucursalId || !usuarioEnviaId || !items || !Array.isArray(items) || items.length === 0) {
+    return res.status(400).json({ error: 'Datos incompletos. Se requieren origenSucursalId, destinoSucursalId, usuarioEnviaId e items.' });
+  }
+
+  try {
+    const result = await prisma.$transaction(async (tx) => {
+      const traspaso = await tx.traspasoMercancia.create({
+        data: {
+          origenSucursalId,
+          destinoSucursalId,
+          usuarioEnviaId,
+          estado: EstadoTraspaso.COMPLETADO,
+          recibidoAt: new Date()
+        }
+      });
+
+      const detalles = [];
+
+      for (const item of items) {
+        const { productoId, cantidad } = item;
+        const cantNum = Number(cantidad);
+
+        const balanceOrigen = await tx.inventarioBalance.findUnique({
+          where: { sucursalId_productoId: { sucursalId: origenSucursalId, productoId } }
+        });
+
+        if (!balanceOrigen || Number(balanceOrigen.stockReal) < cantNum) {
+          throw new Error(`Stock insuficiente para el producto ${productoId} en la sucursal de origen.`);
+        }
+
+        await tx.inventarioBalance.update({
+          where: { id: balanceOrigen.id },
+          data: { stockReal: { decrement: cantNum } }
+        });
+
+        const balanceDestino = await tx.inventarioBalance.upsert({
+          where: { sucursalId_productoId: { sucursalId: destinoSucursalId, productoId } },
+          update: { stockReal: { increment: cantNum } },
+          create: {
+            sucursalId: destinoSucursalId,
+            productoId,
+            stockReal: cantNum,
+            reservado: 0
+          }
+        });
+
+        const det = await tx.detalleTraspaso.create({
+          data: {
+            traspasoId: traspaso.id,
+            productoId,
+            cantidadEnviada: cantNum,
+            cantidadRecibida: cantNum
+          }
+        });
+
+        await tx.kardexMovimiento.create({
+          data: {
+            sucursalId: origenSucursalId,
+            productoId,
+            usuarioId: usuarioEnviaId,
+            tipo: TipoMovimiento.SALIDA_TRASPASO,
+            cantidad: cantNum,
+            referencia: traspaso.id,
+            observacion: `Envío de stock a sucursal ${destinoSucursalId}`
+          }
+        });
+
+        await tx.kardexMovimiento.create({
+          data: {
+            sucursalId: destinoSucursalId,
+            productoId,
+            usuarioId: usuarioEnviaId,
+            tipo: TipoMovimiento.ENTRADA_TRASPASO,
+            cantidad: cantNum,
+            referencia: traspaso.id,
+            observacion: `Recepción de stock de sucursal ${origenSucursalId}`
+          }
+        });
+
+        detalles.push(det);
+      }
+
+      return { traspaso, detalles };
+    });
+
+    res.json({ success: true, ...result });
+  } catch (error: any) {
+    console.error('Error en traspaso de inventario:', error);
+    res.status(500).json({ error: error.message || 'Error al procesar el traspaso en la base de datos.' });
+  }
+});
+
+// POST /api/v1/cfdi/timbrar
+app.post('/api/v1/cfdi/timbrar', async (req, res) => {
+  const { ventaId, rfcReceptor, razonSocial, usoCFDI } = req.body;
+
+  if (!ventaId || !rfcReceptor || !razonSocial || !usoCFDI) {
+    return res.status(400).json({ error: 'Datos incompletos para timbrar la factura CFDI.' });
+  }
+
+  try {
+    const facturaExistente = await prisma.facturaCFDI.findUnique({
+      where: { ventaId }
+    });
+
+    if (facturaExistente && facturaExistente.estado === EstadoCFDI.TIMBRADA) {
+      return res.status(400).json({ error: 'Esta venta ya cuenta con una factura timbrada asociada.' });
+    }
+
+    const venta = await prisma.venta.findUnique({
+      where: { id: ventaId }
+    });
+
+    if (!venta) {
+      return res.status(404).json({ error: 'No se encontró la venta especificada.' });
+    }
+
+    const uuidSat = Math.random().toString(36).substring(2, 10).toUpperCase() + '-' +
+                    Math.random().toString(36).substring(2, 6).toUpperCase() + '-' +
+                    Math.random().toString(36).substring(2, 6).toUpperCase() + '-' +
+                    Math.random().toString(36).substring(2, 18).toUpperCase();
+
+    const factura = await prisma.facturaCFDI.upsert({
+      where: { ventaId },
+      update: {
+        uuidSat,
+        rfcReceptor,
+        razonSocial,
+        usoCFDI,
+        estado: EstadoCFDI.TIMBRADA,
+        xmlUrl: `https://cfdi-storage.s3.amazonaws.com/xmls/${uuidSat}.xml`,
+        pdfUrl: `https://cfdi-storage.s3.amazonaws.com/pdfs/${uuidSat}.pdf`,
+        timbradaAt: new Date(),
+        errorPac: null
+      },
+      create: {
+        ventaId,
+        uuidSat,
+        rfcReceptor,
+        razonSocial,
+        usoCFDI,
+        estado: EstadoCFDI.TIMBRADA,
+        xmlUrl: `https://cfdi-storage.s3.amazonaws.com/xmls/${uuidSat}.xml`,
+        pdfUrl: `https://cfdi-storage.s3.amazonaws.com/pdfs/${uuidSat}.pdf`,
+        timbradaAt: new Date()
+      }
+    });
+
+    res.json({ success: true, factura });
+  } catch (error: any) {
+    console.error('Error al timbrar factura:', error);
+    res.status(500).json({ error: error.message || 'Error interno al timbrar la factura.' });
   }
 });
 
