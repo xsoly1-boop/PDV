@@ -172,6 +172,33 @@ export default function POSInterface() {
     }
   };
 
+  const fetchProducts = async () => {
+    try {
+      const response = await fetch(`${API_V1}/productos/buscar?q=`);
+      if (response.ok) {
+        const data = await response.json();
+        if (Array.isArray(data) && data.length > 0) {
+          const mapped = data.map((p: any) => ({
+            id: String(p.id),
+            sku: String(p.sku),
+            codigoBarras: p.codigos?.[0]?.codigo || '',
+            nombre: String(p.nombre),
+            categoria: p.metadatos?.categoria || 'General',
+            precio: Number(p.precio) || 0,
+            costo: Number(p.costo) || 0,
+            stock: p.balances ? p.balances.reduce((sum: number, b: any) => sum + Number(b.stockReal), 0) : 0,
+            unidad: p.unidad || 'pieza',
+            metadata: p.metadatos || {}
+          }));
+          setProducts(mapped);
+          localStorage.setItem('pos_products', JSON.stringify(mapped));
+        }
+      }
+    } catch (e) {
+      console.warn('Error fetching products from API:', e);
+    }
+  };
+
   const fetchActiveQuotes = async () => {
     setLoadingQuotes(true);
     try {
@@ -538,6 +565,8 @@ export default function POSInterface() {
   }, [isOnline]);
 
   useEffect(() => {
+    fetchProducts();
+    fetchActiveQuotes();
     const timer = setInterval(() => {
       setTime(new Date().toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' }));
     }, 1000);
