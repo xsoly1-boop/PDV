@@ -451,9 +451,12 @@ function MainApp() {
 
 export default function App() {
   return (
-    <ErrorBoundary>
-      <MainApp />
-    </ErrorBoundary>
+    <SafeAreaView style={{ flex: 1, backgroundColor: '#0d0e12', justifyContent: 'center', alignItems: 'center', padding: 20 }}>
+      <Text style={{ color: '#f59e0b', fontSize: 24, fontWeight: 'bold' }}>APEX DIAGNÓSTICO</Text>
+      <Text style={{ color: '#9ca3af', fontSize: 14, marginTop: 10, textAlign: 'center' }}>
+        Si puedes ver este texto, el motor de JavaScript y React Native están funcionando perfectamente en tu dispositivo.
+      </Text>
+    </SafeAreaView>
   );
 }
 
