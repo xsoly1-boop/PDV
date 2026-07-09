@@ -490,7 +490,7 @@ const styles = StyleSheet.create({
   },
   totalRow: {
     flexDirection: 'row',
-    justifyContent: 'between',
+    justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 16,
   },
@@ -555,7 +555,7 @@ const styles = StyleSheet.create({
   resultCode: {
     color: '#f59e0b',
     fontSize: 48,
-    fontWeight: '950',
+    fontWeight: '900',
     letterSpacing: 4,
   },
   resultFolio: {
