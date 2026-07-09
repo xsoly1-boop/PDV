@@ -8,12 +8,134 @@ import {
 import { LocalDb } from './db/localDb';
 import { SyncService } from './services/SyncService';
 import AdminDashboard from './AdminDashboard';
-import { API_V1 } from './config';
+import { API_V1, API_BASE_URL } from './config';
+import OnboardingWizard from './OnboardingWizard';
 
 export default function POSInterface() {
   const [time, setTime] = useState(new Date().toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' }));
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedItemId, setSelectedItemId] = useState(2); // Seleccionamos el cable por defecto
+  const [tabs, setTabs] = useState<any[]>(() => {
+    const saved = localStorage.getItem('pos_tabs');
+    if (saved) return JSON.parse(saved);
+    const lastTicketSaved = localStorage.getItem('pos_last_ticket');
+    const startTicket = lastTicketSaved ? parseInt(lastTicketSaved) + 1 : 1;
+    return [
+      {
+        id: 'tab-default',
+        name: 'Ticket 1',
+        cart: [],
+        ticketNumber: startTicket,
+        selectedItemId: null,
+        discount: 0
+      }
+    ];
+  });
+  const [activeTabId, setActiveTabId] = useState<string>(() => {
+    return localStorage.getItem('pos_active_tab_id') || 'tab-default';
+  });
+
+  useEffect(() => {
+    localStorage.setItem('pos_tabs', JSON.stringify(tabs));
+  }, [tabs]);
+
+  useEffect(() => {
+    localStorage.setItem('pos_active_tab_id', activeTabId);
+  }, [activeTabId]);
+
+  const activeTab = tabs.find(t => t.id === activeTabId) || tabs[0] || {
+    id: 'tab-default',
+    name: 'Ticket 1',
+    cart: [],
+    ticketNumber: 1,
+    selectedItemId: null,
+    discount: 0
+  };
+
+  const cart = activeTab.cart;
+  const ticketNumber = activeTab.ticketNumber;
+  const selectedItemId = activeTab.selectedItemId;
+  const discount = activeTab.discount;
+
+  const setCart = (newCart: any | ((prev: any[]) => any[])) => {
+    setTabs(prev => prev.map(t => {
+      if (t.id === activeTabId) {
+        const nextCart = typeof newCart === 'function' ? newCart(t.cart) : newCart;
+        return { ...t, cart: nextCart };
+      }
+      return t;
+    }));
+  };
+
+  const setSelectedItemId = (id: any | ((prev: number | null) => number | null)) => {
+    setTabs(prev => prev.map(t => {
+      if (t.id === activeTabId) {
+        const nextId = typeof id === 'function' ? id(t.selectedItemId) : id;
+        return { ...t, selectedItemId: nextId };
+      }
+      return t;
+    }));
+  };
+
+  const setDiscount = (disc: any | ((prev: number) => number)) => {
+    setTabs(prev => prev.map(t => {
+      if (t.id === activeTabId) {
+        const nextDisc = typeof disc === 'function' ? disc(t.discount) : disc;
+        return { ...t, discount: nextDisc };
+      }
+      return t;
+    }));
+  };
+
+  const setTicketNumber = (num: any | ((prev: number) => number)) => {
+    setTabs(prev => prev.map(t => {
+      if (t.id === activeTabId) {
+        const nextNum = typeof num === 'function' ? num(t.ticketNumber) : num;
+        return { ...t, ticketNumber: nextNum };
+      }
+      return t;
+    }));
+  };
+
+  const handleAddTab = () => {
+    const nextTicketNum = Math.max(...tabs.map(t => t.ticketNumber), 0) + 1;
+    const newTabId = `tab-${Date.now()}`;
+    const newTab = {
+      id: newTabId,
+      name: `Ticket ${tabs.length + 1}`,
+      cart: [],
+      ticketNumber: nextTicketNum,
+      selectedItemId: null,
+      discount: 0
+    };
+    setTabs(prev => [...prev, newTab]);
+    setActiveTabId(newTabId);
+  };
+
+  const handleCloseTab = (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (tabs.length === 1) {
+      setTabs([
+        {
+          id: 'tab-default',
+          name: 'Ticket 1',
+          cart: [],
+          ticketNumber: 1,
+          selectedItemId: null,
+          discount: 0
+        }
+      ]);
+      setActiveTabId('tab-default');
+      return;
+    }
+    const idx = tabs.findIndex(t => t.id === id);
+    const newTabs = tabs.filter(t => t.id !== id);
+    setTabs(newTabs.map((t, index) => ({ ...t, name: `Ticket ${index + 1}` })));
+    if (activeTabId === id) {
+      const nextActiveIdx = Math.max(0, idx - 1);
+      setActiveTabId(newTabs[nextActiveIdx].id);
+    }
+  };
+
   const [isOnline, setIsOnline] = useState(true);
   const [pendingCount, setPendingCount] = useState(LocalDb.getUnsynced().length);
 
@@ -32,7 +154,6 @@ export default function POSInterface() {
   const [adminAuthAction, setAdminAuthAction] = useState<(() => void) | null>(null);
   const [adminAuthPin, setAdminAuthPin] = useState('');
   const [adminAuthError, setAdminAuthError] = useState('');
-  const [discount, setDiscount] = useState(0);
 
   // Estados de Multisucursal
   const [sucursales] = useState<any[]>([
@@ -45,11 +166,43 @@ export default function POSInterface() {
   const [transferQty, setTransferQty] = useState('1');
 
   // Estados de Autenticación y Tema
-  const [currentUser, setCurrentUser] = useState<{ nombre: string; rol: string } | null>(null);
+  const [currentUser, setCurrentUser] = useState<{ nombre: string; rol: string } | null>(() => {
+    const saved = localStorage.getItem('pos_current_user');
+    return saved ? JSON.parse(saved) : null;
+  });
   const [pin, setPin] = useState('');
   const [loginError, setLoginError] = useState('');
+  const [authToken, setAuthToken] = useState<string | null>(() => localStorage.getItem('pos_auth_token'));
+  const [showNetworkModal, setShowNetworkModal] = useState(false);
+  const [tempApiBaseUrl, setTempApiBaseUrl] = useState('');
+
+  // Restore user from token on component mount
+  useEffect(() => {
+    if (authToken && !currentUser) {
+      const saved = localStorage.getItem('pos_current_user');
+      if (saved) {
+        setCurrentUser(JSON.parse(saved));
+      }
+    }
+  }, [authToken, currentUser]);
+
+  // Existing effect for persisting currentUser
+  useEffect(() => {
+    if (currentUser) {
+      localStorage.setItem('pos_current_user', JSON.stringify(currentUser));
+    } else {
+      localStorage.removeItem('pos_current_user');
+    }
+  }, [currentUser]);
   const [theme, setTheme] = useState<'dark' | 'light'>('dark');
   const [currentView, setCurrentView] = useState<'pos' | 'admin'>('pos');
+  const [showOnboarding, setShowOnboarding] = useState(false);
+  const [showCheckoutModal, setShowCheckoutModal] = useState(false);
+  const [paymentMethod, setPaymentMethod] = useState<'EFECTIVO' | 'TARJETA' | 'TRANSFERENCIA' | 'MIXTO'>('EFECTIVO');
+  const [amountPaid, setAmountPaid] = useState('');
+  const [mixedCash, setMixedCash] = useState('');
+  const [mixedCard, setMixedCard] = useState('');
+  const [mixedTransfer, setMixedTransfer] = useState('');
   const [config, setConfig] = useState(() => {
     const saved = localStorage.getItem('pos_config');
     return saved ? JSON.parse(saved) : {
@@ -60,55 +213,79 @@ export default function POSInterface() {
       address: 'Av. Industrial 405, Zona Centro',
       phone: '449-123-4567',
       logoUrl: '',
+      ticketMessage: '¡Gracias por su compra!',
+      printerType: 'thermal_80',
+      allowCash: true,
+      allowCard: true,
+      allowTransfer: true,
+      allowDrawer: true,
+      drawerCommand: '27,112,0,25,250',
+      allowScale: false,
+      scalePort: 'COM1',
+      scaleBaudRate: 9605,
+      scaleModel: 'torrey',
+      sessionTimeout: 0,
+      businessStartHour: '08:00',
+      businessEndHour: '20:00',
+      allowGerenteLogin: true,
+      allowCajeroLogin: true,
+      allowVendedorMovilLogin: true,
+      restrictGerenteSchedule: false,
+      restrictCajeroSchedule: false,
+      restrictVendedorMovilSchedule: true,
+      allowGerenteCheckout: true,
+      allowCajeroCheckout: true,
+      allowVendedorMovilCheckout: false
     };
   });
 
+  // Autolock: Cerrar sesión automática por inactividad
+  useEffect(() => {
+    if (!currentUser || !config.sessionTimeout || config.sessionTimeout === 0) {
+      return;
+    }
+
+    const timeoutMs = config.sessionTimeout * 60 * 1000;
+    let idleTimer: any;
+
+    const resetTimer = () => {
+      if (idleTimer) clearTimeout(idleTimer);
+      idleTimer = setTimeout(() => {
+        // Ejecutar cierre de sesión
+        setCurrentUser(null);
+        localStorage.removeItem('pos_current_user');
+        localStorage.removeItem('pos_auth_token');
+        alert('Sesión cerrada automáticamente por inactividad.');
+        window.location.reload();
+      }, timeoutMs);
+    };
+
+    // Agregar oyentes de actividad global
+    window.addEventListener('mousemove', resetTimer);
+    window.addEventListener('keydown', resetTimer);
+    window.addEventListener('click', resetTimer);
+    window.addEventListener('touchstart', resetTimer);
+
+    // Iniciar temporizador
+    resetTimer();
+
+    return () => {
+      if (idleTimer) clearTimeout(idleTimer);
+      window.removeEventListener('mousemove', resetTimer);
+      window.removeEventListener('keydown', resetTimer);
+      window.removeEventListener('click', resetTimer);
+      window.removeEventListener('touchstart', resetTimer);
+    };
+  }, [currentUser, config.sessionTimeout]);
+
   const [products, setProducts] = useState(() => {
     const saved = localStorage.getItem('pos_products');
-    return saved ? JSON.parse(saved) : [
-      { id: '1', sku: 'AUT-881', codigoBarras: '7501006598214', nombre: 'Balatas Delanteras Cerámicas de Alto Rendimiento', categoria: 'Automotriz', precio: 340.00, costo: 180.00, stock: 15, unidad: 'pieza', metadata: { oem: 'D-1092', compatible: 'Vento 250 / Honda CGL', garantia: '6 Meses' } },
-      { id: '2', sku: 'FER-092', codigoBarras: '7501006598221', nombre: 'Cable de Cobre Calibre 12 THW Aislamiento Extra', categoria: 'Ferretería', precio: 18.00, costo: 9.50, stock: 240, unidad: 'metros', metadata: { marca: 'Condumex', ubicacion: 'Pasillo 4, Anaquel B', amperaje_max: '25A' } },
-      { id: '3', sku: 'FER-114', codigoBarras: '7501006598238', nombre: 'Disco Abrasivo Corte Metal 4.5" Extra Fino', categoria: 'Ferretería', precio: 45.50, costo: 22.00, stock: 85, unidad: 'piezas', metadata: { marca: 'Dewalt', rpm_max: '13300', uso: 'Industrial' } },
-      { id: '4', sku: 'REF-001', codigoBarras: '7501011302722', nombre: 'Coca Cola 600ml', categoria: 'Abarrotes', precio: 18.50, costo: 12.00, stock: 50, unidad: 'piezas', metadata: { marca: 'Coca-Cola' } },
-      { id: '5', sku: 'PAN-001', codigoBarras: '7501011302739', nombre: 'Pan Dulce (Concha)', categoria: 'Panadería', precio: 15.00, costo: 8.00, stock: 45, unidad: 'piezas', metadata: { tipo: 'Repostería' } }
-    ];
+    return saved ? JSON.parse(saved) : [];
   });
 
 
 
-  // Simulamos un carrito EXCLUSIVO del giro Ferretería/Refaccionaria (Tema Oscuro/Industrial premium con la paleta de colores del portal)
-  const [cart, setCart] = useState([
-    {
-      id: 1,
-      sku: 'AUT-881',
-      nombre: 'Balatas Delanteras Cerámicas de Alto Rendimiento',
-      tipo: 'automotriz',
-      metadata: { oem: 'D-1092', compatible: 'Vento 250 / Honda CGL', garantia: '6 Meses' },
-      precio: 340.00,
-      cantidad: 1,
-      unidad: 'pieza'
-    },
-    {
-      id: 2,
-      sku: 'FER-092',
-      nombre: 'Cable de Cobre Calibre 12 THW Aislamiento Extra',
-      tipo: 'ferreteria',
-      metadata: { marca: 'Condumex', ubicacion: 'Pasillo 4, Anaquel B', amperaje_max: '25A' },
-      precio: 18.00,
-      cantidad: 3.5, // Fracciones nativas
-      unidad: 'metros'
-    },
-    {
-      id: 3,
-      sku: 'FER-114',
-      nombre: 'Disco Abrasivo Corte Metal 4.5" Extra Fino',
-      tipo: 'ferreteria',
-      metadata: { marca: 'Dewalt', rpm_max: '13300', uso: 'Industrial' },
-      precio: 45.50,
-      cantidad: 5,
-      unidad: 'piezas'
-    }
-  ]);
+
 
   const handleIncrement = (id: number) => {
     setCart(prev => prev.map(item => {
@@ -206,6 +383,44 @@ export default function POSInterface() {
       if (response.ok) {
         const data = await response.json();
         setActiveQuotes(data);
+
+        // Ruteador de Impresión: Auto-imprimir cotizaciones nuevas de vendedores móviles
+        const printedQuotesStr = localStorage.getItem('pos_printed_quotes') || '[]';
+        const printedQuotes: string[] = JSON.parse(printedQuotesStr);
+        let updatedPrinted = [...printedQuotes];
+        let hasNew = false;
+
+        data.forEach((quote: any) => {
+          if (!printedQuotes.includes(quote.id)) {
+            console.log(`[PRINTER ROUTER] Nueva cotización móvil detectada (#${quote.codigoCorto}). Imprimiendo en Mostrador.`);
+            
+            const electronAPI = (window as any).electronAPI;
+            const formattedItems = quote.detalles ? quote.detalles.map((d: any) => ({
+              sku: d.producto.sku,
+              nombre: d.producto.nombre,
+              precio: Number(d.precioUnitario),
+              cantidad: d.cantidad,
+              unidad: d.producto.unidad
+            })) : [];
+
+            if (electronAPI) {
+              electronAPI.printTicket({
+                ticketId: quote.folio || `COT-${quote.codigoCorto}`,
+                cajero: quote.clienteNombre || 'Cliente Móvil',
+                items: formattedItems,
+                total: Number(quote.total),
+                printerTarget: 'mostrador' // Ruteado a Impresora 3 (Mostrador)
+              });
+            }
+            
+            updatedPrinted.push(quote.id);
+            hasNew = true;
+          }
+        });
+
+        if (hasNew) {
+          localStorage.setItem('pos_printed_quotes', JSON.stringify(updatedPrinted));
+        }
       }
     } catch (e) {
       console.log('Error al obtener cotizaciones.');
@@ -425,20 +640,56 @@ export default function POSInterface() {
     setPendingCount(LocalDb.getUnsynced().length);
   };
 
-  const handleCheckout = async () => {
+  const handleCheckout = async (metodoPago: string) => {
     if (cart.length === 0) return;
+
+    let finalMetodo = metodoPago;
+    if (metodoPago === 'MIXTO') {
+      const parts = [];
+      if (Number(mixedCash) > 0) parts.push(`Efectivo: $${Number(mixedCash).toFixed(2)}`);
+      if (Number(mixedCard) > 0) parts.push(`Tarjeta: $${Number(mixedCard).toFixed(2)}`);
+      if (Number(mixedTransfer) > 0) parts.push(`Transferencia: $${Number(mixedTransfer).toFixed(2)}`);
+      finalMetodo = `MIXTO (${parts.join(', ')})`;
+    }
+
+    const ticketRef = 'TKT-' + ticketNumber;
 
     // Registrar cada producto en la cola del Kardex local
     for (const item of cart) {
       SyncService.registrarMovimientoLocal({
         sucursalId: 'suc-norte',
         productoId: item.sku,
-        usuarioId: currentUser ? currentUser.nombre : 'usr-desconocido',
+        usuarioId: currentUser ? (currentUser.id || currentUser.nombre) : 'usr-desconocido',
         tipo: 'SALIDA_VENTA',
         cantidad: item.cantidad,
-        referencia: 'TKT-14092',
-        observacion: 'Venta de mostrador'
+        referencia: ticketRef,
+        observacion: 'Venta mostrador (' + finalMetodo + ')'
       });
+    }
+
+    // Registrar la venta en la base de datos central
+    try {
+      await fetch(`${API_V1}/ventas`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          folio: ticketRef,
+          sucursalId: 'suc-norte',
+          usuarioId: currentUser ? (currentUser.id || currentUser.nombre) : 'ADMIN',
+          total: total,
+          subtotal: subtotal,
+          descuento: discount,
+          metodo: finalMetodo,
+          detalles: cart.map(item => ({
+            productoId: item.sku,
+            cantidad: item.cantidad,
+            precioUnitario: item.precio,
+            subtotal: item.precio * item.cantidad
+          }))
+        })
+      });
+    } catch (err) {
+      console.error('Error al registrar venta central:', err);
     }
 
     setPendingCount(LocalDb.getUnsynced().length);
@@ -446,15 +697,25 @@ export default function POSInterface() {
     if (isOnline) {
       const res = await SyncService.syncPendingMovimientos();
       if (res.success) {
-        alert(`Venta registrada y sincronizada en PostgreSQL central con éxito!\nSaldos procesados: ${res.processed} movimientos.`);
+        const hasCashPayment = metodoPago === 'EFECTIVO' || (metodoPago === 'MIXTO' && Number(mixedCash) > 0);
+        const drawerMsg = (config.allowDrawer && hasCashPayment)
+          ? '\n\n[Hardware] Cajón de dinero abierto (Comando: ' + (config.drawerCommand || '27,112,0,25,250') + ')'
+          : '';
+        alert('Venta registrada y sincronizada en PostgreSQL central con exito!' + drawerMsg);
       } else {
-        alert(`Venta registrada en base de datos SQLite local (Simulada).\nAlerta de Red: ${res.error}. Se sincronizará automáticamente al detectar conexión.`);
+        alert('Venta registrada en base de datos local.\nAlerta de Red: ' + res.error + '. Se sincronizara automaticamente al detectar conexion.');
       }
     } else {
-      alert(`Modo Offline Activo: Venta guardada en SQLite local. Pendiente por sincronizar.`);
+      alert('Modo Offline Activo: Venta guardada localmente. Pendiente por sincronizar.');
     }
 
+    // Avanzar al siguiente ticket y persistirlo
+    const nextTicket = ticketNumber + 1;
+    localStorage.setItem('pos_last_ticket', String(ticketNumber));
+    setTicketNumber(nextTicket);
     setCart([]);
+    setSelectedItemId(null);
+    setShowCheckoutModal(false);
     setPendingCount(LocalDb.getUnsynced().length);
   };
 
@@ -482,19 +743,28 @@ export default function POSInterface() {
     setPin('');
   };
 
-  const verifyPin = (typedPin: string) => {
-    // Simulación de credenciales de sucursales según schema.prisma
-    if (typedPin === '1234') {
-      setCurrentUser({ nombre: 'Dorian', rol: 'Cajero' });
-      setPin('');
-    } else if (typedPin === '9999') {
-      setCurrentUser({ nombre: 'Carlos M.', rol: 'Administrador' });
-      setPin('');
-    } else if (typedPin === '5555') {
-      setCurrentUser({ nombre: 'Ana G.', rol: 'Agente Ventas' });
-      setPin('');
-    } else {
-      setLoginError('PIN Incorrecto. Intenta nuevamente.');
+  const verifyPin = async (typedPin: string) => {
+    try {
+      const response = await fetch(`${API_V1}/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ pin: typedPin })
+      });
+      const data = await response.json();
+      if (response.ok && data.usuario) {
+        const user = { id: data.usuario.id, nombre: data.usuario.nombre, rol: data.usuario.rol === 'ADMINISTRADOR' ? 'Administrador' : data.usuario.rol === 'CAJERO' ? 'Cajero' : 'Agente Ventas' };
+        setCurrentUser(user);
+        const token = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        setAuthToken(token);
+        localStorage.setItem('pos_auth_token', token);
+        localStorage.setItem('pos_current_user', JSON.stringify(user));
+        setPin('');
+      } else {
+        setLoginError('PIN incorrecto. Intenta nuevamente.');
+        setPin('');
+      }
+    } catch (err) {
+      setLoginError('Error de conexion con el servidor.');
       setPin('');
     }
   };
@@ -518,7 +788,8 @@ export default function POSInterface() {
         ticketId: 'TKT-14092',
         cajero: currentUser?.nombre || 'Dorian',
         items: cart,
-        total
+        total,
+        printerTarget: 'caja'
       });
       alert(res.message);
     } else {
@@ -544,7 +815,8 @@ export default function POSInterface() {
         ticketId: quote.folio || 'COT-TEMP',
         cajero: currentUser?.nombre || 'Dorian',
         items: formattedItems,
-        total: Number(quote.total) || total
+        total: Number(quote.total) || total,
+        printerTarget: 'mostrador'
       });
       alert(`Impresión de Cotización: ${res.message}`);
     } else {
@@ -565,6 +837,46 @@ export default function POSInterface() {
   }, [isOnline]);
 
   useEffect(() => {
+    const checkCompanyConfig = async () => {
+      try {
+        const resp = await fetch(`${API_V1}/configuracion-empresa`);
+        if (resp.ok) {
+          const data = await resp.json();
+          if (!data) {
+            setShowOnboarding(true);
+          } else {
+            const mapped = {
+              businessName: data.nombreEmpresa,
+              rfc: data.rfc || '',
+              currency: 'MXN ($)',
+              taxRate: 16,
+              address: data.formatoTicket?.direccion || '',
+              phone: data.formatoTicket?.telefono || '',
+              logoUrl: data.logoUrl || '',
+              giro: data.giro,
+              ticketMessage: data.formatoTicket?.ticketMessage || '¡Gracias por su compra!',
+              printerType: data.formatoTicket?.printerType || 'thermal_80',
+              allowCash: data.formatoTicket?.allowCash !== false,
+              allowCard: data.formatoTicket?.allowCard !== false,
+              allowTransfer: data.formatoTicket?.allowTransfer !== false,
+              allowDrawer: data.formatoTicket?.allowDrawer !== false,
+              drawerCommand: data.formatoTicket?.drawerCommand || '27,112,0,25,250',
+              allowScale: data.formatoTicket?.allowScale || false,
+              scalePort: data.formatoTicket?.scalePort || 'COM1',
+              scaleBaudRate: data.formatoTicket?.scaleBaudRate || 9600,
+              scaleModel: data.formatoTicket?.scaleModel || 'torrey'
+            };
+            setConfig(mapped);
+            localStorage.setItem('pos_config', JSON.stringify(mapped));
+            setShowOnboarding(false);
+          }
+        }
+      } catch (e) {
+        console.error("Error loading config from API", e);
+      }
+    };
+
+    checkCompanyConfig();
     fetchProducts();
     fetchActiveQuotes();
     const timer = setInterval(() => {
@@ -602,11 +914,24 @@ export default function POSInterface() {
           </button>
         </div>
 
-        <div className={`border p-8 rounded-3xl w-[400px] shadow-2xl flex flex-col items-center transition-all ${
+        <div className={`border p-8 rounded-3xl w-[400px] shadow-2xl flex flex-col items-center transition-all relative ${
           theme === 'dark' 
             ? 'bg-[#13151b] border-[#20222b]' 
             : 'bg-white border-slate-200 shadow-slate-200/50'
         }`}>
+          {/* Botón de Configuración de Red */}
+          <div className="absolute top-4 right-4">
+            <button 
+              onClick={() => {
+                setTempApiBaseUrl(API_BASE_URL);
+                setShowNetworkModal(true);
+              }}
+              className="text-slate-500 hover:text-slate-300 cursor-pointer border-0 bg-transparent text-[10px] font-bold flex items-center gap-0.5"
+              title="Configurar conexión del servidor"
+            >
+              ⚙️ Red
+            </button>
+          </div>
           
           {/* Logo Hexagonal */}
           <div className="w-16 h-16 bg-amber-500 text-[#0d0e12] font-black rounded-2xl flex items-center justify-center shadow-[0_0_20px_rgba(245,158,11,0.3)] mb-4">
@@ -637,7 +962,7 @@ export default function POSInterface() {
             </div>
           ) : (
             <div className="text-slate-500 text-[10px] uppercase tracking-widest font-mono mb-4">
-              Demo: Cajero (1234) | Admin (9999)
+              Ingresa tu PIN de acceso
             </div>
           )}
 
@@ -691,6 +1016,29 @@ export default function POSInterface() {
 
         </div>
       </div>
+    );
+  }
+
+  // 1.5. WIZARD DE CONFIGURACIÓN INICIAL (ONBOARDING)
+  if (showOnboarding) {
+    return (
+      <OnboardingWizard
+        onComplete={(newConfigData) => {
+          const mapped = {
+            businessName: newConfigData.nombre,
+            rfc: newConfigData.rfc || '',
+            currency: 'MXN ($)',
+            taxRate: 16,
+            address: newConfigData.direccion || '',
+            phone: newConfigData.telefono || '',
+            logoUrl: '',
+            giro: newConfigData.giro
+          };
+          setConfig(mapped);
+          localStorage.setItem('pos_config', JSON.stringify(mapped));
+          setShowOnboarding(false);
+        }}
+      />
     );
   }
 
@@ -766,11 +1114,16 @@ export default function POSInterface() {
                   >
                     <div>
                       <p className={`font-bold ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>{product.nombre}</p>
-                      <p className="text-[10px] text-slate-500 font-mono mt-0.5">
-                        SKU: <span className="text-amber-500 font-bold">{product.sku}</span>
+                      <p className="text-[10px] text-slate-500 font-mono mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-0.5">
+                        <span>SKU: <span className="text-amber-500 font-bold">{product.sku}</span></span>
                         {product.codigoBarras && (
-                          <span className="ml-3">Cód. Barras: <span className="text-slate-400 font-bold">{product.codigoBarras}</span></span>
+                          <span>Cód. Barras: <span className="text-slate-400 font-bold">{product.codigoBarras}</span></span>
                         )}
+                        <span className={`font-black ${
+                          product.stock > 5 ? 'text-emerald-500' : product.stock > 0 ? 'text-amber-500' : 'text-rose-500'
+                        }`}>
+                          • Existencia: {product.stock} {product.unidad}(s)
+                        </span>
                       </p>
                     </div>
                     <span className="font-mono font-bold text-sm text-amber-500">${product.precio.toFixed(2)}</span>
@@ -787,7 +1140,7 @@ export default function POSInterface() {
           )}
         </div>
 
-        <div className="flex items-center justify-end gap-6 w-1/4">
+        <div className="flex items-center justify-end gap-4 w-fit">
           
           {/* Botón de Administración */}
           {currentUser && currentUser.rol === 'Administrador' && (
@@ -852,11 +1205,18 @@ export default function POSInterface() {
               <span>{currentUser.nombre} <span className="text-[10px] text-slate-400">({currentUser.rol})</span></span>
             </div>
             <button 
-              onClick={() => { setCurrentUser(null); setPin(''); setLoginError(''); }}
+              onClick={() => { 
+                setCurrentUser(null); 
+                setAuthToken(null);
+                localStorage.removeItem('pos_auth_token');
+                localStorage.removeItem('pos_current_user');
+                setPin(''); 
+                setLoginError(''); 
+              }}
               className="text-xs text-rose-500 hover:text-rose-455 hover:bg-rose-500/10 px-2.5 py-1.5 rounded-lg transition-colors bg-transparent border border-transparent hover:border-rose-500/20 cursor-pointer"
               title="Cerrar sesión / Bloquear terminal"
             >
-              Bloquear
+              Salir
             </button>
           </div>
 
@@ -876,19 +1236,78 @@ export default function POSInterface() {
           theme === 'dark' ? 'bg-[#13151b] border-[#20222b]' : 'bg-white border-slate-200'
         }`}>
           
-          <div className={`px-8 py-4 border-b flex justify-between items-center ${
+          {/* Barra de Tickets (Multi-Pestañas locales) */}
+          <div className={`px-4 pt-3 border-b flex flex-col gap-2 ${
             theme === 'dark' ? 'border-[#20222b] bg-[#090a0d]/20' : 'border-slate-200 bg-slate-50/50'
           }`}>
-            <div>
-              <h2 className={`font-bold text-xl ${theme === 'dark' ? 'text-slate-100' : 'text-slate-900'}`}>Ticket #14092</h2>
-              <p className="text-sm text-slate-400">Cliente: Público General</p>
+            <div className="flex justify-between items-center">
+              {/* Contenedor de Pestañas */}
+              <div className="flex items-center gap-1.5 overflow-x-auto max-w-[75%]">
+                {tabs.map((t, index) => (
+                  <div
+                    key={t.id}
+                    onClick={() => setActiveTabId(t.id)}
+                    className={`group px-3 py-1.5 rounded-t-xl border-t border-x text-xs font-bold transition-all cursor-pointer flex items-center gap-2 select-none ${
+                      activeTabId === t.id
+                        ? theme === 'dark'
+                          ? 'bg-[#13151b] border-[#20222b] text-slate-100 shadow-[0_-2px_10px_rgba(0,0,0,0.5)]'
+                          : 'bg-white border-slate-200 text-slate-850 shadow-[0_-2px_10px_rgba(0,0,0,0.05)]'
+                        : theme === 'dark'
+                          ? 'bg-[#090a0d]/40 border-transparent text-slate-500 hover:text-slate-300 hover:bg-[#090a0d]/80'
+                          : 'bg-slate-100 border-transparent text-slate-500 hover:text-slate-750 hover:bg-slate-200/50'
+                    }`}
+                  >
+                    <span>🎟️ Ticket {index + 1} (#{t.ticketNumber})</span>
+                    {t.cart.length > 0 && (
+                      <span className="bg-emerald-500 text-white font-black text-[9px] w-4 h-4 rounded-full flex items-center justify-center">
+                        {t.cart.length}
+                      </span>
+                    )}
+                    <span 
+                      onClick={(e) => handleCloseTab(t.id, e)}
+                      className="text-[10px] text-slate-500 hover:text-rose-500 p-0.5 rounded transition-colors"
+                    >
+                      ✕
+                    </span>
+                  </div>
+                ))}
+                
+                {/* Botón Nueva Pestaña */}
+                <button
+                  type="button"
+                  onClick={handleAddTab}
+                  className="px-3 py-1.5 rounded-t-xl text-xs font-bold transition-colors cursor-pointer border border-transparent bg-transparent hover:bg-amber-500/10 text-amber-500 flex items-center gap-1"
+                  title="Abrir nuevo Ticket"
+                >
+                  + Nuevo
+                </button>
+              </div>
+
+              {/* Botón Asignar Cliente */}
+              <button className="text-amber-500 hover:text-amber-400 font-semibold flex items-center gap-1.5 hover:bg-amber-500/10 px-3 py-1 rounded-lg transition-colors border border-transparent hover:border-amber-500/20 text-xs bg-transparent cursor-pointer">
+                <User className="w-4 h-4" /> Asignar Cliente / RFC
+              </button>
             </div>
-            <button className="text-amber-500 hover:text-amber-400 font-semibold flex items-center gap-1.5 hover:bg-amber-500/10 px-3 py-1.5 rounded-lg transition-colors border border-transparent hover:border-amber-500/20 text-xs bg-transparent cursor-pointer">
-              <User className="w-4 h-4" /> Asignar Cliente / RFC
-            </button>
+            
+            {/* Info del Ticket Activo */}
+            <div className="pb-2 pt-1 flex justify-between items-center text-xs text-slate-500 px-1 border-t border-slate-750/10">
+              <div>
+                <span>Atendiendo Ticket #{ticketNumber}</span>
+                <span className="mx-2">•</span>
+                <span>Artículos: {cart.reduce((sum, item) => sum + Number(item.cantidad), 0)}</span>
+              </div>
+              <span className="italic">Cliente: Público General</span>
+            </div>
           </div>
 
           <div className="flex-1 overflow-y-auto p-4 space-y-2.5">
+            {cart.length === 0 ? (
+              <div className="flex flex-col items-center justify-center h-full gap-3 text-slate-600">
+                <PackageOpen className="w-12 h-12 opacity-30" />
+                <p className="text-sm font-medium opacity-50">Ticket vacío</p>
+                <p className="text-xs opacity-30">Escanea un código o busca un producto</p>
+              </div>
+            ) : null}
             {cart.map((item) => (
               <div 
                 key={item.id} 
@@ -1006,30 +1425,61 @@ export default function POSInterface() {
               </div>
             </div>
 
-            <div className="flex gap-4">
-              <button 
-                onClick={handleCheckout}
-                disabled={cart.length === 0}
-                className="flex-grow bg-emerald-600 hover:bg-emerald-500 text-white text-lg font-black py-3.5 rounded-xl shadow-lg shadow-emerald-900/50 active:scale-[0.98] transition-all flex items-center justify-center gap-3 border-0 disabled:bg-slate-800 disabled:text-slate-400 disabled:cursor-not-allowed cursor-pointer"
-              >
-                COBRAR TICKET
-                <span className="text-emerald-100 font-mono text-xs bg-emerald-800/50 px-2 py-1 rounded border border-emerald-500/30">F12</span>
-              </button>
-              
-              <button 
-                onClick={() => {
-                  if (cart.length > 0) {
-                    setQuoteClientName('Público General');
-                    setShowSaveQuoteModal(true);
-                  }
-                }}
-                disabled={cart.length === 0}
-                className="bg-[#1a1c24] hover:bg-[#252837] border border-[#2b2d3d] text-amber-500 text-sm font-bold px-5 py-3.5 rounded-xl active:scale-[0.98] transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
-              >
-                <Bookmark className="w-5 h-5" />
-                COTIZAR
-              </button>
-            </div>
+            {(() => {
+              const canCheckout = (() => {
+                if (!currentUser) return false;
+                const role = currentUser.rol;
+                if (role === 'ADMINISTRADOR' || role === 'Administrador') return true;
+                if (role === 'GERENTE' || role === 'Gerente') return config.allowGerenteCheckout !== false;
+                if (role === 'CAJERO' || role === 'Cajero') return config.allowCajeroCheckout !== false;
+                if (role === 'VENDEDOR_MOVIL' || role === 'Vendedor Móvil') return config.allowVendedorMovilCheckout === true;
+                return false;
+              })();
+
+              return (
+                <div className="flex gap-4">
+                  {canCheckout && (
+                    <button 
+                      onClick={() => {
+                        if (cart.length > 0) {
+                          let defaultMethod: 'EFECTIVO' | 'TARJETA' | 'TRANSFERENCIA' = 'EFECTIVO';
+                          if (config.allowCash === false) {
+                            if (config.allowCard !== false) defaultMethod = 'TARJETA';
+                            else if (config.allowTransfer !== false) defaultMethod = 'TRANSFERENCIA';
+                          }
+                          setPaymentMethod(defaultMethod);
+                          setAmountPaid('');
+                          setShowCheckoutModal(true);
+                        }
+                      }}
+                      disabled={cart.length === 0}
+                      className="flex-grow bg-emerald-600 hover:bg-emerald-500 text-white text-lg font-black py-3.5 rounded-xl shadow-lg shadow-emerald-900/50 active:scale-[0.98] transition-all flex items-center justify-center gap-3 border-0 disabled:bg-slate-800 disabled:text-slate-400 disabled:cursor-not-allowed cursor-pointer"
+                    >
+                      COBRAR TICKET
+                      <span className="text-emerald-100 font-mono text-xs bg-emerald-800/50 px-2 py-1 rounded border border-emerald-500/30">F12</span>
+                    </button>
+                  )}
+                  
+                  <button 
+                    onClick={() => {
+                      if (cart.length > 0) {
+                        setQuoteClientName('Público General');
+                        setShowSaveQuoteModal(true);
+                      }
+                    }}
+                    disabled={cart.length === 0}
+                    className={`active:scale-[0.98] transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer ${
+                      !canCheckout
+                        ? 'flex-grow bg-amber-500 hover:bg-amber-400 text-[#0d0e12] text-base font-black py-3.5 rounded-xl border-0 shadow-lg shadow-amber-900/10'
+                        : 'bg-[#1a1c24] hover:bg-[#252837] border border-[#2b2d3d] text-amber-500 text-sm font-bold px-5 py-3.5 rounded-xl'
+                    }`}
+                  >
+                    <Bookmark className="w-5 h-5" />
+                    {!canCheckout ? 'ENVIAR PEDIDO A CAJA' : 'COTIZAR'}
+                  </button>
+                </div>
+              );
+            })()}
           </div>
         </section>
 
@@ -1226,6 +1676,99 @@ export default function POSInterface() {
         </div>
       )}
 
+      {/* MODAL CONFIGURACIÓN DE RED (DYNAMICAL API ROUTING) */}
+      {showNetworkModal && (
+        <div className="fixed inset-0 bg-black/75 backdrop-blur-sm flex items-center justify-center z-[100] p-4">
+          <div className={`w-full max-w-md rounded-2xl border p-6 shadow-2xl transition-colors ${
+            theme === 'dark' ? 'bg-[#13151b] border-[#262836] text-white' : 'bg-white border-slate-200 text-slate-800'
+          }`}>
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-base font-bold flex items-center gap-2">
+                ⚙️ Configuración de Conexión (Red/API)
+              </h3>
+              <button 
+                onClick={() => setShowNetworkModal(false)}
+                className="text-slate-500 hover:text-slate-400 border-0 bg-transparent cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <p className="text-xs text-slate-400 mb-6">
+              Elige cómo se conectará esta terminal a la base de datos de Apex POS:
+            </p>
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <button
+                  type="button"
+                  onClick={() => setTempApiBaseUrl('http://localhost:3001')}
+                  className={`w-full text-left p-3 rounded-xl border text-xs font-bold transition-all cursor-pointer ${
+                    tempApiBaseUrl === 'http://localhost:3001'
+                      ? 'border-amber-500 bg-amber-500/5 text-amber-500'
+                      : theme === 'dark' ? 'bg-[#1a1c24] border-[#262836] text-slate-400 hover:border-slate-600' : 'bg-slate-50 border-slate-200 text-slate-600 hover:border-slate-300'
+                  }`}
+                >
+                  <div className="font-black">Opción A: Servidor Local (Auto-Sincronizado)</div>
+                  <div className="font-medium text-[10px] text-slate-500 mt-0.5">La terminal se comunica localmente y se sincroniza con la nube (http://localhost:3001)</div>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setTempApiBaseUrl('https://pdventa.onrender.com')}
+                  className={`w-full text-left p-3 rounded-xl border text-xs font-bold transition-all cursor-pointer ${
+                    tempApiBaseUrl === 'https://pdventa.onrender.com'
+                      ? 'border-amber-500 bg-amber-500/5 text-amber-500'
+                      : theme === 'dark' ? 'bg-[#1a1c24] border-[#262836] text-slate-400 hover:border-slate-600' : 'bg-slate-50 border-slate-200 text-slate-600 hover:border-slate-300'
+                  }`}
+                >
+                  <div className="font-black">Nube Directa: Servidor Cloud</div>
+                  <div className="font-medium text-[10px] text-slate-500 mt-0.5">La terminal lee/escribe en caliente sobre internet (https://pdventa.onrender.com)</div>
+                </button>
+              </div>
+
+              <div>
+                <label className="text-xs text-slate-500 font-bold mb-1 block">Dirección IP / Servidor Personalizado (Opción B)</label>
+                <input
+                  type="text"
+                  placeholder="Ej: http://192.168.1.50:3001"
+                  className={`w-full rounded-xl py-3 px-4 border focus:ring-2 focus:ring-amber-500 focus:outline-none focus:border-transparent ${
+                    theme === 'dark' ? 'bg-[#090a0d] border-[#20222b] text-white' : 'bg-slate-100 border-slate-200 text-slate-800'
+                  }`}
+                  value={tempApiBaseUrl}
+                  onChange={(e) => setTempApiBaseUrl(e.target.value)}
+                />
+                <p className="text-[9px] text-slate-500 mt-1">Escribe la dirección IP del ordenador principal (ej: http://192.168.1.X:3001) para el modelo de caja central local.</p>
+              </div>
+
+              <div className="flex gap-4 pt-2">
+                <button
+                  onClick={() => setShowNetworkModal(false)}
+                  className={`flex-1 font-bold py-3 rounded-xl border transition-colors cursor-pointer text-sm ${
+                    theme === 'dark' ? 'bg-[#1a1c24] border-[#262836] text-slate-400 hover:text-white' : 'bg-slate-100 border-slate-200 text-slate-600 hover:bg-slate-200'
+                  }`}
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={() => {
+                    if (tempApiBaseUrl.trim()) {
+                      localStorage.setItem('pos_api_base_url', tempApiBaseUrl.trim());
+                      setShowNetworkModal(false);
+                      alert('Dirección de red configurada con éxito. Recargando la terminal...');
+                      window.location.reload();
+                    } else {
+                      alert('Ingresa una dirección de red válida.');
+                    }
+                  }}
+                  className="flex-1 bg-amber-500 hover:bg-amber-400 text-[#0d0e12] font-black py-3 rounded-xl shadow-lg shadow-amber-900/10 transition-colors border-0 cursor-pointer text-sm"
+                >
+                  Guardar y Reiniciar
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* MODAL 2: GUARDAR COTIZACIÓN (DESDE CAJA) */}
       {showSaveQuoteModal && (
         <div className="fixed inset-0 bg-black/75 backdrop-blur-sm flex items-center justify-center z-50 p-4">
@@ -1347,9 +1890,48 @@ export default function POSInterface() {
           theme={theme} 
           onClose={() => setCurrentView('pos')} 
           config={config}
-          onConfigChange={(newConfig) => {
+          onConfigChange={async (newConfig) => {
             setConfig(newConfig);
             localStorage.setItem('pos_config', JSON.stringify(newConfig));
+            try {
+              await fetch(`${API_V1}/configuracion-empresa`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  nombre: newConfig.businessName,
+                  rfc: newConfig.rfc,
+                  telefono: newConfig.phone,
+                  direccion: newConfig.address,
+                  ciudad: '',
+                  giro: newConfig.giro || 'tienda',
+                  ticketMessage: newConfig.ticketMessage || '',
+                  printerType: newConfig.printerType || 'thermal_80',
+                  allowCash: newConfig.allowCash !== false,
+                  allowCard: newConfig.allowCard !== false,
+                  allowTransfer: newConfig.allowTransfer !== false,
+                  allowDrawer: newConfig.allowDrawer !== false,
+                  drawerCommand: newConfig.drawerCommand || '',
+                  allowScale: newConfig.allowScale || false,
+                  scalePort: newConfig.scalePort || '',
+                  scaleBaudRate: newConfig.scaleBaudRate || 9600,
+                  scaleModel: newConfig.scaleModel || '',
+                  sessionTimeout: newConfig.sessionTimeout || 0,
+                  businessStartHour: newConfig.businessStartHour || '08:00',
+                  businessEndHour: newConfig.businessEndHour || '20:00',
+                  allowGerenteLogin: newConfig.allowGerenteLogin !== false,
+                  allowCajeroLogin: newConfig.allowCajeroLogin !== false,
+                  allowVendedorMovilLogin: newConfig.allowVendedorMovilLogin !== false,
+                  restrictGerenteSchedule: newConfig.restrictGerenteSchedule || false,
+                  restrictCajeroSchedule: newConfig.restrictCajeroSchedule || false,
+                  restrictVendedorMovilSchedule: newConfig.restrictVendedorMovilSchedule !== false,
+                  allowGerenteCheckout: newConfig.allowGerenteCheckout !== false,
+                  allowCajeroCheckout: newConfig.allowCajeroCheckout !== false,
+                  allowVendedorMovilCheckout: newConfig.allowVendedorMovilCheckout || false
+                })
+              });
+            } catch (err) {
+              console.error('Error saving config to API:', err);
+            }
           }}
           products={products}
           onProductsChange={(newProducts) => {
@@ -1494,6 +2076,283 @@ export default function POSInterface() {
                   Ejecutar Traspaso
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* Modal de Cobro y Medios de Pago */}
+      {showCheckoutModal && (
+        <div className="fixed inset-0 bg-black/75 backdrop-blur-sm flex items-center justify-center z-[60] p-4 font-sans animate-fadeIn">
+          <div className={`w-full max-w-lg rounded-2xl border p-6 shadow-2xl transition-colors ${
+            theme === 'dark' ? 'bg-[#13151b] border-[#262836] text-white' : 'bg-white border-slate-200 text-slate-800'
+          }`}>
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="text-lg font-bold uppercase tracking-wider flex items-center gap-2">
+                <DollarSign className="w-6 h-6 text-emerald-500" /> Cobro de Ticket
+              </h3>
+              <button 
+                onClick={() => setShowCheckoutModal(false)}
+                className="text-slate-400 hover:text-white border-0 bg-transparent cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="space-y-6">
+              {/* Resumen de Total */}
+              <div className={`p-4 rounded-xl text-center border ${
+                theme === 'dark' ? 'bg-[#090a0d]/50 border-[#20222b]' : 'bg-slate-50 border-slate-200'
+              }`}>
+                <p className="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-1">Monto a Liquidar</p>
+                <p className="text-4xl font-black text-emerald-500">${total.toFixed(2)}</p>
+                <p className="text-[10px] text-slate-500 mt-1">IVA del 16% Incluido (${iva.toFixed(2)})</p>
+              </div>
+
+              {/* Métodos de Pago Disponibles */}
+              <div>
+                <label className="block text-xs font-bold uppercase text-slate-500 mb-2">Método de Pago</label>
+                <div className="grid grid-cols-3 gap-3">
+                  {config.allowCash !== false && (
+                    <button
+                      type="button"
+                      onClick={() => { setPaymentMethod('EFECTIVO'); setAmountPaid(''); }}
+                      className={`py-3 rounded-xl font-bold text-xs border transition-all cursor-pointer flex flex-col items-center gap-1.5 ${
+                        paymentMethod === 'EFECTIVO'
+                          ? 'border-emerald-500 bg-emerald-500/10 text-emerald-400'
+                          : theme === 'dark' ? 'bg-[#1a1c24] border-[#262836] hover:border-slate-700 text-slate-400' : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'
+                      }`}
+                    >
+                      <span className="text-lg">💵</span> Efectivo
+                    </button>
+                  )}
+
+                  {config.allowCard !== false && (
+                    <button
+                      type="button"
+                      onClick={() => { setPaymentMethod('TARJETA'); setAmountPaid(String(total)); }}
+                      className={`py-3 rounded-xl font-bold text-xs border transition-all cursor-pointer flex flex-col items-center gap-1.5 ${
+                        paymentMethod === 'TARJETA'
+                          ? 'border-emerald-500 bg-emerald-500/10 text-emerald-400'
+                          : theme === 'dark' ? 'bg-[#1a1c24] border-[#262836] hover:border-slate-700 text-slate-400' : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'
+                      }`}
+                    >
+                      <span className="text-lg">💳</span> Tarjeta
+                    </button>
+                  )}
+
+                  {config.allowTransfer !== false && (
+                    <button
+                      type="button"
+                      onClick={() => { setPaymentMethod('TRANSFERENCIA'); setAmountPaid(String(total)); }}
+                      className={`py-3 rounded-xl font-bold text-xs border transition-all cursor-pointer flex flex-col items-center gap-1.5 ${
+                        paymentMethod === 'TRANSFERENCIA'
+                          ? 'border-emerald-500 bg-emerald-500/10 text-emerald-400'
+                          : theme === 'dark' ? 'bg-[#1a1c24] border-[#262836] hover:border-slate-700 text-slate-400' : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'
+                      }`}
+                    >
+                      <span className="text-lg">🏦</span> Transferencia
+                    </button>
+                  )}
+                  {((config.allowCash !== false ? 1 : 0) + (config.allowCard !== false ? 1 : 0) + (config.allowTransfer !== false ? 1 : 0)) > 1 && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setPaymentMethod('MIXTO');
+                        setMixedCash('');
+                        setMixedCard('');
+                        setMixedTransfer('');
+                      }}
+                      className={`py-3 rounded-xl font-bold text-xs border transition-all cursor-pointer flex flex-col items-center gap-1.5 col-span-3 ${
+                        paymentMethod === 'MIXTO'
+                          ? 'border-amber-500 bg-amber-500/10 text-amber-400'
+                          : theme === 'dark' ? 'bg-[#1a1c24] border-[#262836] hover:border-slate-700 text-slate-400' : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'
+                      }`}
+                    >
+                      <span className="text-lg">🔀</span> Pago Híbrido / Combinado
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* Lógica Específica de Efectivo */}
+              {paymentMethod === 'EFECTIVO' && (
+                <div className="space-y-4 animate-fadeIn">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-bold uppercase text-slate-500 mb-2">Efectivo Recibido</label>
+                      <input
+                        type="number"
+                        placeholder="0.00"
+                        className={`w-full rounded-xl p-3 border focus:outline-none focus:ring-2 focus:ring-emerald-500 font-mono font-black text-lg ${
+                          theme === 'dark' ? 'bg-[#1a1c24] border-[#262836] text-white' : 'bg-slate-50 border-slate-200 text-slate-800'
+                        }`}
+                        value={amountPaid}
+                        onChange={e => setAmountPaid(e.target.value)}
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold uppercase text-slate-550 mb-2">Cambio a entregar</label>
+                      <div className={`w-full rounded-xl p-3 border font-mono font-black text-lg flex items-center justify-between ${
+                        Number(amountPaid) >= total 
+                          ? theme === 'dark' ? 'bg-emerald-950/20 border-emerald-500/30 text-emerald-400' : 'bg-emerald-50 border-emerald-250 text-emerald-700'
+                          : theme === 'dark' ? 'bg-rose-950/20 border-rose-500/30 text-rose-450' : 'bg-rose-50 border-rose-250 text-rose-700'
+                      }`}>
+                        <span>Cambio:</span>
+                        <span>
+                          {Number(amountPaid) >= total 
+                            ? '$' + (Number(amountPaid) - total).toFixed(2)
+                            : '$0.00 (Monto insuficiente)'}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Botones de Cobro Rápido */}
+                  <div className="flex gap-2 justify-center flex-wrap">
+                    {[
+                      { label: 'Exacto', val: total.toFixed(2) },
+                      { label: '$50', val: '50' },
+                      { label: '$100', val: '100' },
+                      { label: '$200', val: '200' },
+                      { label: '$500', val: '500' },
+                      { label: '$1000', val: '1000' }
+                    ].map(btn => (
+                      <button
+                        key={btn.label}
+                        type="button"
+                        onClick={() => setAmountPaid(btn.val)}
+                        className={`text-xs px-3 py-1.5 rounded-lg border transition-colors cursor-pointer ${
+                          theme === 'dark' ? 'bg-[#1a1c24] border-[#262836] text-slate-300 hover:bg-slate-800' : 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100'
+                        }`}
+                      >
+                        {btn.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Lógica Específica de Pago Híbrido */}
+              {paymentMethod === 'MIXTO' && (
+                <div className="space-y-4 border border-dashed border-slate-750/30 p-4 rounded-xl animate-fadeIn">
+                  <h4 className="text-xs font-bold uppercase text-amber-500 tracking-wider mb-2">Desglose de Pago Combinado</h4>
+                  
+                  <div className="space-y-3">
+                    {config.allowCash !== false && (
+                      <div className="flex items-center justify-between gap-4">
+                        <span className="text-xs font-bold text-slate-400 uppercase w-28">💵 Efectivo:</span>
+                        <input
+                          type="number"
+                          placeholder="0.00"
+                          className={`w-full max-w-[200px] rounded-lg p-2 border focus:outline-none focus:ring-1 focus:ring-amber-500 font-mono text-sm text-right ${
+                            theme === 'dark' ? 'bg-[#1a1c24] border-[#262836] text-white' : 'bg-slate-50 border-slate-200 text-slate-800'
+                          }`}
+                          value={mixedCash}
+                          onChange={e => setMixedCash(e.target.value)}
+                        />
+                      </div>
+                    )}
+
+                    {config.allowCard !== false && (
+                      <div className="flex items-center justify-between gap-4">
+                        <span className="text-xs font-bold text-slate-400 uppercase w-28">💳 Tarjeta:</span>
+                        <input
+                          type="number"
+                          placeholder="0.00"
+                          className={`w-full max-w-[200px] rounded-lg p-2 border focus:outline-none focus:ring-1 focus:ring-amber-500 font-mono text-sm text-right ${
+                            theme === 'dark' ? 'bg-[#1a1c24] border-[#262836] text-white' : 'bg-slate-50 border-slate-200 text-slate-800'
+                          }`}
+                          value={mixedCard}
+                          onChange={e => setMixedCard(e.target.value)}
+                        />
+                      </div>
+                    )}
+
+                    {config.allowTransfer !== false && (
+                      <div className="flex items-center justify-between gap-4">
+                        <span className="text-xs font-bold text-slate-400 uppercase w-28">🏦 Transf.:</span>
+                        <input
+                          type="number"
+                          placeholder="0.00"
+                          className={`w-full max-w-[200px] rounded-lg p-2 border focus:outline-none focus:ring-1 focus:ring-amber-500 font-mono text-sm text-right ${
+                            theme === 'dark' ? 'bg-[#1a1c24] border-[#262836] text-white' : 'bg-slate-50 border-slate-200 text-slate-800'
+                          }`}
+                          value={mixedTransfer}
+                          onChange={e => setMixedTransfer(e.target.value)}
+                        />
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Resultados del Pago Combinado */}
+                  <div className={`mt-4 p-3 rounded-lg border flex items-center justify-between text-xs font-mono font-bold ${
+                    (Number(mixedCash || 0) + Number(mixedCard || 0) + Number(mixedTransfer || 0)) >= total
+                      ? theme === 'dark' ? 'bg-emerald-950/20 border-emerald-500/30 text-emerald-400' : 'bg-emerald-50 border-emerald-250 text-emerald-700'
+                      : theme === 'dark' ? 'bg-rose-950/20 border-rose-500/30 text-rose-450' : 'bg-rose-50 border-rose-250 text-rose-700'
+                  }`}>
+                    <span>Total Registrado:</span>
+                    <span>
+                      ${(Number(mixedCash || 0) + Number(mixedCard || 0) + Number(mixedTransfer || 0)).toFixed(2)} / ${total.toFixed(2)}
+                    </span>
+                  </div>
+
+                  {/* Indicación de Saldo */}
+                  <div className="text-[10px] text-right font-medium">
+                    {(Number(mixedCash || 0) + Number(mixedCard || 0) + Number(mixedTransfer || 0)) >= total ? (
+                      <span className="text-emerald-500">
+                        Cobro completo. Cambio a entregar: ${(Number(mixedCash || 0) + Number(mixedCard || 0) + Number(mixedTransfer || 0) - total).toFixed(2)}
+                      </span>
+                    ) : (
+                      <span className="text-rose-450">
+                        Falta liquidar: ${(total - (Number(mixedCash || 0) + Number(mixedCard || 0) + Number(mixedTransfer || 0))).toFixed(2)}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Simulación de Báscula */}
+              {config.allowScale && (
+                <div className={`p-4 rounded-xl border flex items-center justify-between ${
+                  theme === 'dark' ? 'bg-[#090a0d]/30 border-[#20222b]' : 'bg-slate-50 border-slate-200'
+                }`}>
+                  <div>
+                    <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Lectura de Báscula ({config.scaleModel})</h4>
+                    <p className="text-sm font-semibold text-amber-500 mt-1">Peso leido: 2.345 kg (Simulado)</p>
+                  </div>
+                  <button 
+                    type="button" 
+                    onClick={() => alert('[Báscula] Lectura recalculada desde puerto serial: 2.345 kg.')}
+                    className="bg-amber-500/10 hover:bg-amber-500/20 text-amber-500 border border-amber-500/20 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer"
+                  >
+                    Recalcular
+                  </button>
+                </div>
+              )}
+            </div>
+
+            <div className="flex gap-4 mt-8">
+              <button
+                type="button"
+                onClick={() => setShowCheckoutModal(false)}
+                className={`flex-1 font-bold py-3 rounded-xl border transition-colors cursor-pointer text-sm ${
+                  theme === 'dark' ? 'border-[#262836] text-slate-400 bg-transparent hover:bg-slate-800' : 'border-slate-200 text-slate-500 hover:bg-slate-50'
+                }`}
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={() => handleCheckout(paymentMethod)}
+                disabled={
+                  (paymentMethod === 'EFECTIVO' && Number(amountPaid) < total) ||
+                  (paymentMethod === 'MIXTO' && (Number(mixedCash || 0) + Number(mixedCard || 0) + Number(mixedTransfer || 0)) < total)
+                }
+                className="flex-grow bg-emerald-600 hover:bg-emerald-500 text-white font-black py-3 rounded-xl shadow-lg border-0 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer text-sm flex items-center justify-center gap-1.5"
+              >
+                ✓ Registrar Cobro
+              </button>
             </div>
           </div>
         </div>

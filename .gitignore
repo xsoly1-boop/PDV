@@ -23,3 +23,7 @@ apps/pos-desktop/release/
 
 # Shared types build — NO ignorar, Render lo necesita
 # packages/shared-types/dist/
+
+# Scratch and test files
+apps/api/scratch/
+*.fdb

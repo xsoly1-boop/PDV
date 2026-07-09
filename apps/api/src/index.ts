@@ -93,6 +93,149 @@ app.get('/api/v1/productos/escanear/:codigo', async (req, res) => {
   }
 });
 
+// GET /api/v1/productos (listar todos)
+app.get('/api/v1/productos', async (req, res) => {
+  try {
+    const productos = await prisma.producto.findMany({
+      include: { codigos: true, balances: true, categoria: true, proveedor: true },
+      orderBy: { nombre: 'asc' }
+    });
+    res.json(productos);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// POST /api/v1/productos (crear)
+app.post('/api/v1/productos', async (req, res) => {
+  const { sku, nombre, descripcion, costo, precio, categoriaId, proveedorId, codigoBarras, stock, unidad, permiteFracciones } = req.body;
+  try {
+    const producto = await prisma.producto.create({
+      data: {
+        sku: sku || `SKU-${Date.now()}`,
+        nombre,
+        descripcion: descripcion || '',
+        costo: costo || 0,
+        precio: precio || 0,
+        permiteFracciones: permiteFracciones || false,
+        categoriaId: categoriaId || null,
+        proveedorId: proveedorId || null,
+        metadatos: unidad ? { unidad } : undefined,
+        codigos: codigoBarras ? { create: { codigo: codigoBarras } } : undefined,
+      },
+      include: { codigos: true, balances: true }
+    });
+
+    // Crear balance de inventario si se proporcionó stock
+    if (stock && stock > 0) {
+      const sucursal = await prisma.sucursal.findFirst();
+      if (sucursal) {
+        await prisma.inventarioBalance.create({
+          data: { productoId: producto.id, sucursalId: sucursal.id, cantidad: stock }
+        });
+      }
+    }
+
+    res.status(201).json(producto);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// PUT /api/v1/productos/:id (actualizar)
+app.put('/api/v1/productos/:id', async (req, res) => {
+  const { id } = req.params;
+  const { sku, nombre, descripcion, costo, precio, categoriaId, proveedorId, codigoBarras, stock, unidad, permiteFracciones } = req.body;
+  try {
+    const producto = await prisma.producto.update({
+      where: { id },
+      data: {
+        sku, nombre, descripcion,
+        costo: costo || 0,
+        precio: precio || 0,
+        permiteFracciones: permiteFracciones || false,
+        categoriaId: categoriaId || null,
+        proveedorId: proveedorId || null,
+        metadatos: unidad ? { unidad } : undefined,
+      },
+      include: { codigos: true, balances: true }
+    });
+    res.json(producto);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// DELETE /api/v1/productos/:id
+app.delete('/api/v1/productos/:id', async (req, res) => {
+  const { id } = req.params;
+  try {
+    await prisma.codigoBarras.deleteMany({ where: { productoId: id } });
+    await prisma.inventarioBalance.deleteMany({ where: { productoId: id } });
+    await prisma.producto.delete({ where: { id } });
+    res.json({ success: true });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ==========================================
+// CRUD Usuarios (Empleados)
+// ==========================================
+
+// GET /api/v1/usuarios
+app.get('/api/v1/usuarios', async (req, res) => {
+  try {
+    const usuarios = await prisma.usuario.findMany({ orderBy: { nombre: 'asc' } });
+    res.json(usuarios);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// POST /api/v1/usuarios
+app.post('/api/v1/usuarios', async (req, res) => {
+  const { nombre, pin, rol } = req.body;
+  try {
+    const usuario = await prisma.usuario.create({
+      data: { nombre, pin, rol: rol === 'Administrador' ? Rol.ADMINISTRADOR : rol === 'Agente Ventas' ? Rol.AGENTE_VENTAS : Rol.CAJERO, activo: true }
+    });
+    res.status(201).json(usuario);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// PUT /api/v1/usuarios/:id
+app.put('/api/v1/usuarios/:id', async (req, res) => {
+  const { id } = req.params;
+  const { nombre, pin, rol, activo } = req.body;
+  try {
+    const usuario = await prisma.usuario.update({
+      where: { id },
+      data: {
+        nombre, pin,
+        rol: rol === 'Administrador' ? Rol.ADMINISTRADOR : rol === 'Agente Ventas' ? Rol.AGENTE_VENTAS : Rol.CAJERO,
+        activo: activo !== undefined ? activo : true
+      }
+    });
+    res.json(usuario);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// DELETE /api/v1/usuarios/:id
+app.delete('/api/v1/usuarios/:id', async (req, res) => {
+  const { id } = req.params;
+  try {
+    await prisma.usuario.delete({ where: { id } });
+    res.json({ success: true });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // ==========================================
 // 2. Módulo de Cotizaciones y Reservas (Soft-Allocation)
 // ==========================================
@@ -424,6 +567,70 @@ app.get('/api/v1/inventario/balance-global', async (req, res) => {
   }
 });
 
+// POST /api/v1/auth/login — Autenticación general por PIN (cualquier usuario activo)
+app.post('/api/v1/auth/login', async (req, res) => {
+  const { pin } = req.body;
+  if (!pin) {
+    return res.status(400).json({ error: 'Se requiere PIN.' });
+  }
+  try {
+    const usuario = await prisma.usuario.findFirst({
+      where: { pin, activo: true }
+    });
+    if (!usuario) {
+      return res.status(401).json({ error: 'PIN incorrecto.' });
+    }
+
+    // Consultar configuraciones de seguridad
+    const configRow = await prisma.configuracionEmpresa.findFirst();
+    const formatoTicket = configRow?.formatoTicket as any;
+
+    // 1. Validar restricción de acceso por rol
+    if (usuario.rol === 'GERENTE' && formatoTicket?.allowGerenteLogin === false) {
+      return res.status(403).json({ error: 'Acceso denegado. El inicio de sesión para Gerentes ha sido deshabilitado temporalmente por el Administrador.' });
+    }
+    if (usuario.rol === 'CAJERO' && formatoTicket?.allowCajeroLogin === false) {
+      return res.status(403).json({ error: 'Acceso denegado. El inicio de sesión para Cajeros ha sido deshabilitado temporalmente por el Administrador.' });
+    }
+    if (usuario.rol === 'VENDEDOR_MOVIL' && formatoTicket?.allowVendedorMovilLogin === false) {
+      return res.status(403).json({ error: 'Acceso denegado. El inicio de sesión para Vendedores Móviles ha sido deshabilitado temporalmente por el Administrador.' });
+    }
+
+    // 2. Validar horario laboral por cada rol registrado
+    let shouldCheckSchedule = false;
+    if (usuario.rol === 'GERENTE' && formatoTicket?.restrictGerenteSchedule === true) {
+      shouldCheckSchedule = true;
+    } else if (usuario.rol === 'CAJERO' && formatoTicket?.restrictCajeroSchedule === true) {
+      shouldCheckSchedule = true;
+    } else if (usuario.rol === 'VENDEDOR_MOVIL' && formatoTicket?.restrictVendedorMovilSchedule !== false) {
+      shouldCheckSchedule = true;
+    }
+
+    if (shouldCheckSchedule) {
+      const startHour = formatoTicket?.businessStartHour || '08:00';
+      const endHour = formatoTicket?.businessEndHour || '20:00';
+      
+      const now = new Date();
+      const currentHourStr = now.toLocaleTimeString('es-MX', { 
+        hour: '2-digit', 
+        minute: '2-digit', 
+        hour12: false,
+        timeZone: 'America/Mexico_City'
+      });
+
+      if (currentHourStr < startHour || currentHourStr > endHour) {
+        return res.status(403).json({ 
+          error: `Acceso denegado. El inicio de sesión para el rol "${usuario.rol}" está restringido fuera de la jornada laboral (${startHour} a ${endHour}).` 
+        });
+      }
+    }
+
+    res.json({ usuario: { id: usuario.id, nombre: usuario.nombre, rol: usuario.rol } });
+  } catch (error) {
+    res.status(500).json({ error: 'Error al validar PIN.' });
+  }
+});
+
 // POST /api/v1/auth/autorizar-accion
 app.post('/api/v1/auth/autorizar-accion', async (req, res) => {
   const { pin, accion } = req.body;
@@ -674,8 +881,24 @@ async function liberarReservasExpiradas() {
 // Inicializar servidor y seed data
 // ==========================================
 async function seedDatabase() {
-  console.log('[SEED] Iniciando poblado de datos base en Supabase...');
+  console.log('[SEED] Verificando si se necesita poblar datos iniciales...');
   try {
+    // Si ya existe cualquier usuario, no volver a sembrar datos demo
+    const existingUsers = await prisma.usuario.count();
+    if (existingUsers > 0) {
+      console.log('[SEED] Base de datos ya contiene datos. Saltando seed automatico.');
+      return;
+    }
+
+    // Si ya existe cualquier producto, tampoco sembrar
+    const existingProducts = await prisma.producto.count();
+    if (existingProducts > 0) {
+      console.log('[SEED] Catalogo ya contiene productos. Saltando seed automatico.');
+      return;
+    }
+
+    console.log('[SEED] Base de datos vacia detectada. Iniciando poblado de datos demo...');
+
     // 1. Seed Sucursal
     await prisma.sucursal.upsert({
       where: { id: 'suc-norte' },
@@ -687,7 +910,7 @@ async function seedDatabase() {
       }
     });
 
-    // 2. Seed Usuarios
+    // 2. Seed Usuarios demo
     const users = [
       { id: 'Dorian', nombre: 'Dorian', rol: 'CAJERO', pin: '1234' },
       { id: 'Carlos M.', nombre: 'Carlos M.', rol: 'ADMINISTRADOR', pin: '9999' },
@@ -709,7 +932,7 @@ async function seedDatabase() {
       });
     }
 
-    // 3. Seed Productos
+    // 3. Seed Productos demo
     const products = [
       {
         id: 'AUT-881',
@@ -756,7 +979,7 @@ async function seedDatabase() {
       });
     }
 
-    console.log('[SEED] Poblado de datos base completado con éxito.');
+    console.log('[SEED] Datos demo insertados correctamente.');
   } catch (error) {
     console.error('[SEED] Error al poblar base de datos:', error);
   }
@@ -764,6 +987,960 @@ async function seedDatabase() {
 
 // Iniciar simulación de Cron Job cada 1 minuto (para demo) en producción sería cada 5 min
 setInterval(liberarReservasExpiradas, 60 * 1000);
+
+// --- ENDPOINTS DE CLIENTES Y FINANZAS ---
+
+// Listar todos los clientes
+app.get('/api/v1/clientes', async (req, res) => {
+  try {
+    const clientes = await prisma.cliente.findMany({
+      orderBy: { nombre: 'asc' }
+    });
+    res.json(clientes);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Crear un nuevo cliente
+app.post('/api/v1/clientes', async (req, res) => {
+  const { nombre, telefono, direccion, limiteCredito, saldoDeudor } = req.body;
+  if (!nombre) {
+    return res.status(400).json({ error: 'El nombre es obligatorio' });
+  }
+  try {
+    const nuevo = await prisma.cliente.create({
+      data: {
+        nombre,
+        telefono: telefono || null,
+        direccion: direccion || null,
+        limiteCredito: Number(limiteCredito) || 0,
+        saldoDeudor: Number(saldoDeudor) || 0
+      }
+    });
+    res.json(nuevo);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Actualizar un cliente
+app.put('/api/v1/clientes/:id', async (req, res) => {
+  const { id } = req.params;
+  const { nombre, telefono, direccion, limiteCredito, saldoDeudor } = req.body;
+  try {
+    const actualizado = await prisma.cliente.update({
+      where: { id },
+      data: {
+        nombre,
+        telefono: telefono || null,
+        direccion: direccion || null,
+        limiteCredito: limiteCredito !== undefined ? Number(limiteCredito) : undefined,
+        saldoDeudor: saldoDeudor !== undefined ? Number(saldoDeudor) : undefined
+      }
+    });
+    res.json(actualizado);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Eliminar un cliente
+app.delete('/api/v1/clientes/:id', async (req, res) => {
+  const { id } = req.params;
+  try {
+    await prisma.cliente.delete({
+      where: { id }
+    });
+    res.json({ success: true });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Registrar abono
+app.post('/api/v1/clientes/:id/abono', async (req, res) => {
+  const { id } = req.params;
+  const { monto } = req.body;
+  const montoNum = Number(monto);
+  if (isNaN(montoNum) || montoNum <= 0) {
+    return res.status(400).json({ error: 'Monto de abono inválido' });
+  }
+  try {
+    const cliente = await prisma.cliente.findUnique({ where: { id } });
+    if (!cliente) {
+      return res.status(404).json({ error: 'Cliente no encontrado' });
+    }
+    const nuevoSaldo = Math.max(0, Number(cliente.saldoDeudor) - montoNum);
+    const actualizado = await prisma.cliente.update({
+      where: { id },
+      data: { saldoDeudor: nuevoSaldo }
+    });
+    res.json(actualizado);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// --- CRUD CATEGORIAS ---
+app.get('/api/v1/categorias', async (req, res) => {
+  try {
+    const list = await prisma.categoria.findMany({ orderBy: { nombre: 'asc' } });
+    res.json(list);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.post('/api/v1/categorias', async (req, res) => {
+  const { nombre } = req.body;
+  try {
+    const nuevo = await prisma.categoria.create({ data: { nombre } });
+    res.status(201).json(nuevo);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.put('/api/v1/categorias/:id', async (req, res) => {
+  const { nombre } = req.body;
+  try {
+    const up = await prisma.categoria.update({
+      where: { id: req.params.id },
+      data: { nombre }
+    });
+    res.json(up);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.delete('/api/v1/categorias/:id', async (req, res) => {
+  try {
+    await prisma.categoria.delete({ where: { id: req.params.id } });
+    res.json({ success: true });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// --- CRUD PROVEEDORES ---
+app.get('/api/v1/proveedores', async (req, res) => {
+  try {
+    const list = await prisma.proveedor.findMany({ orderBy: { nombre: 'asc' } });
+    res.json(list);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.post('/api/v1/proveedores', async (req, res) => {
+  const { nombre, representante, telefonos, correos, paginaWeb, notas } = req.body;
+  try {
+    const nuevo = await prisma.proveedor.create({
+      data: { nombre, representante, telefonos, correos, paginaWeb, notas }
+    });
+    res.status(201).json(nuevo);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.put('/api/v1/proveedores/:id', async (req, res) => {
+  const { nombre, representante, telefonos, correos, paginaWeb, notas } = req.body;
+  try {
+    const up = await prisma.proveedor.update({
+      where: { id: req.params.id },
+      data: { nombre, representante, telefonos, correos, paginaWeb, notas }
+    });
+    res.json(up);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.delete('/api/v1/proveedores/:id', async (req, res) => {
+  try {
+    await prisma.proveedor.delete({ where: { id: req.params.id } });
+    res.json({ success: true });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// --- ENDPOINTS MIGRACION ---
+
+// Migrar categorías
+app.post('/api/v1/categorias/migrar', async (req, res) => {
+  const { categorias } = req.body;
+  if (!categorias || !Array.isArray(categorias)) {
+    return res.status(400).json({ error: 'Formato de categorías inválido' });
+  }
+  try {
+    const importados = [];
+    for (const cat of categorias) {
+      const nombre = (cat.nombre || '').trim();
+      if (!nombre) continue;
+      
+      const existente = await prisma.categoria.findUnique({
+        where: { nombre }
+      });
+      
+      if (!existente) {
+        const nuevo = await prisma.categoria.create({
+          data: { nombre }
+        });
+        importados.push(nuevo);
+      } else {
+        importados.push(existente);
+      }
+    }
+    res.json({ success: true, count: importados.length });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Migrar proveedores
+app.post('/api/v1/proveedores/migrar', async (req, res) => {
+  const { proveedores } = req.body;
+  if (!proveedores || !Array.isArray(proveedores)) {
+    return res.status(400).json({ error: 'Formato de proveedores inválido' });
+  }
+  try {
+    const importados = [];
+    for (const p of proveedores) {
+      const nombre = (p.nombre || '').trim();
+      if (!nombre) continue;
+      
+      const existente = await prisma.proveedor.findFirst({
+        where: { nombre }
+      });
+      
+      if (existente) {
+        const up = await prisma.proveedor.update({
+          where: { id: existente.id },
+          data: {
+            representante: p.representante || existente.representante,
+            telefonos: p.telefonos || existente.telefonos,
+            correos: p.correos || existente.correos,
+            paginaWeb: p.pagina_web || existente.paginaWeb,
+            notas: p.notas || existente.notas
+          }
+        });
+        importados.push(up);
+      } else {
+        const nuevo = await prisma.proveedor.create({
+          data: {
+            nombre,
+            representante: p.representante || null,
+            telefonos: p.telefonos || null,
+            correos: p.correos || null,
+            paginaWeb: p.pagina_web || null,
+            notas: p.notas || null
+          }
+        });
+        importados.push(nuevo);
+      }
+    }
+    res.json({ success: true, count: importados.length });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Migrar productos
+app.post('/api/v1/productos/migrar', async (req, res) => {
+  const { productos } = req.body;
+  if (!productos || !Array.isArray(productos)) {
+    return res.status(400).json({ error: 'Formato de productos inválido' });
+  }
+  try {
+    const importados = [];
+    
+    // Fetch all categories and suppliers to map name/id if needed
+    const allCats = await prisma.categoria.findMany();
+    const allProvs = await prisma.proveedor.findMany();
+    
+    // Map of name -> ID
+    const catMap = new Map(allCats.map(c => [c.nombre.toLowerCase().trim(), c.id]));
+    const provMap = new Map(allProvs.map(p => [p.nombre.toLowerCase().trim(), p.id]));
+    
+    for (const p of productos) {
+      const sku = (p.sku || '').trim();
+      const nombre = (p.nombre || '').trim();
+      if (!sku || !nombre) continue;
+      
+      const costo = Number(p.costo) || 0;
+      const precio = Number(p.precio) || 0;
+      const permiteFracciones = !!p.permiteFracciones;
+      
+      // Determine category ID
+      let categoriaId: string | null = null;
+      if (p.categoria) {
+        const catName = p.categoria.toLowerCase().trim();
+        categoriaId = catMap.get(catName) || null;
+      }
+      
+      // Determine supplier ID (match by Eleventa supplier name if possible, or link by prov_id)
+      let proveedorId: string | null = null;
+      if (p.proveedor_nombre) {
+        proveedorId = provMap.get(p.proveedor_nombre.toLowerCase().trim()) || null;
+      }
+      
+      const existente = await prisma.producto.findUnique({
+        where: { sku }
+      });
+      
+      if (existente) {
+        const up = await prisma.producto.update({
+          where: { id: existente.id },
+          data: {
+            nombre,
+            costo,
+            precio,
+            permiteFracciones,
+            categoriaId: categoriaId || existente.categoriaId,
+            proveedorId: proveedorId || existente.proveedorId
+          }
+        });
+        importados.push(up);
+      } else {
+        const nuevo = await prisma.producto.create({
+          data: {
+            id: sku, // Use SKU as ID for simplicity
+            sku,
+            nombre,
+            costo,
+            precio,
+            permiteFracciones,
+            categoriaId,
+            proveedorId
+          }
+        });
+        importados.push(nuevo);
+      }
+    }
+    res.json({ success: true, count: importados.length });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Migrar clientes desde Eleventa (masivo con campos fiscales SAT)
+app.post('/api/v1/clientes/migrar', async (req, res) => {
+  const { clientes } = req.body;
+  if (!clientes || !Array.isArray(clientes)) {
+    return res.status(400).json({ error: 'Formato de datos de migración inválido' });
+  }
+  try {
+    const importados = [];
+    for (const c of clientes) {
+      const nombre = (c.nombre || 'Sin Nombre').trim();
+      const telefono = c.telefono || null;
+      const limite = Number(c.limite_credito) || 0;
+      const saldo = Number(c.saldo_deudor) || 0;
+      const rfc = c.rfc || null;
+      const razonSocial = c.razon_social || null;
+      const regimenFiscal = c.regimen_fiscal || null;
+      const codigoPostal = c.codigo_postal || null;
+      const direccionFiscal = c.direccion_fiscal || null;
+      
+      const existente = await prisma.cliente.findFirst({
+        where: { nombre }
+      });
+      
+      if (existente) {
+        const up = await prisma.cliente.update({
+          where: { id: existente.id },
+          data: {
+            telefono: telefono || existente.telefono,
+            limiteCredito: limite,
+            saldoDeudor: saldo,
+            rfc: rfc || existente.rfc,
+            razonSocial: razonSocial || existente.razonSocial,
+            regimenFiscal: regimenFiscal || existente.regimenFiscal,
+            codigoPostal: codigoPostal || existente.codigoPostal,
+            direccionFiscal: direccionFiscal || existente.direccionFiscal
+          }
+        });
+        importados.push(up);
+      } else {
+        const nuevo = await prisma.cliente.create({
+          data: {
+            nombre,
+            telefono,
+            limiteCredito: limite,
+            saldoDeudor: saldo,
+            rfc,
+            razonSocial,
+            regimenFiscal,
+            codigoPostal,
+            direccionFiscal
+          }
+        });
+        importados.push(nuevo);
+      }
+    }
+    res.json({ success: true, count: importados.length });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Limpiar base de datos (Datos Demo)
+app.post('/api/v1/mantenimiento/limpiar-datos-demo', async (req, res) => {
+  const { pin } = req.body;
+
+  // 1. Verificar PIN maestro
+  if (pin !== '8888') {
+    return res.status(403).json({ error: 'PIN maestro inválido. Se requiere PIN 8888 para limpiar la base de datos.' });
+  }
+
+  try {
+    const result = await prisma.$transaction(async (tx) => {
+      // ── TRANSACCIONALES ──
+      await tx.facturaCFDI.deleteMany({});
+      await tx.detalleVenta.deleteMany({});
+      await tx.venta.deleteMany({});
+      await tx.detalleCotizacion.deleteMany({});
+      await tx.reservaTemporal.deleteMany({});
+      await tx.cotizacion.deleteMany({});
+      await tx.detalleTraspaso.deleteMany({});
+      await tx.traspasoMercancia.deleteMany({});
+      await tx.kardexMovimiento.deleteMany({});
+      await tx.inventarioBalance.deleteMany({});
+
+      // ── CATÁLOGOS ──
+      await tx.codigoBarras.deleteMany({});
+      await tx.producto.deleteMany({});
+      await tx.cliente.deleteMany({});
+      await tx.proveedor.deleteMany({});
+      await tx.categoria.deleteMany({});
+
+      // ── USUARIOS (borrar todos) ──
+      await tx.usuario.deleteMany({});
+
+      // ── CONFIGURACIÓN DE EMPRESA (resetear) ──
+      await tx.configuracionEmpresa.deleteMany({});
+
+      // Crear admin maestro único con ID fijo
+      const adminUser = await tx.usuario.create({
+        data: {
+          id: 'ADMIN',
+          nombre: 'Admin',
+          pin: '8888',
+          rol: Rol.ADMINISTRADOR,
+          activo: true,
+        },
+      });
+
+      return {
+        adminPreservado: adminUser.nombre,
+      };
+    });
+
+    res.json({
+      success: true,
+      message: `Base de datos limpiada al 100%. Solo se conservó la cuenta de: ${result.adminPreservado}`,
+      adminPreservado: result.adminPreservado,
+    });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// POST /api/v1/negocio/reiniciar-desde-cero — Inicializar nuevo negocio desde cero (Borrado total + Configuración limpia)
+app.post('/api/v1/negocio/reiniciar-desde-cero', async (req, res) => {
+  const { pin } = req.body;
+
+  if (pin !== '8888') {
+    return res.status(403).json({ error: 'PIN de autorización inválido. Se requiere PIN 8888 para reiniciar el negocio.' });
+  }
+
+  try {
+    const result = await prisma.$transaction(async (tx) => {
+      // 1. Eliminar datos transaccionales
+      await tx.facturaCFDI.deleteMany({});
+      await tx.detalleVenta.deleteMany({});
+      await tx.venta.deleteMany({});
+      await tx.detalleCotizacion.deleteMany({});
+      await tx.reservaTemporal.deleteMany({});
+      await tx.cotizacion.deleteMany({});
+      await tx.detalleTraspaso.deleteMany({});
+      await tx.traspasoMercancia.deleteMany({});
+      await tx.kardexMovimiento.deleteMany({});
+      await tx.inventarioBalance.deleteMany({});
+
+      // 2. Eliminar catálogos
+      await tx.codigoBarras.deleteMany({});
+      await tx.producto.deleteMany({});
+      await tx.cliente.deleteMany({});
+      await tx.proveedor.deleteMany({});
+      await tx.categoria.deleteMany({});
+
+      // 3. Resetear usuarios (conservar solo admin maestro)
+      await tx.usuario.deleteMany({});
+      const adminUser = await tx.usuario.create({
+        data: {
+          id: 'ADMIN',
+          nombre: 'Administrador Principal',
+          pin: '8888',
+          rol: Rol.ADMINISTRADOR,
+          activo: true,
+        },
+      });
+
+      // 4. Limpiar configuración de empresa por completo (para forzar carga limpia)
+      await tx.configuracionEmpresa.deleteMany({});
+
+      return {
+        adminPreservado: adminUser.nombre,
+      };
+    });
+
+    res.json({
+      success: true,
+      message: 'Base de datos inicializada desde cero con éxito. Configuraciones limpias y cuenta de Administrador creada.',
+      adminUser: result.adminPreservado,
+      nextStep: 'Acceder con PIN 8888 y configurar los datos del nuevo negocio en el panel de administración.'
+    });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Reporte de Finanzas (Hoy, Semana, Mes, Año)
+app.get('/api/v1/reportes/finanzas', async (req, res) => {
+  try {
+    
+    // Fetch all sales with details to compute statistics
+    const sales = await prisma.venta.findMany({
+      include: {
+        detalles: {
+          include: {
+            producto: true
+          }
+        }
+      },
+      orderBy: { creadoAt: 'asc' }
+    });
+    
+    // Aggregate by day, week, month, year
+    const now = new Date();
+    const reports = {
+      hoy: { ventas: 0, costo: 0, ganancia: 0, count: 0 },
+      semana: { ventas: 0, costo: 0, ganancia: 0, count: 0 },
+      mes: { ventas: 0, costo: 0, ganancia: 0, count: 0 },
+      anio: { ventas: 0, costo: 0, ganancia: 0, count: 0 }
+    };
+    
+    // Helper time frames
+    const oneDayMs = 24 * 60 * 60 * 1000;
+    const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const startOfWeek = new Date(now.getTime() - 7 * oneDayMs);
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const startOfYear = new Date(now.getFullYear(), 0, 1);
+    
+    for (const sale of sales) {
+      const saleDate = new Date(sale.creadoAt);
+      const total = Number(sale.total);
+      
+      // Calculate cost
+      let cost = 0;
+      for (const d of sale.detalles) {
+        cost += Number(d.producto.costo) * Number(d.cantidad);
+      }
+      const profit = total - cost;
+      
+      // Hoy
+      if (saleDate >= startOfToday) {
+        reports.hoy.ventas += total;
+        reports.hoy.costo += cost;
+        reports.hoy.ganancia += profit;
+        reports.hoy.count++;
+      }
+      // Semana (últimos 7 días)
+      if (saleDate >= startOfWeek) {
+        reports.semana.ventas += total;
+        reports.semana.costo += cost;
+        reports.semana.ganancia += profit;
+        reports.semana.count++;
+      }
+      // Mes
+      if (saleDate >= startOfMonth) {
+        reports.mes.ventas += total;
+        reports.mes.costo += cost;
+        reports.mes.ganancia += profit;
+        reports.mes.count++;
+      }
+      // Año
+      if (saleDate >= startOfYear) {
+        reports.anio.ventas += total;
+        reports.anio.costo += cost;
+        reports.anio.ganancia += profit;
+        reports.anio.count++;
+      }
+    }
+    
+    res.json(reports);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// --- CONFIGURACIÓN DE EMPRESA ---
+
+// GET /api/v1/configuracion-empresa — Obtener configuración actual
+app.get('/api/v1/configuracion-empresa', async (req, res) => {
+  try {
+    const config = await prisma.configuracionEmpresa.findFirst();
+    res.json(config || null);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// POST /api/v1/configuracion-empresa — Crear o actualizar configuración
+app.post('/api/v1/configuracion-empresa', async (req, res) => {
+  const { 
+    nombre, rfc, telefono, direccion, ciudad, giro,
+    ticketMessage, printerType,
+    allowCash, allowCard, allowTransfer,
+    allowDrawer, drawerCommand,
+    allowScale, scalePort, scaleBaudRate, scaleModel,
+    sessionTimeout, businessStartHour, businessEndHour,
+    allowGerenteLogin, allowCajeroLogin, allowVendedorMovilLogin,
+    restrictGerenteSchedule, restrictCajeroSchedule, restrictVendedorMovilSchedule
+  } = req.body;
+
+  let mappedGiro: any = 'ABARROTES';
+  if (giro === 'farmacia') mappedGiro = 'FARMACIA';
+  else if (giro === 'ferreteria') mappedGiro = 'FERRETERIA';
+  else if (giro === 'refaccionaria') mappedGiro = 'REFACCIONARIA';
+  else if (giro === 'tienda') mappedGiro = 'ABARROTES';
+
+  try {
+    const existing = await prisma.configuracionEmpresa.findFirst();
+    const data = {
+      nombreEmpresa: nombre,
+      giro: mappedGiro,
+      rfc: rfc || null,
+      formatoTicket: {
+        telefono: telefono || '',
+        direccion: direccion || '',
+        ciudad: ciudad || '',
+        ticketMessage: ticketMessage || '',
+        printerType: printerType || 'thermal_80',
+        allowCash: allowCash !== false,
+        allowCard: allowCard !== false,
+        allowTransfer: allowTransfer !== false,
+        allowDrawer: allowDrawer !== false,
+        drawerCommand: drawerCommand || '',
+        allowScale: allowScale || false,
+        scalePort: scalePort || '',
+        scaleBaudRate: Number(scaleBaudRate) || 9600,
+        scaleModel: scaleModel || '',
+        sessionTimeout: Number(sessionTimeout) || 0,
+        businessStartHour: businessStartHour || '08:00',
+        businessEndHour: businessEndHour || '20:00',
+        allowGerenteLogin: allowGerenteLogin !== false,
+        allowCajeroLogin: allowCajeroLogin !== false,
+        allowVendedorMovilLogin: allowVendedorMovilLogin !== false,
+        restrictGerenteSchedule: restrictGerenteSchedule || false,
+        restrictCajeroSchedule: restrictCajeroSchedule || false,
+        restrictVendedorMovilSchedule: restrictVendedorMovilSchedule !== false
+      } as any,
+    };
+
+    if (existing) {
+      const updated = await prisma.configuracionEmpresa.update({
+        where: { id: existing.id },
+        data,
+      });
+      res.json(updated);
+    } else {
+      const created = await prisma.configuracionEmpresa.create({
+        data,
+      });
+      res.json(created);
+    }
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// POST /api/v1/business/reset — Inicializar la configuración de un nuevo negocio desde cero (Borra transacciones, productos e inventarios y restablece configuración)
+app.post('/api/v1/business/reset', async (req, res) => {
+  const { confirmReset } = req.body;
+  if (confirmReset !== 'RESET_ALL_DATA') {
+    return res.status(400).json({ error: 'Confirmación inválida para restablecer el negocio.' });
+  }
+
+  try {
+    console.log('[API-RESET] Restableciendo base de datos a valores de fábrica...');
+    await prisma.$transaction([
+      prisma.reservaTemporal.deleteMany(),
+      prisma.detalleCotizacion.deleteMany(),
+      prisma.cotizacion.deleteMany(),
+      prisma.facturaCFDI.deleteMany(),
+      prisma.detalleVenta.deleteMany(),
+      prisma.venta.deleteMany(),
+      prisma.kardexMovimiento.deleteMany(),
+      prisma.detalleTraspaso.deleteMany(),
+      prisma.traspasoMercancia.deleteMany(),
+      prisma.inventarioBalance.deleteMany(),
+      prisma.codigoBarras.deleteMany(),
+      prisma.producto.deleteMany(),
+      prisma.cliente.deleteMany(),
+      prisma.proveedor.deleteMany(),
+      prisma.categoria.deleteMany(),
+      prisma.configuracionEmpresa.deleteMany(),
+    ]);
+
+    // Crear configuración por defecto inicial
+    const defaultInit = await prisma.configuracionEmpresa.create({
+      data: {
+        nombreEmpresa: 'Mi Nuevo Negocio',
+        giro: 'ABARROTES',
+        formatoTicket: {
+          telefono: '',
+          direccion: '',
+          ciudad: '',
+          ticketMessage: '¡Gracias por su compra!',
+          printerType: 'thermal_80',
+          allowCash: true,
+          allowCard: true,
+          allowTransfer: true,
+          allowDrawer: true,
+          drawerCommand: '',
+          allowScale: false,
+          scalePort: '',
+          scaleBaudRate: 9600,
+          scaleModel: '',
+          sessionTimeout: 0,
+          businessStartHour: '08:00',
+          businessEndHour: '20:00',
+          allowGerenteLogin: true,
+          allowCajeroLogin: true,
+          allowVendedorMovilLogin: true,
+          restrictGerenteSchedule: false,
+          restrictCajeroSchedule: false,
+          restrictVendedorMovilSchedule: true,
+          allowGerenteCheckout: true,
+          allowCajeroCheckout: true,
+          allowVendedorMovilCheckout: false
+        } as any
+      }
+    });
+
+    res.json({ 
+      success: true, 
+      message: 'Base de datos del negocio inicializada desde cero con éxito.',
+      config: defaultInit
+    });
+  } catch (error: any) {
+    console.error('[API-RESET] Error durante el reset:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// --- ENDPOINTS DE VENTAS ---
+
+// GET /api/v1/ventas — Listar todas las ventas mapeadas
+app.get('/api/v1/ventas', async (req, res) => {
+  try {
+    const ventas = await prisma.venta.findMany({
+      include: {
+        detalles: {
+          include: {
+            producto: true
+          }
+        },
+        usuario: true,
+        cliente: true
+      },
+      orderBy: { creadoAt: 'desc' }
+    });
+
+    const mapped = ventas.map(v => {
+      const itemsCount = v.detalles.reduce((acc, d) => acc + Number(d.cantidad), 0);
+      const parts = v.folio.split('|');
+      const folioReal = parts[0] || v.folio;
+      const metodo = parts[1] || 'Efectivo';
+
+      return {
+        id: folioReal,
+        dbId: v.id,
+        fecha: new Date(v.creadoAt).toLocaleString('es-MX', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: 'short' }),
+        cliente: v.cliente?.nombre || 'Público General',
+        total: Number(v.total),
+        items: itemsCount,
+        metodo: metodo,
+        sucursal: v.sucursal?.nombre || 'Suc. Norte'
+      };
+    });
+
+    res.json(mapped);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// POST /api/v1/ventas — Crear/Registrar una nueva venta
+app.post('/api/v1/ventas', async (req, res) => {
+  const { folio, sucursalId, usuarioId, clienteId, total, subtotal, descuento, metodo, detalles } = req.body;
+
+  if (!folio || !usuarioId || !detalles || !Array.isArray(detalles)) {
+    return res.status(400).json({ error: 'Datos de venta incompletos' });
+  }
+
+  try {
+    let finalSucursalId = sucursalId;
+    if (!finalSucursalId) {
+      const defaultSucursal = await prisma.sucursal.findFirst();
+      finalSucursalId = defaultSucursal?.id || 'suc-norte';
+    }
+
+    let finalUsuarioId = usuarioId;
+    const userExist = await prisma.usuario.findFirst({
+      where: {
+        OR: [
+          { id: usuarioId },
+          { nombre: usuarioId }
+        ]
+      }
+    });
+    if (userExist) {
+      finalUsuarioId = userExist.id;
+    } else {
+      finalUsuarioId = 'ADMIN';
+    }
+
+    const folioConMetodo = `${folio}|${metodo}`;
+
+    const venta = await prisma.$transaction(async (tx) => {
+      const newVenta = await tx.venta.create({
+        data: {
+          folio: folioConMetodo,
+          sucursalId: finalSucursalId,
+          usuarioId: finalUsuarioId,
+          clienteId: clienteId || null,
+          total: Number(total),
+          subtotal: Number(subtotal),
+          descuento: Number(descuento) || 0,
+        }
+      });
+
+      for (const d of detalles) {
+        const prod = await tx.producto.findFirst({
+          where: {
+            OR: [
+              { id: d.productoId },
+              { sku: d.productoId }
+            ]
+          }
+        });
+
+        if (prod) {
+          await tx.detalleVenta.create({
+            data: {
+              ventaId: newVenta.id,
+              productoId: prod.id,
+              cantidad: Number(d.cantidad),
+              precioUnitario: Number(d.precioUnitario),
+              subtotal: Number(d.subtotal)
+            }
+          });
+        }
+      }
+
+      return newVenta;
+    });
+
+    res.json({ success: true, ventaId: venta.id });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// GET /api/v1/ventas/detalles/:dbId — Obtener los detalles de una venta
+app.get('/api/v1/ventas/detalles/:dbId', async (req, res) => {
+  try {
+    const venta = await prisma.venta.findUnique({
+      where: { id: req.params.dbId },
+      include: { detalles: { include: { producto: true } } }
+    });
+    res.json(venta);
+  } catch (e: any) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// POST /api/v1/ventas/cancelar — Cancelar/Reversar una venta y devolver stock
+app.post('/api/v1/ventas/cancelar', async (req, res) => {
+  const { ventaId } = req.body;
+  
+  if (!ventaId) {
+    return res.status(400).json({ error: 'Falta el ID de la venta a cancelar' });
+  }
+
+  try {
+    const venta = await prisma.venta.findUnique({
+      where: { id: ventaId },
+      include: { detalles: true }
+    });
+
+    if (!venta) {
+      return res.status(404).json({ error: 'La venta no existe' });
+    }
+
+    await prisma.$transaction(async (tx) => {
+      // 1. Devolver el inventario de cada artículo y registrar Kardex
+      for (const d of venta.detalles) {
+        await tx.inventarioBalance.upsert({
+          where: {
+            sucursalId_productoId: {
+              sucursalId: venta.sucursalId,
+              productoId: d.productoId
+            }
+          },
+          update: {
+            stockReal: { increment: Number(d.cantidad) }
+          },
+          create: {
+            sucursalId: venta.sucursalId,
+            productoId: d.productoId,
+            stockReal: Number(d.cantidad),
+            reservado: 0
+          }
+        });
+
+        // Registrar movimiento de devolución en el Kardex
+        await tx.kardexMovimiento.create({
+          data: {
+            sucursalId: venta.sucursalId,
+            productoId: d.productoId,
+            usuarioId: venta.usuarioId,
+            tipo: 'ENTRADA_DEVOLUCION',
+            cantidad: Number(d.cantidad),
+            referencia: venta.folio.split('|')[0],
+            observacion: 'Devolución por cancelación de venta'
+          }
+        });
+      }
+
+      // 2. Eliminar la venta físicamente
+      await tx.venta.delete({
+        where: { id: venta.id }
+      });
+    });
+
+    res.json({ success: true, message: 'Venta cancelada y stock restaurado en sucursal' });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
 
 seedDatabase().then(() => {
   app.listen(PORT, () => {

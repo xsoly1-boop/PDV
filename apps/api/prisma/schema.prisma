@@ -94,7 +94,12 @@ model Producto {
   costo              Decimal             @db.Decimal(10, 2)
   precio             Decimal             @db.Decimal(10, 2)
   permiteFracciones  Boolean             @default(false)
+  categoriaId        String?
+  proveedorId        String?
   metadatos          Json?
+  
+  categoria          Categoria?          @relation(fields: [categoriaId], references: [id])
+  proveedor          Proveedor?          @relation(fields: [proveedorId], references: [id])
   codigos            CodigoBarras[]
   balances           InventarioBalance[]
   movimientos        KardexMovimiento[]
@@ -168,6 +173,7 @@ model Venta {
   folio           String         @unique
   sucursalId      String
   usuarioId       String
+  clienteId       String?
   total           Decimal        @db.Decimal(10, 2)
   subtotal        Decimal        @db.Decimal(10, 2)
   descuento       Decimal        @db.Decimal(10, 2) @default(0)
@@ -177,6 +183,7 @@ model Venta {
   
   sucursal        Sucursal       @relation(fields: [sucursalId], references: [id])
   usuario         Usuario        @relation(fields: [usuarioId], references: [id])
+  cliente         Cliente?       @relation(fields: [clienteId], references: [id])
   detalles        DetalleVenta[]
   factura         FacturaCFDI?
 }
@@ -201,6 +208,7 @@ model Cotizacion {
   sucursalId    String
   usuarioId     String
   clienteNombre String?
+  clienteId     String?
   total         Decimal           @db.Decimal(10, 2)
   subtotal      Decimal           @db.Decimal(10, 2)
   estado        EstadoReserva     @default(ACTIVA)
@@ -208,6 +216,7 @@ model Cotizacion {
   creadoAt      DateTime          @default(now())
   
   sucursal      Sucursal          @relation(fields: [sucursalId], references: [id])
+  cliente       Cliente?          @relation(fields: [clienteId], references: [id])
   usuario       Usuario           @relation(fields: [usuarioId], references: [id])
   detalles      DetalleCotizacion[]
   reservas      ReservaTemporal[]
@@ -277,4 +286,43 @@ model FacturaCFDI {
   errorPac     String?
   timbradaAt   DateTime?
   creadoAt     DateTime   @default(now())
+}
+
+model Cliente {
+  id              String       @id @default(uuid())
+  nombre          String
+  telefono        String?
+  direccion       String?
+  limiteCredito   Decimal      @db.Decimal(10, 2) @default(0)
+  saldoDeudor     Decimal      @db.Decimal(10, 2) @default(0)
+  rfc             String?
+  razonSocial     String?
+  regimenFiscal   String?
+  codigoPostal    String?
+  direccionFiscal String?
+  creadoAt        DateTime     @default(now())
+  
+  ventas          Venta[]
+  cotizaciones    Cotizacion[]
+}
+
+model Proveedor {
+  id            String     @id @default(uuid())
+  nombre        String
+  representante String?
+  telefonos     String?
+  correos       String?
+  paginaWeb     String?
+  notas         String?
+  creadoAt      DateTime   @default(now())
+  
+  productos     Producto[]
+}
+
+model Categoria {
+  id        String     @id @default(uuid())
+  nombre    String     @unique
+  creadoAt  DateTime   @default(now())
+  
+  productos Producto[]
 }

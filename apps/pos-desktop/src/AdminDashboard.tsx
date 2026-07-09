@@ -4,8 +4,9 @@ import {
   X, Edit2, Trash2, Search, Building, Save, 
   DollarSign, CheckCircle, Store,
   PlusCircle, FileSpreadsheet,
-  Wrench, Database, Download, Upload, Play, RefreshCw
+  Wrench, Database, Download, Upload, Play, RefreshCw, Printer
 } from 'lucide-react';
+import { API_V1 } from './config';
 
 interface CompanyConfig {
   businessName: string;
@@ -15,6 +16,29 @@ interface CompanyConfig {
   address: string;
   phone: string;
   logoUrl?: string;
+  ticketMessage?: string;
+  printerType?: 'thermal_58' | 'thermal_80' | 'pdf_a4' | 'virtual';
+  allowCash?: boolean;
+  allowCard?: boolean;
+  allowTransfer?: boolean;
+  allowDrawer?: boolean;
+  drawerCommand?: string;
+  allowScale?: boolean;
+  scalePort?: string;
+  scaleBaudRate?: number;
+  scaleModel?: string;
+  sessionTimeout?: number;
+  businessStartHour?: string;
+  businessEndHour?: string;
+  allowGerenteLogin?: boolean;
+  allowCajeroLogin?: boolean;
+  allowVendedorMovilLogin?: boolean;
+  restrictGerenteSchedule?: boolean;
+  restrictCajeroSchedule?: boolean;
+  restrictVendedorMovilSchedule?: boolean;
+  allowGerenteCheckout?: boolean;
+  allowCajeroCheckout?: boolean;
+  allowVendedorMovilCheckout?: boolean;
 }
 
 interface AdminDashboardProps {
@@ -48,29 +72,68 @@ interface Employee {
 }
 
 export default function AdminDashboard({ currentUser, theme, onClose, config: initialConfig, onConfigChange, products, onProductsChange }: AdminDashboardProps) {
-  const [activeTab, setActiveTab] = useState<'summary' | 'products' | 'employees' | 'sales' | 'config' | 'maintenance'>('summary');
+  const [activeTab, setActiveTab] = useState<'summary' | 'products' | 'employees' | 'sales' | 'config' | 'maintenance' | 'clientes'>('summary');
   const [searchQuery, setSearchQuery] = useState('');
   const [maintenanceLogs, setMaintenanceLogs] = useState<string>('Iniciado módulo de Mantenimiento. Listo para operar.\n');
   const [isOptimizing, setIsOptimizing] = useState<boolean>(false);
 
 
-  // 2. Mock Data for Employees
-  const [employees, setEmployees] = useState<Employee[]>([
-    { id: '1', nombre: 'Carlos M.', rol: 'Administrador', pin: '9999', activo: true },
-    { id: '2', nombre: 'Dorian', rol: 'Cajero', pin: '1234', activo: true },
-    { id: '3', nombre: 'Ana G.', rol: 'Agente Ventas', pin: '5555', activo: true },
-  ]);
+  // Employees — loaded from API on mount
+  const [employees, setEmployees] = useState<Employee[]>([]);
 
-  // 3. Mock Data for Sales
-  const [sales] = useState([
-    { id: 'TKT-14092', fecha: 'Hoy, 12:45 PM', cliente: 'Público General', total: 403.50, items: 3, metodo: 'Efectivo', sucursal: 'Suc. Norte' },
-    { id: 'TKT-14091', fecha: 'Hoy, 11:20 AM', cliente: 'Taller Mecánico Hnos.', total: 1240.00, items: 4, metodo: 'Tarjeta', sucursal: 'Suc. Norte' },
-    { id: 'TKT-14090', fecha: 'Ayer, 06:15 PM', cliente: 'Construcciones del Centro', total: 5850.00, items: 12, metodo: 'Transferencia', sucursal: 'Suc. Norte' },
-    { id: 'TKT-14089', fecha: 'Ayer, 04:30 PM', cliente: 'Público General', total: 95.00, items: 1, metodo: 'Efectivo', sucursal: 'Suc. Sur' },
-  ]);
+  // Sales — loaded from API on mount
+  const [sales, setSales] = useState<any[]>([]);
 
   // 4. Config State
   const [config, setConfig] = useState<CompanyConfig>(initialConfig);
+  const [showTestTicketModal, setShowTestTicketModal] = useState(false);
+  const [testTicketContent, setTestTicketContent] = useState('');
+
+  // Financial Reports state
+  const [selectedPeriod, setSelectedPeriod] = useState<'hoy' | 'semana' | 'mes' | 'anio'>('hoy');
+  const [finanzasReport, setFinanzasReport] = useState<any>({
+    hoy: { ventas: 0, costo: 0, ganancia: 0, count: 0 },
+    semana: { ventas: 0, costo: 0, ganancia: 0, count: 0 },
+    mes: { ventas: 0, costo: 0, ganancia: 0, count: 0 },
+    anio: { ventas: 0, costo: 0, ganancia: 0, count: 0 }
+  });
+
+  const [categoriesList, setCategoriesList] = useState<any[]>([]);
+  const [suppliersList, setSuppliersList] = useState<any[]>([]);
+
+  const fetchCategoriesAndSuppliers = async () => {
+    try {
+      const [catRes, provRes] = await Promise.all([
+        fetch(`${API_V1}/categorias`),
+        fetch(`${API_V1}/proveedores`)
+      ]);
+      if (catRes.ok) {
+        setCategoriesList(await catRes.json());
+      }
+      if (provRes.ok) {
+        setSuppliersList(await provRes.json());
+      }
+    } catch (e) {
+      console.error('Error fetching categories and suppliers:', e);
+    }
+  };
+
+  const fetchFinanzasReport = async () => {
+    try {
+      const res = await fetch(`${API_V1}/reportes/finanzas`);
+      if (res.ok) {
+        const data = await res.json();
+        setFinanzasReport(data);
+      }
+    } catch (e) {
+      console.error('Error fetching finanzas report:', e);
+    }
+  };
+
+  React.useEffect(() => {
+    fetchFinanzasReport();
+    fetchCategoriesAndSuppliers();
+  }, [activeTab]);
 
   // Modals / Form States
   const [showProductModal, setShowProductModal] = useState(false);
@@ -79,7 +142,6 @@ export default function AdminDashboard({ currentUser, theme, onClose, config: in
   const [currentEmployee, setCurrentEmployee] = useState<Partial<Employee>>({});
 
   // Summary Metrics
-  const totalSales = sales.reduce((acc, sale) => acc + sale.total, 0);
   const totalStockItems = products.reduce((acc, p) => acc + p.stock, 0);
   const totalCost = products.reduce((acc, p) => acc + (p.costo * p.stock), 0);
   const estimatedProfit = products.reduce((acc, p) => acc + ((p.precio - p.costo) * p.stock), 0);
@@ -101,6 +163,137 @@ export default function AdminDashboard({ currentUser, theme, onClose, config: in
     e.preventDefault();
     onConfigChange(config);
     alert('Configuración de la empresa guardada con éxito.');
+  };
+
+  const centerText = (text: string, width: number) => {
+    if (text.length >= width) return text.substring(0, width);
+    const spaces = Math.floor((width - text.length) / 2);
+    return ' '.repeat(spaces) + text;
+  };
+
+  const formatItemLine = (left: string, right: string, width: number) => {
+    const spacesNeeded = width - left.length - right.length;
+    if (spacesNeeded <= 0) return left.substring(0, width - right.length - 1) + ' ' + right;
+    return left + ' '.repeat(spacesNeeded) + right;
+  };
+
+  const handleTestPrint = () => {
+    const width = config.printerType === 'thermal_58' ? 32 : 48;
+    const border = '='.repeat(width);
+    const divider = '-'.repeat(width);
+    
+    let ticket = '';
+    
+    ticket += border + '\n';
+    ticket += centerText(config.businessName.toUpperCase(), width) + '\n';
+    if (config.rfc) ticket += centerText('RFC: ' + config.rfc, width) + '\n';
+    if (config.address) ticket += centerText(config.address, width) + '\n';
+    if (config.phone) ticket += centerText('Tel: ' + config.phone, width) + '\n';
+    ticket += border + '\n';
+    
+    ticket += 'TICKET DE PRUEBA\n';
+    ticket += 'Fecha: ' + new Date().toLocaleDateString() + ' ' + new Date().toLocaleTimeString() + '\n';
+    ticket += 'Cajero: ' + (currentUser?.nombre || 'Admin') + '\n';
+    ticket += divider + '\n';
+    
+    ticket += formatItemLine('1.00 x Producto Demo A', '65.00', width) + '\n';
+    ticket += formatItemLine('2.50 x Producto Demo B', '35.00', width) + '\n';
+    ticket += divider + '\n';
+    
+    ticket += formatItemLine('SUBTOTAL:', '84.00', width) + '\n';
+    ticket += formatItemLine('IVA (16%):', '16.00', width) + '\n';
+    ticket += formatItemLine('TOTAL:', '100.00', width) + '\n';
+    ticket += border + '\n';
+    
+    if (config.ticketMessage) {
+      ticket += centerText(config.ticketMessage, width) + '\n';
+    }
+    ticket += border;
+
+    setTestTicketContent(ticket);
+    setShowTestTicketModal(true);
+  };
+
+  const handleCancelSale = async (dbId: string, folio: string) => {
+    if (!window.confirm(`¿Estás seguro de cancelar la venta con Folio ${folio}? El inventario de los artículos se restaurará en sucursal.`)) {
+      return;
+    }
+
+    try {
+      const resp = await fetch(`${API_V1}/ventas/cancelar`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ventaId: dbId })
+      });
+
+      if (resp.ok) {
+        alert('Venta cancelada y mercancía devuelta al stock con éxito.');
+        fetchSales();
+        if (products && onProductsChange) {
+          const productsResp = await fetch(`${API_V1}/productos`);
+          if (productsResp.ok) {
+            const data = await productsResp.json();
+            onProductsChange(data);
+          }
+        }
+      } else {
+        const error = await resp.json();
+        alert(`Error al cancelar: ${error.error}`);
+      }
+    } catch (e: any) {
+      alert('Error de conexión al procesar la cancelación.');
+    }
+  };
+
+  const handleReprintSale = async (dbId: string) => {
+    try {
+      const resp = await fetch(`${API_V1}/ventas/detalles/${dbId}`);
+      if (!resp.ok) {
+        throw new Error('No se encontraron los detalles de la venta');
+      }
+      const venta = await resp.json();
+      
+      const width = config.printerType === 'thermal_58' ? 32 : 48;
+      const border = '='.repeat(width);
+      const divider = '-'.repeat(width);
+      
+      let ticket = '';
+      
+      ticket += border + '\n';
+      ticket += centerText(config.businessName.toUpperCase(), width) + '\n';
+      if (config.rfc) ticket += centerText('RFC: ' + config.rfc, width) + '\n';
+      if (config.address) ticket += centerText(config.address, width) + '\n';
+      if (config.phone) ticket += centerText('Tel: ' + config.phone, width) + '\n';
+      ticket += border + '\n';
+      
+      ticket += 'REIMPRESIÓN DE TICKET\n';
+      ticket += 'Folio: ' + venta.folio.split('|')[0] + '\n';
+      ticket += 'Fecha original: ' + new Date(venta.creadoAt).toLocaleString() + '\n';
+      ticket += 'Cajero: ' + (currentUser?.nombre || 'Admin') + '\n';
+      ticket += divider + '\n';
+      
+      venta.detalles.forEach((d: any) => {
+        const pName = d.producto ? d.producto.nombre : 'Artículo';
+        const lineVal = (Number(d.cantidad) * Number(d.precioUnitario)).toFixed(2);
+        ticket += formatItemLine(Number(d.cantidad).toFixed(2) + ' x ' + pName, lineVal, width) + '\n';
+      });
+      ticket += divider + '\n';
+      
+      ticket += formatItemLine('SUBTOTAL:', Number(venta.subtotal).toFixed(2), width) + '\n';
+      ticket += formatItemLine('DESCUENTO:', Number(venta.descuento || 0).toFixed(2), width) + '\n';
+      ticket += formatItemLine('TOTAL:', Number(venta.total).toFixed(2), width) + '\n';
+      ticket += border + '\n';
+      
+      if (config.ticketMessage) {
+        ticket += centerText(config.ticketMessage, width) + '\n';
+      }
+      ticket += border;
+
+      setTestTicketContent(ticket);
+      setShowTestTicketModal(true);
+    } catch (e: any) {
+      alert(e.message || 'Error al reimprimir el ticket.');
+    }
   };
 
 
@@ -161,7 +354,7 @@ export default function AdminDashboard({ currentUser, theme, onClose, config: in
       
       addLog('✔ Respaldo descargado exitosamente como JSON.');
     } catch (err: any) {
-      addLog(`❌ Error al generar respaldo: ${err.message}`);
+      addLog('Error al generar respaldo: ' + err.message);
     }
   };
 
@@ -188,8 +381,8 @@ export default function AdminDashboard({ currentUser, theme, onClose, config: in
         addLog('✔ Restauración de respaldo completada con éxito.');
         alert('Copia de seguridad restaurada con éxito.');
       } catch (err: any) {
-        addLog(`❌ Error al restaurar respaldo: ${err.message}`);
-        alert(`Error al restaurar respaldo: ${err.message}`);
+        addLog('Error al restaurar respaldo: ' + err.message);
+        alert('Error al restaurar respaldo: ' + err.message);
       }
     };
     reader.readAsText(file);
@@ -224,7 +417,7 @@ export default function AdminDashboard({ currentUser, theme, onClose, config: in
 
       addLog('✔ Catálogo de productos exportado a CSV con éxito.');
     } catch (err: any) {
-      addLog(`❌ Error al exportar catálogo: ${err.message}`);
+      addLog('Error al exportar catálogo: ' + err.message);
     }
   };
 
@@ -262,11 +455,11 @@ export default function AdminDashboard({ currentUser, theme, onClose, config: in
         }
 
         onProductsChange(newProducts);
-        addLog(`✔ Catálogo importado con éxito: ${newProducts.length} productos cargados en memoria.`);
-        alert(`Se han importado ${newProducts.length} productos exitosamente.`);
+        addLog('✔ Catálogo importado con éxito: ' + newProducts.length + ' productos cargados en memoria.');
+        alert('Se han importado ' + newProducts.length + ' productos exitosamente.');
       } catch (err: any) {
-        addLog(`❌ Error al importar catálogo: ${err.message}`);
-        alert(`Error al importar catálogo: ${err.message}`);
+        addLog('Error al importar catálogo: ' + err.message);
+        alert('Error al importar catálogo: ' + err.message);
       }
     };
     reader.readAsText(file);
@@ -306,74 +499,299 @@ export default function AdminDashboard({ currentUser, theme, onClose, config: in
         onProductsChange(combinedProducts);
 
         addLog(`✔ Procesados ${mappedProducts.length} productos de Eleventa.`);
-        addLog(`✔ Detectados y vinculados ${data.clientes?.length || 0} clientes deudores en Supabase.`);
-        addLog(`✔ Catálogo unificado: ahora tienes un total de ${combinedProducts.length} productos.`);
-        addLog('✔ Migración de Eleventa completada exitosamente.');
-        alert(`Migración completada con éxito:\n- ${mappedProducts.length} productos importados.\n- ${data.clientes?.length || 0} saldos deudores registrados.`);
+        
+        // Sincronizar catálogos y clientes en Supabase
+        const runMigration = async () => {
+          try {
+            if (data.categorias && data.categorias.length > 0) {
+              addLog(`Enviando ${data.categorias.length} categorías a Supabase...`);
+              const r = await fetch(`${API_V1}/categorias/migrar`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ categorias: data.categorias })
+              });
+              if (r.ok) {
+                const res = await r.json();
+                addLog(`✔ ${res.count} categorías cargadas.`);
+              }
+            }
+            
+            if (data.proveedores && data.proveedores.length > 0) {
+              addLog(`Enviando ${data.proveedores.length} proveedores a Supabase...`);
+              const r = await fetch(`${API_V1}/proveedores/migrar`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ proveedores: data.proveedores })
+              });
+              if (r.ok) {
+                const res = await r.json();
+                addLog(`✔ ${res.count} proveedores cargados.`);
+              }
+            }
+            
+            if (data.clientes && data.clientes.length > 0) {
+              addLog(`Enviando ${data.clientes.length} clientes a Supabase...`);
+              const r = await fetch(`${API_V1}/clientes/migrar`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ clientes: data.clientes })
+              });
+              if (r.ok) {
+                const res = await r.json();
+                addLog(`✔ ${res.count} clientes / saldos deudores sincronizados.`);
+              }
+            }
+            
+            if (data.productos && data.productos.length > 0) {
+              addLog(`Enviando ${data.productos.length} productos a Supabase...`);
+              const r = await fetch(`${API_V1}/productos/migrar`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ productos: data.productos })
+              });
+              if (r.ok) {
+                const res = await r.json();
+                addLog(`✔ ${res.count} productos sincronizados en la nube.`);
+              }
+            }
+            
+            addLog(`✔ Catálogo unificado: ahora tienes un total de ${combinedProducts.length} productos.`);
+            addLog('✔ Migración de Eleventa completada exitosamente.');
+            alert('Migración completada con éxito:\n- ' + mappedProducts.length + ' productos cargados localmente.\n- Catálogos y saldos sincronizados con Supabase.');
+          } catch (err: any) {
+            addLog('Error en sincronización remota: ' + err.message);
+            alert('Migración local completada, pero falló la sincronización con Supabase: ' + err.message);
+          }
+        };
+        
+        runMigration();
       } catch (err: any) {
-        addLog(`❌ Error al migrar desde Eleventa: ${err.message}`);
+        addLog('Error al migrar desde Eleventa: ' + err.message);
         alert(`Error en migración: ${err.message}`);
       }
     };
     reader.readAsText(file);
   };
 
+// Clear ALL data – full database reset (only admin account survives)
+    const handleClearDemoData = async () => {
+      // PASO 1: Primera advertencia
+      const paso1 = confirm(
+        '⚠️ ADVERTENCIA CRÍTICA ⚠️\n\n' +
+        'Esta acción ELIMINARÁ PERMANENTEMENTE:\n\n' +
+        '• Todos los productos y códigos de barras\n' +
+        '• Todos los clientes y adeudos\n' +
+        '• Todas las ventas y cotizaciones\n' +
+        '• Todos los traspasos e inventarios\n' +
+        '• Todas las facturas CFDI\n' +
+        '• Todos los proveedores y categorías\n' +
+        '• Todos los empleados (excepto Admin)\n' +
+        '• La configuración de empresa\n\n' +
+        '¿Deseas continuar?'
+      );
+      if (!paso1) return;
 
-  // Add / Edit Product
-  const handleProductSubmit = (e: React.FormEvent) => {
+      // PASO 2: Confirmación por texto
+      const confirmText = prompt(
+        '🔒 CONFIRMACIÓN DE SEGURIDAD\n\n' +
+        'Para confirmar, escribe exactamente:\n\nBORRAR TODO'
+      );
+      if (confirmText !== 'BORRAR TODO') {
+        alert('Operación cancelada. El texto no coincide.');
+        return;
+      }
+
+      // PASO 3: Pedir PIN de administrador
+      const pinAdmin = prompt(
+        '🔑 AUTENTICACIÓN REQUERIDA\n\n' +
+        'Ingresa el PIN del Administrador para autorizar la limpieza total:'
+      );
+      if (!pinAdmin) {
+        alert('Operación cancelada. No se ingresó PIN.');
+        return;
+      }
+
+      try {
+        addLog('🗑️ Iniciando limpieza total de la base de datos...');
+        addLog('⏳ Verificando credenciales de administrador...');
+
+        const response = await fetch(`${API_V1}/mantenimiento/limpiar-datos-demo`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ pin: pinAdmin })
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.error || 'Error al ejecutar la limpieza.');
+        }
+
+        // Limpiar estado local
+        onProductsChange([]);
+        setSales([]);
+        setEmployees(prev => prev.filter(emp => emp.rol === 'Administrador'));
+
+        addLog('✅ Base de datos Supabase limpiada al 100%.');
+        addLog('✅ Cuenta preservada: ' + data.adminPreservado);
+        addLog('✅ El sistema está listo para migración o configuración desde cero.');
+
+        alert('BASE DE DATOS LIMPIADA AL 100%\n\nCuenta conservada: ' + data.adminPreservado + '\n\nLa aplicacion se reiniciara automaticamente.\nTodos los datos demo han sido eliminados.\nEl sistema esta listo para configuracion desde cero.');
+
+        // Reinicio completo: borrar localStorage + estado local + recargar app desde cero
+        setTimeout(() => {
+          localStorage.clear(); // Elimina productos, config y carrito cacheados localmente
+          window.location.reload();
+        }, 500);
+      } catch (err: any) {
+        addLog('Error al limpiar: ' + err.message);
+        alert('Error al limpiar base de datos:\n' + err.message);
+      }
+    };
+
+  // Fetch current products from API
+  const fetchProducts = async () => {
+    try {
+      const resp = await fetch(`${API_V1}/productos`);
+      const data = await resp.json();
+      onProductsChange(data);
+    } catch (e) {
+      console.error('Error loading products', e);
+    }
+  };
+
+  // Fetch current employees (usuarios) from API
+  const fetchEmployees = async () => {
+    try {
+      const resp = await fetch(`${API_V1}/usuarios`);
+      const data = await resp.json();
+      setEmployees(data);
+    } catch (e) {
+      console.error('Error loading employees', e);
+    }
+  };
+
+  // Fetch sales history from API
+  const fetchSales = async () => {
+    try {
+      const resp = await fetch(`${API_V1}/ventas`);
+      if (resp.ok) {
+        const data = await resp.json();
+        setSales(data);
+      }
+    } catch (e) {
+      console.error('Error loading sales', e);
+    }
+  };
+
+  // Load initial data on mount
+  React.useEffect(() => {
+    fetchProducts();
+    fetchEmployees();
+    fetchSales();
+  }, []);
+
+  // Add / Edit Product (persist via API)
+  const handleProductSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (currentProduct.id) {
-      // Edit
-      const updated = products.map(p => p.id === currentProduct.id ? (currentProduct as Product) : p);
-      onProductsChange(updated);
-      alert('Producto actualizado con éxito.');
+      // Edit existing product
+      try {
+        const resp = await fetch(`${API_V1}/productos/${currentProduct.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(currentProduct)
+        });
+        if (!resp.ok) throw new Error('Error al actualizar producto');
+        await fetchProducts();
+        alert('Producto actualizado con éxito.');
+      } catch (err: any) {
+        console.error(err);
+        alert('Error al actualizar producto');
+      }
     } else {
-      // Add
-      const newP = {
-        ...currentProduct,
-        id: (products.length + 1).toString(),
-        sku: currentProduct.sku || `SKU-${Math.floor(100 + Math.random() * 900)}`,
-      } as Product;
-      onProductsChange([...products, newP]);
-      alert('Producto agregado al catálogo.');
+      // Create new product
+      try {
+        const resp = await fetch(`${API_V1}/productos`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(currentProduct)
+        });
+        if (!resp.ok) throw new Error('Error al crear producto');
+        await fetchProducts();
+        alert('Producto agregado al catálogo.');
+      } catch (err: any) {
+        console.error(err);
+        alert('Error al crear producto');
+      }
     }
     setShowProductModal(false);
     setCurrentProduct({});
   };
 
-  // Delete Product
-  const handleDeleteProduct = (id: string) => {
+  // Delete Product (persist via API)
+  const handleDeleteProduct = async (id: string) => {
     if (confirm('¿Estás seguro de eliminar este producto?')) {
-      const updated = products.filter(p => p.id !== id);
-      onProductsChange(updated);
+      try {
+        const resp = await fetch(`${API_V1}/productos/${id}`, { method: 'DELETE' });
+        if (!resp.ok) throw new Error('Error al borrar producto');
+        await fetchProducts();
+      } catch (err: any) {
+        console.error(err);
+        alert('Error al borrar producto');
+      }
     }
   };
 
-  // Add / Edit Employee
-  const handleEmployeeSubmit = (e: React.FormEvent) => {
+  // Add / Edit Employee (persist via API)
+  const handleEmployeeSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (currentEmployee.id) {
-      // Edit
-      setEmployees(prev => prev.map(emp => emp.id === currentEmployee.id ? (currentEmployee as Employee) : emp));
-      alert('Empleado actualizado con éxito.');
+      // Edit existing employee
+      try {
+        const resp = await fetch(`${API_V1}/usuarios/${currentEmployee.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(currentEmployee)
+        });
+        if (!resp.ok) throw new Error('Error al actualizar empleado');
+        await fetchEmployees();
+        alert('Empleado actualizado con éxito.');
+      } catch (err: any) {
+        console.error(err);
+        alert('Error al actualizar empleado');
+      }
     } else {
-      // Add
-      const newEmp = {
-        ...currentEmployee,
-        id: (employees.length + 1).toString(),
-        activo: true,
-      } as Employee;
-      setEmployees(prev => [...prev, newEmp]);
-      alert('Personal agregado al sistema.');
+      // Add new employee
+      try {
+        const resp = await fetch(`${API_V1}/usuarios`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(currentEmployee)
+        });
+        if (!resp.ok) throw new Error('Error al crear empleado');
+        await fetchEmployees();
+        alert('Personal agregado al sistema.');
+      } catch (err: any) {
+        console.error(err);
+        alert('Error al crear empleado');
+      }
     }
     setShowEmployeeModal(false);
     setCurrentEmployee({});
   };
 
-  // Delete Employee
-  const handleDeleteEmployee = (id: string) => {
+  // Delete Employee (persist via API)
+  const handleDeleteEmployee = async (id: string) => {
     if (confirm('¿Estás seguro de dar de baja a este usuario?')) {
-      setEmployees(prev => prev.filter(emp => emp.id !== id));
+      try {
+        const resp = await fetch(`${API_V1}/usuarios/${id}`, { method: 'DELETE' });
+        if (!resp.ok) throw new Error('Error al borrar empleado');
+        await fetchEmployees();
+      } catch (err: any) {
+        console.error(err);
+        alert('Error al borrar empleado');
+      }
     }
   };
 
@@ -473,6 +891,17 @@ export default function AdminDashboard({ currentUser, theme, onClose, config: in
             >
               <FileSpreadsheet className="w-5 h-5" /> Historial de Ventas
             </button>
+
+            <button 
+              onClick={() => setActiveTab('clientes')}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-bold text-sm transition-all border-0 cursor-pointer ${
+                activeTab === 'clientes' 
+                  ? 'bg-amber-500 text-[#0d0e12] shadow-lg shadow-amber-500/10' 
+                  : theme === 'dark' ? 'text-slate-400 hover:bg-[#1a1c24] hover:text-slate-200' : 'text-slate-600 hover:bg-slate-100'
+              }`}
+            >
+              <DollarSign className="w-5 h-5" /> Clientes / Finanzas
+            </button>
             
             <button 
               onClick={() => setActiveTab('config')}
@@ -512,16 +941,38 @@ export default function AdminDashboard({ currentUser, theme, onClose, config: in
           {/* TAB 1: SUMMARY METRICS */}
           {activeTab === 'summary' && (
             <div className="space-y-8 animate-fadeIn">
-              <h2 className="text-lg font-bold uppercase tracking-wider mb-4">Métricas Globales de Hoy</h2>
               
-              {/* Widgets Row */}
+              {/* Header with period toggle */}
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-lg font-bold uppercase tracking-wider">Reporte de Ventas y Finanzas</h2>
+                  <p className="text-xs text-slate-500 mt-1">Monitoreo de ingresos, costos y utilidad por periodo de tiempo.</p>
+                </div>
+                <div className="flex bg-[#0d0e12] rounded-xl p-1 border border-[#20222b] gap-1">
+                  {(['hoy', 'semana', 'mes', 'anio'] as const).map((period) => (
+                    <button
+                      key={period}
+                      onClick={() => setSelectedPeriod(period)}
+                      className={`px-4 py-2 rounded-lg font-bold text-xs uppercase cursor-pointer border-0 transition-all ${
+                        selectedPeriod === period
+                          ? 'bg-amber-500 text-slate-950 shadow-md shadow-amber-500/10'
+                          : 'text-slate-400 hover:text-white bg-transparent'
+                      }`}
+                    >
+                      {period === 'hoy' ? 'Día' : period === 'semana' ? 'Semana' : period === 'mes' ? 'Mes' : 'Año'}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Sales Period Widgets Row */}
               <div className="grid grid-cols-4 gap-6">
                 <div className={`p-6 rounded-2xl border flex items-center justify-between ${
                   theme === 'dark' ? 'bg-[#13151b] border-[#20222b]' : 'bg-white border-slate-200 shadow-sm'
                 }`}>
                   <div>
-                    <p className="text-xs font-bold text-slate-500 uppercase">Ventas Cobradas (Hoy)</p>
-                    <h3 className="text-3xl font-black text-emerald-550 mt-1">${totalSales.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</h3>
+                    <p className="text-xs font-bold text-slate-500 uppercase">Ventas Cobradas</p>
+                    <h3 className="text-3xl font-black text-emerald-550 mt-1">${(finanzasReport[selectedPeriod]?.ventas || 0).toLocaleString('es-MX', { minimumFractionDigits: 2 })}</h3>
                   </div>
                   <div className="bg-emerald-500/15 text-emerald-500 p-3.5 rounded-xl">
                     <DollarSign className="w-6 h-6" />
@@ -532,8 +983,53 @@ export default function AdminDashboard({ currentUser, theme, onClose, config: in
                   theme === 'dark' ? 'bg-[#13151b] border-[#20222b]' : 'bg-white border-slate-200 shadow-sm'
                 }`}>
                   <div>
-                    <p className="text-xs font-bold text-slate-500 uppercase">Total Items en Inventario</p>
-                    <h3 className="text-3xl font-black text-amber-500 mt-1">{totalStockItems}</h3>
+                    <p className="text-xs font-bold text-slate-500 uppercase">Costo de Ventas</p>
+                    <h3 className="text-3xl font-black text-slate-400 mt-1">${(finanzasReport[selectedPeriod]?.costo || 0).toLocaleString('es-MX', { minimumFractionDigits: 2 })}</h3>
+                  </div>
+                  <div className="bg-slate-500/15 text-slate-400 p-3.5 rounded-xl">
+                    <Store className="w-6 h-6" />
+                  </div>
+                </div>
+
+                <div className={`p-6 rounded-2xl border flex items-center justify-between ${
+                  theme === 'dark' ? 'bg-[#13151b] border-[#20222b]' : 'bg-white border-slate-200 shadow-sm'
+                }`}>
+                  <div>
+                    <p className="text-xs font-bold text-slate-500 uppercase">Utilidad Bruta</p>
+                    <h3 className="text-3xl font-black text-amber-500 mt-1">${(finanzasReport[selectedPeriod]?.ganancia || 0).toLocaleString('es-MX', { minimumFractionDigits: 2 })}</h3>
+                  </div>
+                  <div className="bg-amber-500/15 text-amber-500 p-3.5 rounded-xl">
+                    <TrendingUp className="w-6 h-6" />
+                  </div>
+                </div>
+
+                <div className={`p-6 rounded-2xl border flex items-center justify-between ${
+                  theme === 'dark' ? 'bg-[#13151b] border-[#20222b]' : 'bg-white border-slate-200 shadow-sm'
+                }`}>
+                  <div>
+                    <p className="text-xs font-bold text-slate-500 uppercase">Tickets Emitidos</p>
+                    <h3 className="text-3xl font-black text-blue-500 mt-1">{finanzasReport[selectedPeriod]?.count || 0}</h3>
+                  </div>
+                  <div className="bg-blue-500/15 text-blue-500 p-3.5 rounded-xl">
+                    <FileSpreadsheet className="w-6 h-6" />
+                  </div>
+                </div>
+              </div>
+
+              {/* Inventory Valuation Header */}
+              <div>
+                <h2 className="text-lg font-bold uppercase tracking-wider">Valuación de Inventario Actual</h2>
+                <p className="text-xs text-slate-500 mt-1">Cálculo en base a las existencias físicas en tienda el día de hoy.</p>
+              </div>
+
+              {/* Inventory Valuation Widgets Row */}
+              <div className="grid grid-cols-3 gap-6">
+                <div className={`p-6 rounded-2xl border flex items-center justify-between ${
+                  theme === 'dark' ? 'bg-[#13151b] border-[#20222b]' : 'bg-white border-slate-200 shadow-sm'
+                }`}>
+                  <div>
+                    <p className="text-xs font-bold text-slate-500 uppercase">Total de Artículos</p>
+                    <h3 className="text-3xl font-black text-amber-500 mt-1">{totalStockItems.toLocaleString()}</h3>
                   </div>
                   <div className="bg-amber-500/15 text-amber-500 p-3.5 rounded-xl">
                     <Package className="w-6 h-6" />
@@ -544,7 +1040,7 @@ export default function AdminDashboard({ currentUser, theme, onClose, config: in
                   theme === 'dark' ? 'bg-[#13151b] border-[#20222b]' : 'bg-white border-slate-200 shadow-sm'
                 }`}>
                   <div>
-                    <p className="text-xs font-bold text-slate-500 uppercase">Costo Total Valuado</p>
+                    <p className="text-xs font-bold text-slate-500 uppercase">Costo Valuado de Almacén</p>
                     <h3 className="text-3xl font-black text-slate-400 mt-1">${totalCost.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</h3>
                   </div>
                   <div className="bg-slate-500/15 text-slate-400 p-3.5 rounded-xl">
@@ -556,15 +1052,14 @@ export default function AdminDashboard({ currentUser, theme, onClose, config: in
                   theme === 'dark' ? 'bg-[#13151b] border-[#20222b]' : 'bg-white border-slate-200 shadow-sm'
                 }`}>
                   <div>
-                    <p className="text-xs font-bold text-slate-500 uppercase">Utilidad Estimada</p>
-                    <h3 className="text-3xl font-black text-amber-500 mt-1">${estimatedProfit.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</h3>
+                    <p className="text-xs font-bold text-slate-500 uppercase">Utilidad Estimada Total</p>
+                    <h3 className="text-3xl font-black text-emerald-550 mt-1">${estimatedProfit.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</h3>
                   </div>
-                  <div className="bg-amber-500/15 text-amber-500 p-3.5 rounded-xl">
+                  <div className="bg-emerald-500/15 text-emerald-550 p-3.5 rounded-xl">
                     <TrendingUp className="w-6 h-6" />
                   </div>
                 </div>
               </div>
-
               {/* Status and Database Connection Status Card */}
               <div className={`p-6 rounded-2xl border ${
                 theme === 'dark' ? 'bg-[#13151b] border-[#20222b]' : 'bg-white border-slate-200 shadow-sm'
@@ -774,6 +1269,7 @@ export default function AdminDashboard({ currentUser, theme, onClose, config: in
                       <th className="py-4 px-6 text-center">Artículos</th>
                       <th className="py-4 px-6 text-center">Método de Pago</th>
                       <th className="py-4 px-6 text-right">Importe Total</th>
+                      <th className="py-4 px-6 text-center">Acciones</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -787,6 +1283,26 @@ export default function AdminDashboard({ currentUser, theme, onClose, config: in
                         <td className="py-4 px-6 text-center font-mono">{sale.items}</td>
                         <td className="py-4 px-6 text-center font-medium">{sale.metodo}</td>
                         <td className="py-4 px-6 text-right font-mono font-black text-emerald-450">${sale.total.toFixed(2)}</td>
+                        <td className="py-4 px-6 text-center">
+                          <div className="flex gap-2 justify-center">
+                            <button
+                              type="button"
+                              onClick={() => handleReprintSale(sale.dbId)}
+                              className="bg-amber-500/10 hover:bg-amber-500/20 text-amber-500 border border-amber-500/20 px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1"
+                              title="Reimprimir Ticket de Venta"
+                            >
+                              <Printer className="w-3 h-3" /> Reimprimir
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleCancelSale(sale.dbId, sale.id)}
+                              className="bg-rose-500/10 hover:bg-rose-500/20 text-rose-500 border border-rose-500/20 px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1"
+                              title="Cancelar venta y devolver inventario"
+                            >
+                              ✕ Cancelar
+                            </button>
+                          </div>
+                        </td>
                       </tr>
                     ))}
                   </tbody>
@@ -795,122 +1311,494 @@ export default function AdminDashboard({ currentUser, theme, onClose, config: in
             </div>
           )}
 
-          {/* TAB 5: SYSTEM CONFIGURATION */}
           {activeTab === 'config' && (
-            <div className="space-y-6 animate-fadeIn max-w-2xl">
-              <h2 className="text-lg font-bold uppercase tracking-wider">Configuración General de la Empresa</h2>
-              
+            <div className="space-y-6 animate-fadeIn max-w-4xl pb-10">
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <h2 className="text-xl font-bold uppercase tracking-wider text-amber-500 font-sans">Configuración de la Empresa</h2>
+                  <p className="text-xs text-slate-500 mt-1">Personaliza los datos del negocio, ticket de impresión, métodos de pago y periféricos.</p>
+                </div>
+              </div>
+
               <form onSubmit={handleSaveConfig} className="space-y-6">
-                <div className="grid grid-cols-2 gap-6">
-                  <div>
-                    <label className="block text-xs font-bold uppercase text-slate-550 mb-2">Nombre Comercial</label>
-                    <input
-                      type="text"
-                      className={`w-full rounded-xl p-3 border focus:outline-none focus:ring-2 focus:ring-amber-500 ${
-                        theme === 'dark' ? 'bg-[#13151b] border-[#20222b]' : 'bg-white border-slate-200 shadow-sm'
-                      }`}
-                      value={config.businessName}
-                      onChange={e => setConfig({ ...config, businessName: e.target.value })}
-                    />
+                
+                {/* CARD 1: DATOS GENERALES */}
+                <div className={`p-6 rounded-2xl border ${
+                  theme === 'dark' ? 'bg-[#13151b] border-[#20222b]' : 'bg-white border-slate-200 shadow-sm'
+                }`}>
+                  <h3 className="text-sm font-bold uppercase tracking-wider mb-4 text-slate-400">Datos Generales</h3>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <div>
+                      <label className="block text-xs font-bold uppercase text-slate-500 mb-2">Nombre Comercial</label>
+                      <input
+                        type="text"
+                        className={`w-full rounded-xl p-3 border focus:outline-none focus:ring-2 focus:ring-amber-500 ${
+                          theme === 'dark' ? 'bg-[#1a1c24] border-[#262836] text-white' : 'bg-slate-50 border-slate-200'
+                        }`}
+                        value={config.businessName}
+                        onChange={e => setConfig({ ...config, businessName: e.target.value })}
+                        required
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold uppercase text-slate-550 mb-2">RFC Fiscal</label>
+                      <input
+                        type="text"
+                        className={`w-full rounded-xl p-3 border focus:outline-none focus:ring-2 focus:ring-amber-500 ${
+                          theme === 'dark' ? 'bg-[#1a1c24] border-[#262836] text-white' : 'bg-slate-50 border-slate-200'
+                        }`}
+                        value={config.rfc || ''}
+                        onChange={e => setConfig({ ...config, rfc: e.target.value })}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <div>
+                      <label className="block text-xs font-bold uppercase text-slate-500 mb-2">Moneda por defecto</label>
+                      <input
+                        type="text"
+                        className={`w-full rounded-xl p-3 border focus:outline-none focus:ring-2 focus:ring-amber-500 ${
+                          theme === 'dark' ? 'bg-[#1a1c24] border-[#262836] text-white' : 'bg-slate-50 border-slate-200'
+                        }`}
+                        value={config.currency}
+                        onChange={e => setConfig({ ...config, currency: e.target.value })}
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold uppercase text-slate-550 mb-2">Tasa de IVA (%)</label>
+                      <input
+                        type="number"
+                        className={`w-full rounded-xl p-3 border focus:outline-none focus:ring-2 focus:ring-amber-500 ${
+                          theme === 'dark' ? 'bg-[#1a1c24] border-[#262836] text-white' : 'bg-slate-50 border-slate-200'
+                        }`}
+                        value={config.taxRate}
+                        onChange={e => setConfig({ ...config, taxRate: parseInt(e.target.value) || 0 })}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <div>
+                      <label className="block text-xs font-bold uppercase text-slate-500 mb-2">Dirección Fiscal</label>
+                      <input
+                        type="text"
+                        className={`w-full rounded-xl p-3 border focus:outline-none focus:ring-2 focus:ring-amber-500 ${
+                          theme === 'dark' ? 'bg-[#1a1c24] border-[#262836] text-white' : 'bg-slate-50 border-slate-200'
+                        }`}
+                        value={config.address || ''}
+                        onChange={e => setConfig({ ...config, address: e.target.value })}
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold uppercase text-slate-550 mb-2">Teléfono</label>
+                      <input
+                        type="text"
+                        className={`w-full rounded-xl p-3 border focus:outline-none focus:ring-2 focus:ring-amber-500 ${
+                          theme === 'dark' ? 'bg-[#1a1c24] border-[#262836] text-white' : 'bg-slate-50 border-slate-200'
+                        }`}
+                        value={config.phone || ''}
+                        onChange={e => setConfig({ ...config, phone: e.target.value })}
+                      />
+                    </div>
                   </div>
 
                   <div>
-                    <label className="block text-xs font-bold uppercase text-slate-550 mb-2">RFC Fiscal</label>
-                    <input
-                      type="text"
-                      className={`w-full rounded-xl p-3 border focus:outline-none focus:ring-2 focus:ring-amber-500 ${
-                        theme === 'dark' ? 'bg-[#13151b] border-[#20222b]' : 'bg-white border-slate-200 shadow-sm'
-                      }`}
-                      value={config.rfc}
-                      onChange={e => setConfig({ ...config, rfc: e.target.value })}
-                    />
+                    <label className="block text-xs font-bold uppercase text-slate-500 mb-2">Logotipo</label>
+                    <div className="flex items-center gap-4 p-4 rounded-xl border border-dashed border-slate-700/50 bg-[#0d0e12]/30">
+                      {config.logoUrl ? (
+                        <div className="relative group">
+                          <img src={config.logoUrl} alt="Logo" className="w-16 h-16 object-contain rounded-lg bg-white p-1 border border-slate-650" />
+                          <button 
+                            type="button" 
+                            onClick={() => setConfig(prev => ({ ...prev, logoUrl: '' }))}
+                            className="absolute -top-2 -right-2 bg-rose-600 hover:bg-rose-500 text-white rounded-full p-1 cursor-pointer border-0 shadow"
+                          >
+                            <X className="w-3 h-3" />
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="w-16 h-16 rounded-lg border border-dashed border-slate-600 flex flex-col items-center justify-center text-[10px] text-slate-500 bg-[#0d0e12]/30">
+                          <span>Sin Logo</span>
+                        </div>
+                      )}
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleLogoChange}
+                        className="text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-amber-500 file:text-[#0d0e12] file:cursor-pointer transition-all active:scale-95"
+                      />
+                    </div>
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-6">
-                  <div>
-                    <label className="block text-xs font-bold uppercase text-slate-550 mb-2">Moneda por defecto</label>
-                    <input
-                      type="text"
-                      className={`w-full rounded-xl p-3 border focus:outline-none focus:ring-2 focus:ring-amber-500 ${
-                        theme === 'dark' ? 'bg-[#13151b] border-[#20222b]' : 'bg-white border-slate-200 shadow-sm'
-                      }`}
-                      value={config.currency}
-                      onChange={e => setConfig({ ...config, currency: e.target.value })}
-                    />
+                {/* CARD 2: IMPRESORA Y TICKET */}
+                <div className={`p-6 rounded-2xl border ${
+                  theme === 'dark' ? 'bg-[#13151b] border-[#20222b]' : 'bg-white border-slate-200 shadow-sm'
+                }`}>
+                  <h3 className="text-sm font-bold uppercase tracking-wider mb-4 text-slate-400">Personalización de Ticket e Impresión</h3>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-4">
+                    <div>
+                      <label className="block text-xs font-bold uppercase text-slate-500 mb-2">Tipo de Impresora</label>
+                      <select
+                        className={`w-full rounded-xl p-3 border focus:outline-none focus:ring-2 focus:ring-amber-500 ${
+                          theme === 'dark' ? 'bg-[#1a1c24] border-[#262836] text-white' : 'bg-slate-50 border-slate-200 text-slate-800'
+                        }`}
+                        value={config.printerType || 'thermal_80'}
+                        onChange={e => setConfig({ ...config, printerType: e.target.value as any })}
+                      >
+                        <option value="thermal_80">Térmica 80mm (Estándar)</option>
+                        <option value="thermal_58">Térmica 58mm (Angosta)</option>
+                        <option value="pdf_a4">Tamaño Carta / A4 (Facturas/Reportes)</option>
+                        <option value="virtual">Ninguna (Impresión Virtual/Solo PDF en pantalla)</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold uppercase text-slate-500 mb-2">Mensaje al Pie del Ticket</label>
+                      <input
+                        type="text"
+                        placeholder="Ej: ¡Gracias por su preferencia!"
+                        className={`w-full rounded-xl p-3 border focus:outline-none focus:ring-2 focus:ring-amber-500 ${
+                          theme === 'dark' ? 'bg-[#1a1c24] border-[#262836] text-white' : 'bg-slate-50 border-slate-200'
+                        }`}
+                        value={config.ticketMessage || ''}
+                        onChange={e => setConfig({ ...config, ticketMessage: e.target.value })}
+                      />
+                    </div>
                   </div>
 
-                  <div>
-                    <label className="block text-xs font-bold uppercase text-slate-550 mb-2">Tasa de IVA General (%)</label>
-                    <input
-                      type="number"
-                      className={`w-full rounded-xl p-3 border focus:outline-none focus:ring-2 focus:ring-amber-500 ${
-                        theme === 'dark' ? 'bg-[#13151b] border-[#20222b]' : 'bg-white border-slate-200 shadow-sm'
-                      }`}
-                      value={config.taxRate}
-                      onChange={e => setConfig({ ...config, taxRate: parseInt(e.target.value) })}
-                    />
+                  <div className="mt-4 flex items-center justify-between border-t border-slate-750/30 pt-4">
+                    <p className="text-[10px] text-slate-500">Haz clic para comprobar el formato final del ticket impreso en base a tus datos.</p>
+                    <button
+                      type="button"
+                      onClick={handleTestPrint}
+                      className="bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold px-4 py-2 rounded-xl text-xs transition-all border-0 cursor-pointer flex items-center gap-1.5"
+                    >
+                      <Printer className="w-4 h-4" /> Probar Impresión (Test)
+                    </button>
                   </div>
                 </div>
 
-                <div>
-                  <label className="block text-xs font-bold uppercase text-slate-550 mb-2">Dirección Fiscal / Oficina</label>
-                  <input
-                    type="text"
-                    className={`w-full rounded-xl p-3 border focus:outline-none focus:ring-2 focus:ring-amber-500 ${
-                      theme === 'dark' ? 'bg-[#13151b] border-[#20222b]' : 'bg-white border-slate-200 shadow-sm'
-                    }`}
-                    value={config.address}
-                    onChange={e => setConfig({ ...config, address: e.target.value })}
-                  />
+                {/* CARD 3: MÉTODOS DE PAGO */}
+                <div className={`p-6 rounded-2xl border ${
+                  theme === 'dark' ? 'bg-[#13151b] border-[#20222b]' : 'bg-white border-slate-200 shadow-sm'
+                }`}>
+                  <h3 className="text-sm font-bold uppercase tracking-wider mb-4 text-slate-400">Métodos de Pago Habilitados</h3>
+                  <p className="text-xs text-slate-500 mb-4">Selecciona qué métodos de pago aparecerán en la ventana de cobro del POS.</p>
+                  
+                  <div className="flex flex-wrap gap-6">
+                    <label className="flex items-center gap-3 cursor-pointer text-sm">
+                      <input
+                        type="checkbox"
+                        className="w-4 h-4 rounded text-amber-500 focus:ring-amber-500 border-slate-600 bg-slate-800"
+                        checked={config.allowCash !== false}
+                        onChange={e => setConfig({ ...config, allowCash: e.target.checked })}
+                      />
+                      Efectivo
+                    </label>
+
+                    <label className="flex items-center gap-3 cursor-pointer text-sm">
+                      <input
+                        type="checkbox"
+                        className="w-4 h-4 rounded text-amber-500 focus:ring-amber-500 border-slate-600 bg-slate-800"
+                        checked={config.allowCard !== false}
+                        onChange={e => setConfig({ ...config, allowCard: e.target.checked })}
+                      />
+                      Tarjeta de Crédito / Débito
+                    </label>
+
+                    <label className="flex items-center gap-3 cursor-pointer text-sm">
+                      <input
+                        type="checkbox"
+                        className="w-4 h-4 rounded text-amber-500 focus:ring-amber-500 border-slate-600 bg-slate-800"
+                        checked={config.allowTransfer !== false}
+                        onChange={e => setConfig({ ...config, allowTransfer: e.target.checked })}
+                      />
+                      Transferencia Bancaria
+                    </label>
+                  </div>
                 </div>
 
-                <div>
-                  <label className="block text-xs font-bold uppercase text-slate-550 mb-2">Teléfono de Atención</label>
-                  <input
-                    type="text"
-                    className={`w-full rounded-xl p-3 border focus:outline-none focus:ring-2 focus:ring-amber-500 ${
-                      theme === 'dark' ? 'bg-[#13151b] border-[#20222b]' : 'bg-white border-slate-200 shadow-sm'
-                    }`}
-                    value={config.phone}
-                    onChange={e => setConfig({ ...config, phone: e.target.value })}
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold uppercase text-slate-550 mb-2">Logotipo del Negocio</label>
-                  <div className="flex items-center gap-4 p-4 rounded-xl border border-dashed border-slate-700/50 bg-[#0d0e12]/30">
-                    {config.logoUrl ? (
-                      <div className="relative group">
-                        <img src={config.logoUrl} alt="Logo" className="w-16 h-16 object-contain rounded-lg bg-white p-1 border border-slate-650" />
-                        <button 
-                          type="button" 
-                          onClick={() => setConfig(prev => ({ ...prev, logoUrl: '' }))}
-                          className="absolute -top-2 -right-2 bg-rose-600 hover:bg-rose-500 text-white rounded-full p-1 cursor-pointer border-0 shadow"
-                        >
-                          <X className="w-3 h-3" />
-                        </button>
+                {/* CARD 4: PERIFÉRICOS */}
+                <div className={`p-6 rounded-2xl border ${
+                  theme === 'dark' ? 'bg-[#13151b] border-[#20222b]' : 'bg-white border-slate-200 shadow-sm'
+                }`}>
+                  <h3 className="text-sm font-bold uppercase tracking-wider mb-4 text-slate-400">Periféricos de Hardware</h3>
+                  
+                  {/* Cajón de Dinero */}
+                  <div className="border-b border-slate-750/50 pb-5 mb-5">
+                    <div className="flex items-center justify-between mb-4">
+                      <div>
+                        <h4 className="text-sm font-bold text-slate-300">Cajón de Dinero</h4>
+                        <p className="text-xs text-slate-500 mt-0.5">Habilitar apertura automática del cajón al finalizar ventas en efectivo.</p>
                       </div>
-                    ) : (
-                      <div className="w-16 h-16 rounded-lg border border-dashed border-slate-600 flex flex-col items-center justify-center text-[10px] text-slate-500">
-                        <span>Sin Logo</span>
+                      <label className="relative inline-flex items-center cursor-pointer">
+                        <input
+                          type="checkbox"
+                          className="sr-only peer"
+                          checked={config.allowDrawer || false}
+                          onChange={e => setConfig({ ...config, allowDrawer: e.target.checked })}
+                        />
+                        <div className="w-11 h-6 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-500"></div>
+                      </label>
+                    </div>
+                    {config.allowDrawer && (
+                      <div className="animate-fadeIn">
+                        <label className="block text-xs font-bold uppercase text-slate-500 mb-2">Comando de Apertura ESC/POS (Decimal separado por comas)</label>
+                        <input
+                          type="text"
+                          className={`w-full max-w-sm rounded-xl p-3 border focus:outline-none focus:ring-2 focus:ring-amber-500 font-mono text-xs ${
+                            theme === 'dark' ? 'bg-[#1a1c24] border-[#262836] text-white' : 'bg-slate-50 border-slate-200'
+                          }`}
+                          placeholder="27,112,0,25,250"
+                          value={config.drawerCommand || ''}
+                          onChange={e => setConfig({ ...config, drawerCommand: e.target.value })}
+                        />
                       </div>
                     )}
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={handleLogoChange}
-                      className="text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-amber-500 file:text-[#0d0e12] file:cursor-pointer transition-all active:scale-95"
-                    />
+                  </div>
+
+                  {/* Báscula */}
+                  <div>
+                    <div className="flex items-center justify-between mb-4">
+                      <div>
+                        <h4 className="text-sm font-bold text-slate-300">Báscula Electrónica</h4>
+                        <p className="text-xs text-slate-500 mt-0.5">Habilitar comunicación serial (RS-232) con báscula para pesar productos a granel automáticamente.</p>
+                      </div>
+                      <label className="relative inline-flex items-center cursor-pointer">
+                        <input
+                          type="checkbox"
+                          className="sr-only peer"
+                          checked={config.allowScale || false}
+                          onChange={e => setConfig({ ...config, allowScale: e.target.checked })}
+                        />
+                        <div className="w-11 h-6 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-500"></div>
+                      </label>
+                    </div>
+
+                    {config.allowScale && (
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 animate-fadeIn">
+                        <div>
+                          <label className="block text-xs font-bold uppercase text-slate-550 mb-2">Puerto de Comunicación</label>
+                          <input
+                            type="text"
+                            placeholder="Ej: COM1 o /dev/ttyUSB0"
+                            className={`w-full rounded-xl p-3 border focus:outline-none focus:ring-2 focus:ring-amber-500 text-xs ${
+                              theme === 'dark' ? 'bg-[#1a1c24] border-[#262836] text-white' : 'bg-slate-50 border-slate-200'
+                            }`}
+                            value={config.scalePort || ''}
+                            onChange={e => setConfig({ ...config, scalePort: e.target.value })}
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-xs font-bold uppercase text-slate-550 mb-2">Velocidad Serial (Baud Rate)</label>
+                          <select
+                            className={`w-full rounded-xl p-3 border focus:outline-none focus:ring-2 focus:ring-amber-500 text-xs ${
+                              theme === 'dark' ? 'bg-[#1a1c24] border-[#262836] text-white' : 'bg-slate-50 border-slate-200 text-slate-800'
+                            }`}
+                            value={config.scaleBaudRate || 9600}
+                            onChange={e => setConfig({ ...config, scaleBaudRate: parseInt(e.target.value) || 9600 })}
+                          >
+                            <option value={9600}>9600 bps (Estándar)</option>
+                            <option value={4800}>4800 bps</option>
+                            <option value={19200}>19200 bps</option>
+                            <option value={115200}>115200 bps</option>
+                          </select>
+                        </div>
+
+                        <div>
+                          <label className="block text-xs font-bold uppercase text-slate-550 mb-2">Modelo de Báscula</label>
+                          <select
+                            className={`w-full rounded-xl p-3 border focus:outline-none focus:ring-2 focus:ring-amber-500 text-xs ${
+                              theme === 'dark' ? 'bg-[#1a1c24] border-[#262836] text-white' : 'bg-slate-50 border-slate-200 text-slate-800'
+                            }`}
+                            value={config.scaleModel || 'torrey'}
+                            onChange={e => setConfig({ ...config, scaleModel: e.target.value })}
+                          >
+                            <option value="torrey">Torrey (W-LABEL/PCR)</option>
+                            <option value="lexus">Lexus / CAS</option>
+                            <option value="generica">Protocolo Genérico RS-232</option>
+                          </select>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
 
-                <button
-                  type="submit"
-                  className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-6 py-3 rounded-xl shadow-lg border-0 cursor-pointer flex items-center gap-2 transition-all active:scale-95"
-                >
-                  <Save className="w-5 h-5" /> Guardar Cambios
-                </button>
+                {/* CARD 5: SEGURIDAD Y SESIÓN */}
+                <div className={`p-6 rounded-2xl border ${
+                  theme === 'dark' ? 'bg-[#13151b] border-[#20222b]' : 'bg-white border-slate-200 shadow-sm'
+                }`}>
+                  <h3 className="text-sm font-bold uppercase tracking-wider mb-4 text-slate-400">Seguridad y Sesión</h3>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-bold uppercase text-slate-550 mb-2">Bloqueo por Inactividad (Cerrar Sesión)</label>
+                      <select
+                        className={`w-full rounded-xl p-3 border focus:outline-none focus:ring-2 focus:ring-amber-500 text-xs ${
+                          theme === 'dark' ? 'bg-[#1a1c24] border-[#262836] text-white' : 'bg-slate-50 border-slate-200 text-slate-800'
+                        }`}
+                        value={config.sessionTimeout || 0}
+                        onChange={e => setConfig({ ...config, sessionTimeout: parseInt(e.target.value) || 0 })}
+                      >
+                        <option value={0}>Nunca (Mantener sesión abierta)</option>
+                        <option value={1}>Después de 1 minuto</option>
+                        <option value={5}>Después de 5 minutos</option>
+                        <option value={15}>Después de 15 minutos</option>
+                        <option value={30}>Después de 30 minutos</option>
+                        <option value={60}>Después de 60 minutos</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold uppercase text-slate-550 mb-2">Restricción Horario Venta Móvil</label>
+                      <div className="flex gap-2 items-center">
+                        <input
+                          type="time"
+                          className={`w-full rounded-xl p-3 border focus:outline-none focus:ring-2 focus:ring-amber-500 text-xs ${
+                            theme === 'dark' ? 'bg-[#1a1c24] border-[#262836] text-white' : 'bg-slate-50 border-slate-200 text-slate-800'
+                          }`}
+                          value={config.businessStartHour || '08:00'}
+                          onChange={e => setConfig({ ...config, businessStartHour: e.target.value })}
+                        />
+                        <span className="text-slate-550 text-xs font-bold">a</span>
+                        <input
+                          type="time"
+                          className={`w-full rounded-xl p-3 border focus:outline-none focus:ring-2 focus:ring-amber-500 text-xs ${
+                            theme === 'dark' ? 'bg-[#1a1c24] border-[#262836] text-white' : 'bg-slate-50 border-slate-200 text-slate-800'
+                          }`}
+                          value={config.businessEndHour || '20:00'}
+                          onChange={e => setConfig({ ...config, businessEndHour: e.target.value })}
+                        />
+                      </div>
+                      <p className="text-[10px] text-slate-500 mt-1.5">Establece la jornada laboral autorizada para los empleados.</p>
+                      
+                      <div className="mt-3.5 space-y-2">
+                        <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">Activar restricción de horario para:</span>
+                        
+                        <div className="flex flex-col gap-2">
+                          <label className="flex items-center gap-2 text-xs font-semibold text-slate-300 cursor-pointer select-none">
+                            <input
+                              type="checkbox"
+                              className="rounded border-slate-700 bg-slate-800 text-amber-550 focus:ring-amber-550 w-4 h-4"
+                              checked={config.restrictGerenteSchedule || false}
+                              onChange={e => setConfig({ ...config, restrictGerenteSchedule: e.target.checked })}
+                            />
+                            Gerentes
+                          </label>
+
+                          <label className="flex items-center gap-2 text-xs font-semibold text-slate-300 cursor-pointer select-none">
+                            <input
+                              type="checkbox"
+                              className="rounded border-slate-700 bg-slate-800 text-amber-550 focus:ring-amber-550 w-4 h-4"
+                              checked={config.restrictCajeroSchedule || false}
+                              onChange={e => setConfig({ ...config, restrictCajeroSchedule: e.target.checked })}
+                            />
+                            Cajeros (POS)
+                          </label>
+
+                          <label className="flex items-center gap-2 text-xs font-semibold text-slate-300 cursor-pointer select-none">
+                            <input
+                              type="checkbox"
+                              className="rounded border-slate-700 bg-slate-800 text-amber-550 focus:ring-amber-550 w-4 h-4"
+                              checked={config.restrictVendedorMovilSchedule !== false}
+                              onChange={e => setConfig({ ...config, restrictVendedorMovilSchedule: e.target.checked })}
+                            />
+                            Vendedores Móviles
+                          </label>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Control de Conectividad de Roles */}
+                  <div className="border-t border-slate-755/20 pt-5 mt-5">
+                    <h4 className="text-xs font-bold text-slate-300 uppercase mb-3">Roles Autorizados para Iniciar Sesión</h4>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <label className="flex items-center gap-2 text-xs font-medium text-slate-300 cursor-pointer select-none">
+                        <input
+                          type="checkbox"
+                          className="rounded border-slate-700 bg-slate-800 text-amber-550 focus:ring-amber-550 w-4 h-4"
+                          checked={config.allowGerenteLogin !== false}
+                          onChange={e => setConfig({ ...config, allowGerenteLogin: e.target.checked })}
+                        />
+                        Permitir Gerentes
+                      </label>
+
+                      <label className="flex items-center gap-2 text-xs font-medium text-slate-300 cursor-pointer select-none">
+                        <input
+                          type="checkbox"
+                          className="rounded border-slate-700 bg-slate-800 text-amber-550 focus:ring-amber-550 w-4 h-4"
+                          checked={config.allowCajeroLogin !== false}
+                          onChange={e => setConfig({ ...config, allowCajeroLogin: e.target.checked })}
+                        />
+                        Permitir Cajeros (POS)
+                      </label>
+
+                      <label className="flex items-center gap-2 text-xs font-medium text-slate-300 cursor-pointer select-none">
+                        <input
+                          type="checkbox"
+                          className="rounded border-slate-700 bg-slate-800 text-amber-550 focus:ring-amber-550 w-4 h-4"
+                          checked={config.allowVendedorMovilLogin !== false}
+                          onChange={e => setConfig({ ...config, allowVendedorMovilLogin: e.target.checked })}
+                        />
+                        Permitir Vendedores Móviles
+                      </label>
+                    </div>
+
+                    <div className="border-t border-slate-755/10 pt-5 mt-5">
+                      <h4 className="text-xs font-bold text-slate-300 uppercase mb-3">Roles Autorizados para Cobrar y Registrar Venta</h4>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <label className="flex items-center gap-2 text-xs font-medium text-slate-300 cursor-pointer select-none">
+                          <input
+                            type="checkbox"
+                            className="rounded border-slate-700 bg-slate-800 text-amber-555 focus:ring-amber-555 w-4 h-4"
+                            checked={config.allowGerenteCheckout !== false}
+                            onChange={e => setConfig({ ...config, allowGerenteCheckout: e.target.checked })}
+                          />
+                          Permitir Gerentes
+                        </label>
+
+                        <label className="flex items-center gap-2 text-xs font-medium text-slate-300 cursor-pointer select-none">
+                          <input
+                            type="checkbox"
+                            className="rounded border-slate-700 bg-slate-800 text-amber-555 focus:ring-amber-555 w-4 h-4"
+                            checked={config.allowCajeroCheckout !== false}
+                            onChange={e => setConfig({ ...config, allowCajeroCheckout: e.target.checked })}
+                          />
+                          Permitir Cajeros (POS)
+                        </label>
+
+                        <label className="flex items-center gap-2 text-xs font-medium text-slate-300 cursor-pointer select-none">
+                          <input
+                            type="checkbox"
+                            className="rounded border-slate-700 bg-slate-800 text-amber-555 focus:ring-amber-555 w-4 h-4"
+                            checked={config.allowVendedorMovilCheckout || false}
+                            onChange={e => setConfig({ ...config, allowVendedorMovilCheckout: e.target.checked })}
+                          />
+                          Permitir Vendedores Móviles
+                        </label>
+                      </div>
+                      <p className="text-[10px] text-slate-500 mt-2">Los roles desmarcados no verán la opción "Cobrar" y sus carritos se guardarán como preventas/pedidos.</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex gap-4">
+                  <button
+                    type="submit"
+                    className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-8 py-3.5 rounded-xl shadow-lg border-0 cursor-pointer flex items-center gap-2 transition-all active:scale-95"
+                  >
+                    <Save className="w-5 h-5" /> Guardar Todos los Cambios
+                  </button>
+                </div>
               </form>
             </div>
           )}
@@ -967,7 +1855,13 @@ export default function AdminDashboard({ currentUser, theme, onClose, config: in
                     >
                       <Play className="w-4 h-4" /> Verificar Conexión
                     </button>
-                  </div>
+                  <button
+        onClick={handleClearDemoData}
+        className="flex-1 bg-rose-600 hover:bg-rose-500 text-white font-bold py-3 px-4 rounded-xl border-0 cursor-pointer text-xs flex items-center justify-center gap-2 transition-all active:scale-95"
+      >
+        Borrar datos demo
+      </button>
+      </div>
                 </div>
 
                 {/* CARD 2: RESPALDO (COPIAS DE SEGURIDAD) */}
@@ -1084,11 +1978,52 @@ export default function AdminDashboard({ currentUser, theme, onClose, config: in
               </div>
             </div>
           )}
+          {/* TAB 7: CLIENTES / FINANZAS */}
+          {activeTab === 'clientes' && (
+            <ClientesSection theme={theme} addLog={addLog} />
+          )}
 
         </main>
       </div>
 
       {/* ---------------- MODALES DE EDICIÓN ---------------- */}
+
+      {/* Print Test Result Modal */}
+      {showTestTicketModal && (
+        <div className="fixed inset-0 bg-[#000000]/75 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className={`p-6 rounded-3xl border w-full max-w-sm shadow-2xl relative ${
+            theme === 'dark' ? 'bg-[#13151b] border-[#262836] text-white' : 'bg-white border-slate-200 text-slate-800'
+          }`}>
+            <button 
+              onClick={() => setShowTestTicketModal(false)}
+              className="absolute top-4 right-4 text-slate-400 hover:text-white bg-transparent border-0 cursor-pointer"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <h3 className="text-md font-bold uppercase tracking-wider mb-4 flex items-center gap-2">
+              <Printer className="w-5 h-5 text-amber-500" /> Vista Previa del Ticket
+            </h3>
+            
+            <div className={`p-4 rounded-xl border font-mono text-xs overflow-x-auto select-all leading-normal whitespace-pre bg-black text-emerald-400 border-slate-700/50 shadow-inner max-h-[400px] overflow-y-auto ${
+              config.printerType === 'thermal_58' ? 'max-w-[280px] mx-auto' : 'max-w-[380px] mx-auto'
+            }`}>
+              {testTicketContent}
+            </div>
+
+            <p className="text-[10px] text-slate-500 mt-4 text-center">
+              Ancho de impresión: {config.printerType === 'thermal_58' ? '32 caracteres (58mm)' : '48 caracteres (80mm)'}
+            </p>
+
+            <button
+              onClick={() => setShowTestTicketModal(false)}
+              className="w-full mt-6 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold py-3 rounded-xl text-xs transition-colors border-0 cursor-pointer"
+            >
+              Cerrar Vista Previa
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Product Form Modal */}
       {showProductModal && (
@@ -1316,6 +2251,460 @@ export default function AdminDashboard({ currentUser, theme, onClose, config: in
                 >
                   Cancelar
                 </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+    </div>
+  );
+}
+
+function ClientesSection({ theme, addLog }: { theme: 'dark' | 'light'; addLog: (text: string) => void }) {
+  const [clientes, setClientes] = useState<any[]>([]);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [showAbonoModal, setShowAbonoModal] = useState(false);
+  const [selectedCliente, setSelectedCliente] = useState<any>(null);
+  const [abonoMonto, setAbonoMonto] = useState('');
+  const [newCliente, setNewCliente] = useState({
+    id: '',
+    nombre: '',
+    telefono: '',
+    direccion: '',
+    limiteCredito: '0',
+    saldoDeudor: '0',
+    rfc: '',
+    razonSocial: '',
+    regimenFiscal: '',
+    codigoPostal: '',
+    direccionFiscal: ''
+  });
+
+  const fetchClientes = async () => {
+    try {
+      const res = await fetch(`${API_V1}/clientes`);
+      if (res.ok) {
+        const data = await res.json();
+        setClientes(data);
+      }
+    } catch (err) {
+      console.error('Error fetching clientes:', err);
+    }
+  };
+
+  React.useEffect(() => {
+    fetchClientes();
+  }, []);
+
+  const handleAddSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newCliente.nombre.trim()) return;
+
+    try {
+      const method = newCliente.id ? 'PUT' : 'POST';
+      const url = newCliente.id ? `${API_V1}/clientes/${newCliente.id}` : `${API_V1}/clientes`;
+
+      const res = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          nombre: newCliente.nombre,
+          telefono: newCliente.telefono,
+          direccion: newCliente.direccion,
+          limiteCredito: Number(newCliente.limiteCredito) || 0,
+          saldoDeudor: Number(newCliente.saldoDeudor) || 0,
+          rfc: newCliente.rfc || null,
+          razonSocial: newCliente.razonSocial || null,
+          regimenFiscal: newCliente.regimenFiscal || null,
+          codigoPostal: newCliente.codigoPostal || null,
+          direccionFiscal: newCliente.direccionFiscal || null
+        })
+      });
+
+      if (res.ok) {
+        addLog(`✅ Cliente ${newCliente.id ? 'actualizado' : 'creado'} con éxito: ${newCliente.nombre}`);
+        setShowAddModal(false);
+        setNewCliente({ id: '', nombre: '', telefono: '', direccion: '', limiteCredito: '0', saldoDeudor: '0', rfc: '', razonSocial: '', regimenFiscal: '', codigoPostal: '', direccionFiscal: '' });
+        fetchClientes();
+      } else {
+        alert('Error al guardar el cliente');
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Error de conexión');
+    }
+  };
+
+  const handleEdit = (c: any) => {
+    setNewCliente({
+      id: c.id,
+      nombre: c.nombre,
+      telefono: c.telefono || '',
+      direccion: c.direccion || '',
+      limiteCredito: c.limiteCredito.toString(),
+      saldoDeudor: c.saldoDeudor.toString(),
+      rfc: c.rfc || '',
+      razonSocial: c.razonSocial || '',
+      regimenFiscal: c.regimenFiscal || '',
+      codigoPostal: c.codigoPostal || '',
+      direccionFiscal: c.direccionFiscal || ''
+    });
+    setShowAddModal(true);
+  };
+
+  const handleDelete = async (id: string, nombre: string) => {
+    if (!confirm(`¿Estás seguro de eliminar al cliente "${nombre}"?`)) return;
+    try {
+      const res = await fetch(`${API_V1}/clientes/${id}`, { method: 'DELETE' });
+      if (res.ok) {
+        addLog(`🗑️ Cliente eliminado: ${nombre}`);
+        fetchClientes();
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleAbonoSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const monto = Number(abonoMonto);
+    if (!selectedCliente || isNaN(monto) || monto <= 0) return;
+
+    try {
+      const res = await fetch(`${API_V1}/clientes/${selectedCliente.id}/abono`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ monto })
+      });
+
+      if (res.ok) {
+        addLog(`💵 Abono de $${monto} registrado para el cliente: ${selectedCliente.nombre}`);
+        setShowAbonoModal(false);
+        setAbonoMonto('');
+        fetchClientes();
+      } else {
+        alert('Error al registrar el abono');
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const filteredClientes = clientes.filter(c => 
+    c.nombre.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (c.telefono && c.telefono.includes(searchQuery))
+  );
+
+  const totalDeuda = clientes.reduce((acc, c) => acc + Number(c.saldoDeudor), 0);
+  const totalDeudores = clientes.filter(c => Number(c.saldoDeudor) > 0).length;
+
+  return (
+    <div className="space-y-6 animate-fadeIn">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-xl font-bold uppercase tracking-wider">Gestión de Clientes y Finanzas</h2>
+          <p className="text-xs text-slate-500 mt-1">Control de cuentas deudoras, límites de crédito y abonos.</p>
+        </div>
+        <button 
+          onClick={() => {
+            setNewCliente({ id: '', nombre: '', telefono: '', direccion: '', limiteCredito: '0', saldoDeudor: '0', rfc: '', razonSocial: '', regimenFiscal: '', codigoPostal: '', direccionFiscal: '' });
+            setShowAddModal(true);
+          }}
+          className="bg-amber-500 hover:bg-amber-400 text-[#0d0e12] font-bold py-2.5 px-5 rounded-xl border-0 cursor-pointer text-xs flex items-center gap-2 shadow-lg shadow-amber-500/10 active:scale-95 transition-all"
+        >
+          <PlusCircle className="w-4 h-4" /> Agregar Cliente
+        </button>
+      </div>
+
+      {/* Stats Cards */}
+      <div className="grid grid-cols-3 gap-6">
+        <div className={`p-6 rounded-2xl border ${theme === 'dark' ? 'bg-[#13151b] border-[#20222b]' : 'bg-white border-slate-200 shadow-sm'}`}>
+          <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Total de Clientes</p>
+          <p className="text-2xl font-black text-amber-500 mt-2">{clientes.length}</p>
+        </div>
+        <div className={`p-6 rounded-2xl border ${theme === 'dark' ? 'bg-[#13151b] border-[#20222b]' : 'bg-white border-slate-200 shadow-sm'}`}>
+          <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Clientes Deudores</p>
+          <p className="text-2xl font-black text-rose-500 mt-2">{totalDeudores}</p>
+        </div>
+        <div className={`p-6 rounded-2xl border ${theme === 'dark' ? 'bg-[#13151b] border-[#20222b]' : 'bg-white border-slate-200 shadow-sm'}`}>
+          <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Total por Cobrar</p>
+          <p className="text-2xl font-black text-emerald-500 mt-2">${totalDeuda.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</p>
+        </div>
+      </div>
+
+      {/* Search and Table */}
+      <div className={`p-6 rounded-2xl border ${theme === 'dark' ? 'bg-[#13151b] border-[#20222b]' : 'bg-white border-slate-200 shadow-sm'}`}>
+        <div className="flex items-center gap-4 mb-6">
+          <div className="flex-1 relative">
+            <Search className="w-4 h-4 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2" />
+            <input 
+              type="text" 
+              placeholder="Buscar cliente por nombre o teléfono..."
+              className={`w-full rounded-xl py-3 pl-10 pr-4 border text-xs focus:outline-none focus:ring-1 focus:ring-amber-500 ${
+                theme === 'dark' ? 'bg-[#0d0e12] border-[#20222b]' : 'bg-slate-50 border-slate-250 shadow-sm'
+              }`}
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+            />
+          </div>
+        </div>
+
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-xs border-collapse">
+            <thead>
+              <tr className="border-b border-slate-800 text-slate-500 font-bold uppercase tracking-wider">
+                <th className="pb-3 pl-3">Nombre</th>
+                <th className="pb-3">Teléfono</th>
+                <th className="pb-3 text-right">Límite de Crédito</th>
+                <th className="pb-3 text-right">Saldo Deudor</th>
+                <th className="pb-3 pr-3 text-center">Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredClientes.length === 0 ? (
+                <tr>
+                  <td colSpan={5} className="py-6 text-center text-slate-500 font-medium">No se encontraron clientes</td>
+                </tr>
+              ) : (
+                filteredClientes.map(c => (
+                  <tr key={c.id} className="border-b border-slate-850/50 hover:bg-slate-500/5 transition-colors">
+                    <td className="py-3.5 pl-3">
+                      <div className="font-bold">{c.nombre}</div>
+                      {c.rfc && (
+                        <div className="text-[10px] text-slate-500 font-mono mt-0.5">
+                          💼 {c.rfc} | {c.razonSocial || c.nombre}
+                        </div>
+                      )}
+                    </td>
+                    <td className="py-3.5 text-slate-400">{c.telefono || '-'}</td>
+                    <td className="py-3.5 text-right font-semibold">${Number(c.limiteCredito).toFixed(2)}</td>
+                    <td className="py-3.5 text-right font-black text-rose-500">${Number(c.saldoDeudor).toFixed(2)}</td>
+                    <td className="py-3.5 pr-3 text-center">
+                      <div className="flex items-center justify-center gap-3">
+                        <button 
+                          onClick={() => {
+                            setSelectedCliente(c);
+                            setShowAbonoModal(true);
+                          }}
+                          disabled={Number(c.saldoDeudor) <= 0}
+                          className={`flex items-center gap-1.5 py-1.5 px-3 rounded-lg border-0 font-bold text-[10px] cursor-pointer shadow-lg active:scale-95 transition-all ${
+                            Number(c.saldoDeudor) > 0
+                              ? 'bg-emerald-500/20 hover:bg-emerald-500 text-emerald-400 hover:text-[#0d0e12]'
+                              : 'bg-slate-500/10 text-slate-500 cursor-not-allowed'
+                          }`}
+                        >
+                          <DollarSign className="w-3.5 h-3.5" /> Abonar
+                        </button>
+                        <button 
+                          onClick={() => handleEdit(c)}
+                          className="bg-slate-500/10 hover:bg-[#1a1c24] text-slate-300 hover:text-white p-2 rounded-lg border-0 cursor-pointer transition-colors"
+                        >
+                          <Edit2 className="w-3.5 h-3.5" />
+                        </button>
+                        <button 
+                          onClick={() => handleDelete(c.id, c.nombre)}
+                          className="bg-rose-500/15 hover:bg-rose-600 text-rose-400 hover:text-white p-2 rounded-lg border-0 cursor-pointer transition-colors"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* Add/Edit Modal */}
+      {showAddModal && (
+        <div className="fixed inset-0 bg-[#000000]/60 backdrop-blur-sm z-50 flex items-center justify-center">
+          <div className={`p-8 rounded-3xl border w-[450px] shadow-2xl relative ${theme === 'dark' ? 'bg-[#13151b] border-[#20222b]' : 'bg-white border-slate-200'}`}>
+            <button 
+              onClick={() => setShowAddModal(false)}
+              className="absolute top-4 right-4 text-slate-500 hover:text-white bg-transparent border-0 cursor-pointer"
+            >
+              <X className="w-5 h-5" />
+            </button>
+            <h3 className="text-md font-bold uppercase tracking-wider mb-6">{newCliente.id ? 'Editar Cliente' : 'Nuevo Cliente'}</h3>
+            <form onSubmit={handleAddSubmit} className="space-y-4">
+              <div>
+                <label className="block text-[10px] font-bold uppercase text-slate-500 mb-1.5">Nombre Completo</label>
+                <input 
+                  type="text" 
+                  required
+                  className={`w-full rounded-xl p-3 border text-xs focus:outline-none focus:ring-1 focus:ring-amber-500 ${
+                    theme === 'dark' ? 'bg-[#0d0e12] border-[#20222b]' : 'bg-slate-50 border-slate-250'
+                  }`}
+                  value={newCliente.nombre}
+                  onChange={e => setNewCliente({ ...newCliente, nombre: e.target.value })}
+                />
+              </div>
+              <div>
+                <label className="block text-[10px] font-bold uppercase text-slate-500 mb-1.5">Teléfono</label>
+                <input 
+                  type="text" 
+                  className={`w-full rounded-xl p-3 border text-xs focus:outline-none focus:ring-1 focus:ring-amber-500 ${
+                    theme === 'dark' ? 'bg-[#0d0e12] border-[#20222b]' : 'bg-slate-50 border-slate-250'
+                  }`}
+                  value={newCliente.telefono}
+                  onChange={e => setNewCliente({ ...newCliente, telefono: e.target.value })}
+                />
+              </div>
+              <div>
+                <label className="block text-[10px] font-bold uppercase text-slate-500 mb-1.5">Dirección</label>
+                <input 
+                  type="text" 
+                  className={`w-full rounded-xl p-3 border text-xs focus:outline-none focus:ring-1 focus:ring-amber-500 ${
+                    theme === 'dark' ? 'bg-[#0d0e12] border-[#20222b]' : 'bg-slate-50 border-slate-250'
+                  }`}
+                  value={newCliente.direccion}
+                  onChange={e => setNewCliente({ ...newCliente, direccion: e.target.value })}
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-[10px] font-bold uppercase text-slate-500 mb-1.5">Límite de Crédito</label>
+                  <input 
+                    type="number" 
+                    step="0.01"
+                    className={`w-full rounded-xl p-3 border text-xs focus:outline-none focus:ring-1 focus:ring-amber-500 ${
+                      theme === 'dark' ? 'bg-[#0d0e12] border-[#20222b]' : 'bg-slate-50 border-slate-250'
+                    }`}
+                    value={newCliente.limiteCredito}
+                    onChange={e => setNewCliente({ ...newCliente, limiteCredito: e.target.value })}
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold uppercase text-slate-500 mb-1.5">Saldo Deudor Inicial</label>
+                  <input 
+                    type="number" 
+                    step="0.01"
+                    className={`w-full rounded-xl p-3 border text-xs focus:outline-none focus:ring-1 focus:ring-amber-500 ${
+                      theme === 'dark' ? 'bg-[#0d0e12] border-[#20222b]' : 'bg-slate-50 border-slate-250'
+                    }`}
+                    value={newCliente.saldoDeudor}
+                    onChange={e => setNewCliente({ ...newCliente, saldoDeudor: e.target.value })}
+                  />
+                </div>
+              </div>
+
+              {/* Sección CFDI */}
+              <div className="border-t border-slate-800 pt-4 mt-2">
+                <p className="text-[10px] font-bold text-amber-500 uppercase tracking-wide mb-3">Datos de Facturación Fiscal (CFDI)</p>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-[10px] font-bold uppercase text-slate-500 mb-1.5">RFC</label>
+                    <input 
+                      type="text" 
+                      placeholder="XAXX010101000"
+                      className={`w-full rounded-xl p-3 border text-xs focus:outline-none focus:ring-1 focus:ring-amber-500 ${
+                        theme === 'dark' ? 'bg-[#0d0e12] border-[#20222b]' : 'bg-slate-50 border-slate-250'
+                      }`}
+                      value={newCliente.rfc}
+                      onChange={e => setNewCliente({ ...newCliente, rfc: e.target.value.toUpperCase() })}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold uppercase text-slate-500 mb-1.5">Código Postal SAT</label>
+                    <input 
+                      type="text" 
+                      placeholder="72000"
+                      className={`w-full rounded-xl p-3 border text-xs focus:outline-none focus:ring-1 focus:ring-amber-500 ${
+                        theme === 'dark' ? 'bg-[#0d0e12] border-[#20222b]' : 'bg-slate-50 border-slate-250'
+                      }`}
+                      value={newCliente.codigoPostal}
+                      onChange={e => setNewCliente({ ...newCliente, codigoPostal: e.target.value.replace(/\D/g, '') })}
+                    />
+                  </div>
+                </div>
+                <div className="mt-3">
+                  <label className="block text-[10px] font-bold uppercase text-slate-500 mb-1.5">Razón Social</label>
+                  <input 
+                    type="text" 
+                    placeholder="Nombre registrado ante el SAT"
+                    className={`w-full rounded-xl p-3 border text-xs focus:outline-none focus:ring-1 focus:ring-amber-500 ${
+                      theme === 'dark' ? 'bg-[#0d0e12] border-[#20222b]' : 'bg-slate-50 border-slate-250'
+                    }`}
+                    value={newCliente.razonSocial}
+                    onChange={e => setNewCliente({ ...newCliente, razonSocial: e.target.value })}
+                  />
+                </div>
+                <div className="mt-3">
+                  <label className="block text-[10px] font-bold uppercase text-slate-500 mb-1.5">Régimen Fiscal (Código)</label>
+                  <input 
+                    type="text" 
+                    placeholder="Ej. 601, 612"
+                    className={`w-full rounded-xl p-3 border text-xs focus:outline-none focus:ring-1 focus:ring-amber-500 ${
+                      theme === 'dark' ? 'bg-[#0d0e12] border-[#20222b]' : 'bg-slate-50 border-slate-250'
+                    }`}
+                    value={newCliente.regimenFiscal}
+                    onChange={e => setNewCliente({ ...newCliente, regimenFiscal: e.target.value })}
+                  />
+                </div>
+                <div className="mt-3">
+                  <label className="block text-[10px] font-bold uppercase text-slate-500 mb-1.5">Calle / Dirección Fiscal</label>
+                  <input 
+                    type="text" 
+                    className={`w-full rounded-xl p-3 border text-xs focus:outline-none focus:ring-1 focus:ring-amber-500 ${
+                      theme === 'dark' ? 'bg-[#0d0e12] border-[#20222b]' : 'bg-slate-50 border-slate-250'
+                    }`}
+                    value={newCliente.direccionFiscal}
+                    onChange={e => setNewCliente({ ...newCliente, direccionFiscal: e.target.value })}
+                  />
+                </div>
+              </div>
+              <div className="flex gap-4 pt-4">
+                <button type="submit" className="flex-1 bg-amber-500 hover:bg-amber-400 text-[#0d0e12] font-bold py-3 rounded-xl border-0 cursor-pointer text-xs transition-all active:scale-95">Guardar</button>
+                <button type="button" onClick={() => setShowAddModal(false)} className={`flex-1 font-bold py-3 rounded-xl border bg-transparent cursor-pointer text-xs transition-all hover:bg-slate-500/10 ${theme === 'dark' ? 'border-[#20222b] text-slate-400' : 'border-slate-350 text-slate-650'}`}>Cancelar</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Abono Modal */}
+      {showAbonoModal && selectedCliente && (
+        <div className="fixed inset-0 bg-[#000000]/60 backdrop-blur-sm z-50 flex items-center justify-center">
+          <div className={`p-8 rounded-3xl border w-[400px] shadow-2xl relative ${theme === 'dark' ? 'bg-[#13151b] border-[#20222b]' : 'bg-white border-slate-200'}`}>
+            <button 
+              onClick={() => setShowAbonoModal(false)}
+              className="absolute top-4 right-4 text-slate-500 hover:text-white bg-transparent border-0 cursor-pointer"
+            >
+              <X className="w-5 h-5" />
+            </button>
+            <h3 className="text-md font-bold uppercase tracking-wider mb-2">Registrar Abono</h3>
+            <p className="text-xs text-slate-500 mb-6">Cliente: <strong className="text-white">{selectedCliente.nombre}</strong></p>
+            
+            <div className={`p-4 rounded-xl mb-5 text-center ${theme === 'dark' ? 'bg-[#0d0e12]' : 'bg-slate-50'}`}>
+              <p className="text-[10px] uppercase text-slate-500 font-bold">Saldo Deudor Actual</p>
+              <p className="text-xl font-black text-rose-500 mt-1">${Number(selectedCliente.saldoDeudor).toFixed(2)}</p>
+            </div>
+
+            <form onSubmit={handleAbonoSubmit} className="space-y-4">
+              <div>
+                <label className="block text-[10px] font-bold uppercase text-slate-500 mb-1.5">Monto del Abono</label>
+                <input 
+                  type="number" 
+                  step="0.01"
+                  required
+                  autoFocus
+                  placeholder="0.00"
+                  max={selectedCliente.saldoDeudor}
+                  className={`w-full rounded-xl p-3 border text-xs focus:outline-none focus:ring-1 focus:ring-amber-500 text-center text-lg font-bold font-mono ${
+                    theme === 'dark' ? 'bg-[#0d0e12] border-[#20222b]' : 'bg-slate-50 border-slate-250'
+                  }`}
+                  value={abonoMonto}
+                  onChange={e => setAbonoMonto(e.target.value)}
+                />
+              </div>
+              <div className="flex gap-4 pt-2">
+                <button type="submit" className="flex-1 bg-emerald-500 hover:bg-emerald-450 text-[#0d0e12] font-bold py-3 rounded-xl border-0 cursor-pointer text-xs transition-all active:scale-95">Confirmar Pago</button>
+                <button type="button" onClick={() => setShowAbonoModal(false)} className={`flex-1 font-bold py-3 rounded-xl border bg-transparent cursor-pointer text-xs transition-all hover:bg-slate-500/10 ${theme === 'dark' ? 'border-[#20222b] text-slate-400' : 'border-slate-350 text-slate-655'}`}>Cancelar</button>
               </div>
             </form>
           </div>

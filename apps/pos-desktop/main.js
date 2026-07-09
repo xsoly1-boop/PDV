@@ -46,10 +46,17 @@ app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') app.quit();
 });
 
-// IPC Handler inicial para recibir peticiones nativas del frontend
+// IPC Handler para recibir peticiones nativas del frontend con enrutamiento de impresoras
 ipcMain.handle('print-ticket', async (event, ticketData) => {
-  console.log('[ELECTRON-MAIN] Recibida orden de impresión para ticket:', ticketData);
-  // Aquí es donde se conectará el driver de la impresora térmica esc-pos.
-  // Por ahora, simulamos una impresión exitosa en la terminal de Node de Electron.
-  return { success: true, message: 'Ticket enviado a cola de impresión nativa' };
+  const target = (ticketData.printerTarget || 'caja').toUpperCase();
+  console.log(`[ELECTRON-MAIN] [Printer: ${target}] Recibida orden de impresión para ticket ${ticketData.ticketId}:`);
+  console.log(`- Cajero/Cliente: ${ticketData.cajero}`);
+  console.log(`- Total: $${Number(ticketData.total).toFixed(2)}`);
+  console.log(`- Artículos:`, ticketData.items.map(i => `${i.cantidad}x ${i.nombre}`).join(', '));
+  
+  // Aquí se enviaría el búfer ESC/POS al puerto correspondiente de la impresora (Caja, Bodega o Mostrador)
+  return { 
+    success: true, 
+    message: `Ticket enviado con éxito a la impresora de ${target}` 
+  };
 });
