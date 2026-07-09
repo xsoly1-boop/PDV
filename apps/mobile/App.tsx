@@ -47,13 +47,9 @@ export default function App() {
   const [scanned, setScanned] = useState(false);
 
   useEffect(() => {
-    // Pedir permisos de cámara
-    if (!permission || !permission.granted) {
-      requestPermission();
-    }
     // Cargar productos actualizados de la API central
     fetchProducts();
-  }, [permission]);
+  }, []);
 
   const hasPermission = permission ? permission.granted : null;
 
@@ -192,7 +188,17 @@ export default function App() {
           <View style={styles.bottomNav}>
             <TouchableOpacity 
               style={[styles.navButton, { backgroundColor: '#1a1c24' }]}
-              onPress={() => { setScanned(false); setCurrentView('scanner'); }}
+              onPress={async () => { 
+                setScanned(false); 
+                if (!permission || !permission.granted) {
+                  const res = await requestPermission();
+                  if (!res.granted) {
+                    Alert.alert('Permiso requerido', 'Se requiere acceso a la cámara para usar el escáner de códigos de barras.');
+                    return;
+                  }
+                }
+                setCurrentView('scanner'); 
+              }}
             >
               <Text style={styles.navButtonText}>📷 ESCANEAR</Text>
             </TouchableOpacity>
