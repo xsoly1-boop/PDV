@@ -5,7 +5,13 @@ import {
   Platform, PermissionsAndroid
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
-import { CameraView } from 'expo-camera';
+let CameraView: any = null;
+try {
+  const ExpoCamera = require('expo-camera');
+  CameraView = ExpoCamera.CameraView;
+} catch (e) {
+  console.warn('expo-camera native module is not available:', e);
+}
 
 class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { hasError: boolean; error: Error | null }> {
   constructor(props: any) {
@@ -311,6 +317,8 @@ function MainApp() {
             <Text style={styles.emptyText}>Solicitando permiso de cámara...</Text>
           ) : hasPermission === false ? (
             <Text style={styles.emptyText}>Sin acceso a la cámara. Habilita permisos en ajustes.</Text>
+          ) : !CameraView ? (
+            <Text style={styles.emptyText}>Módulo de cámara no disponible en este dispositivo.</Text>
           ) : (
             <CameraView
               style={StyleSheet.absoluteFillObject}
