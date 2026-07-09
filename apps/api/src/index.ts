@@ -878,110 +878,26 @@ async function liberarReservasExpiradas() {
 }
 
 // ==========================================
-// Inicializar servidor y seed data
+// Inicializar servidor — solo infraestructura mínima (sin datos demo)
 // ==========================================
 async function seedDatabase() {
-  console.log('[SEED] Verificando si se necesita poblar datos iniciales...');
+  console.log('[SEED] Verificando infraestructura mínima del sistema...');
   try {
-    // Si ya existe cualquier usuario, no volver a sembrar datos demo
-    const existingUsers = await prisma.usuario.count();
-    if (existingUsers > 0) {
-      console.log('[SEED] Base de datos ya contiene datos. Saltando seed automatico.');
-      return;
-    }
-
-    // Si ya existe cualquier producto, tampoco sembrar
-    const existingProducts = await prisma.producto.count();
-    if (existingProducts > 0) {
-      console.log('[SEED] Catalogo ya contiene productos. Saltando seed automatico.');
-      return;
-    }
-
-    console.log('[SEED] Base de datos vacia detectada. Iniciando poblado de datos demo...');
-
-    // 1. Seed Sucursal
+    // Solo garantiza que exista la sucursal raíz para que el sistema pueda operar.
+    // NO inserta usuarios, productos ni datos demo.
+    // El Onboarding Wizard del frontend guiará al administrador en el primer arranque.
     await prisma.sucursal.upsert({
       where: { id: 'suc-norte' },
       update: {},
       create: {
         id: 'suc-norte',
-        nombre: 'Sucursal Norte',
-        direccion: 'Calle Falsa 123'
+        nombre: 'Sucursal Principal',
+        direccion: ''
       }
     });
-
-    // 2. Seed Usuarios demo
-    const users = [
-      { id: 'Dorian', nombre: 'Dorian', rol: 'CAJERO', pin: '1234' },
-      { id: 'Carlos M.', nombre: 'Carlos M.', rol: 'ADMINISTRADOR', pin: '9999' },
-      { id: 'Ana G.', nombre: 'Ana G.', rol: 'VENDEDOR_MOVIL', pin: '5555' },
-      { id: 'usr-dorian', nombre: 'Dorian', rol: 'CAJERO', pin: '1234' },
-      { id: 'usr-desconocido', nombre: 'Desconocido', rol: 'CAJERO', pin: '0000' }
-    ];
-
-    for (const u of users) {
-      await prisma.usuario.upsert({
-        where: { id: u.id },
-        update: {},
-        create: {
-          id: u.id,
-          nombre: u.nombre,
-          rol: u.rol as any,
-          pin: u.pin
-        }
-      });
-    }
-
-    // 3. Seed Productos demo
-    const products = [
-      {
-        id: 'AUT-881',
-        sku: 'AUT-881',
-        nombre: 'Balatas Delanteras Cerámicas de Alto Rendimiento',
-        costo: 280.00,
-        precio: 340.00,
-        permiteFracciones: false,
-        metadatos: { oem: 'D-1092', compatible: 'Vento 250 / Honda CGL', garantia: '6 Meses' }
-      },
-      {
-        id: 'FER-092',
-        sku: 'FER-092',
-        nombre: 'Cable de Cobre Calibre 12 THW Aislamiento Extra',
-        costo: 12.00,
-        precio: 18.00,
-        permiteFracciones: true,
-        metadatos: { marca: 'Condumex', ubicacion: 'Pasillo 4, Anaquel B', amperaje_max: '25A' }
-      },
-      {
-        id: 'FER-114',
-        sku: 'FER-114',
-        nombre: 'Disco Abrasivo Corte Metal 4.5" Extra Fino',
-        costo: 30.00,
-        precio: 45.50,
-        permiteFracciones: false,
-        metadatos: { marca: 'Dewalt', rpm_max: '13300', uso: 'Industrial' }
-      }
-    ];
-
-    for (const p of products) {
-      await prisma.producto.upsert({
-        where: { id: p.id },
-        update: {},
-        create: {
-          id: p.id,
-          sku: p.sku,
-          nombre: p.nombre,
-          costo: p.costo,
-          precio: p.precio,
-          permiteFracciones: p.permiteFracciones,
-          metadatos: p.metadatos
-        }
-      });
-    }
-
-    console.log('[SEED] Datos demo insertados correctamente.');
+    console.log('[SEED] Infraestructura base lista. El negocio se configura desde el panel de administración.');
   } catch (error) {
-    console.error('[SEED] Error al poblar base de datos:', error);
+    console.error('[SEED] Error al inicializar infraestructura:', error);
   }
 }
 
