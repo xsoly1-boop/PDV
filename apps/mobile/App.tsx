@@ -5,7 +5,13 @@ import {
   Platform, PermissionsAndroid
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
-const CameraView: any = null;
+let CameraView: any = null;
+try {
+  const ExpoCamera = require('expo-camera');
+  CameraView = ExpoCamera.CameraView;
+} catch (e) {
+  console.warn('expo-camera native module is not available:', e);
+}
 
 class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { hasError: boolean; error: Error | null }> {
   constructor(props: any) {
@@ -101,8 +107,10 @@ function MainApp() {
         setHasPermission(isGranted);
         return isGranted;
       } else {
-        setHasPermission(false);
-        return false;
+        const { Camera } = require('expo-camera');
+        const status = await Camera.requestCameraPermissionsAsync();
+        setHasPermission(status.granted);
+        return status.granted;
       }
     } catch (err) {
       console.warn(err);
@@ -451,12 +459,9 @@ function MainApp() {
 
 export default function App() {
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: '#0d0e12', justifyContent: 'center', alignItems: 'center', padding: 20 }}>
-      <Text style={{ color: '#f59e0b', fontSize: 24, fontWeight: 'bold' }}>APEX DIAGNÓSTICO</Text>
-      <Text style={{ color: '#9ca3af', fontSize: 14, marginTop: 10, textAlign: 'center' }}>
-        Si puedes ver este texto, el motor de JavaScript y React Native están funcionando perfectamente en tu dispositivo.
-      </Text>
-    </SafeAreaView>
+    <ErrorBoundary>
+      <MainApp />
+    </ErrorBoundary>
   );
 }
 
