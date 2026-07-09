@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { 
   StyleSheet, Text, View, TextInput, TouchableOpacity, 
-  FlatList, ScrollView, SafeAreaView, ActivityIndicator, Alert 
+  FlatList, ScrollView, SafeAreaView, ActivityIndicator, Alert, Linking 
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { CameraView, useCameraPermissions } from 'expo-camera';
@@ -41,6 +41,7 @@ export default function App() {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [quoteResult, setQuoteResult] = useState<{ codigoCorto: string; folio: string } | null>(null);
+  const [whatsAppPhone, setWhatsAppPhone] = useState('');
 
   // Cámara para escaneo de códigos de barra
   const [permission, requestPermission] = useCameraPermissions();
@@ -130,6 +131,22 @@ export default function App() {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const shareQuoteOnWhatsApp = (quote: { codigoCorto: string; folio: string }) => {
+    if (!whatsAppPhone) {
+      Alert.alert('Requerido', 'Ingresa el número telefónico del cliente.');
+      return;
+    }
+    const cleanPhone = whatsAppPhone.replace(/\D/g, '');
+    const formattedPhone = cleanPhone.startsWith('52') ? cleanPhone : `521${cleanPhone}`;
+
+    const textMessage = `¡Hola! Te compartimos la cotización de *Apex POS Móvil*:\n\n*Folio:* ${quote.folio}\n*Código de cobro rápido:* *${quote.codigoCorto}*\n\nPresenta el código *${quote.codigoCorto}* en la caja rápida de la tienda para realizar tu pago. ¡Gracias por tu preferencia!`;
+    const waUrl = `https://wa.me/${formattedPhone}?text=${encodeURIComponent(textMessage)}`;
+    
+    Linking.openURL(waUrl).catch(() => {
+      Alert.alert('Error', 'No se pudo abrir WhatsApp en este dispositivo.');
+    });
   };
 
   const filteredProducts = products.filter(p => 
@@ -325,9 +342,30 @@ export default function App() {
           
           <Text style={styles.resultFolio}>{quoteResult.folio}</Text>
 
+          {/* Compartir WhatsApp Panel */}
+          <View style={styles.whatsappPanel}>
+            <Text style={styles.whatsappLabel}>Compartir por WhatsApp:</Text>
+            <View style={styles.whatsappRow}>
+              <TextInput
+                placeholder="Ej: 4491234567"
+                placeholderTextColor="#666"
+                keyboardType="phone-pad"
+                style={styles.whatsappInput}
+                value={whatsAppPhone}
+                onChangeText={setWhatsAppPhone}
+              />
+              <TouchableOpacity 
+                style={styles.whatsappBtn}
+                onPress={() => shareQuoteOnWhatsApp(quoteResult)}
+              >
+                <Text style={styles.whatsappBtnText}>Enviar</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+
           <TouchableOpacity 
-            style={[styles.checkoutBtn, { marginTop: 40, width: '80%' }]}
-            onPress={() => setCurrentView('catalog')}
+            style={[styles.checkoutBtn, { marginTop: 24, width: '80%' }]}
+            onPress={() => { setWhatsAppPhone(''); setCurrentView('catalog'); }}
           >
             <Text style={styles.checkoutBtnText}>Nuevo Pedido</Text>
           </TouchableOpacity>
@@ -569,5 +607,46 @@ const styles = StyleSheet.create({
     fontFamily: 'monospace',
     fontSize: 10,
     marginTop: 12,
+  },
+  whatsappPanel: {
+    marginTop: 24,
+    width: '80%',
+    backgroundColor: '#13151b',
+    borderWidth: 1,
+    borderColor: '#20222b',
+    borderRadius: 16,
+    padding: 16,
+  },
+  whatsappLabel: {
+    color: '#aaa',
+    fontSize: 11,
+    fontWeight: 'bold',
+    marginBottom: 8,
+  },
+  whatsappRow: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  whatsappInput: {
+    flex: 1,
+    backgroundColor: '#0d0e12',
+    color: '#fff',
+    borderWidth: 1,
+    borderColor: '#20222b',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    fontSize: 12,
+  },
+  whatsappBtn: {
+    backgroundColor: '#10b981',
+    borderRadius: 8,
+    justifyContent: 'center',
+    paddingHorizontal: 16,
+  },
+  whatsappBtnText: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: 'bold',
   }
 });

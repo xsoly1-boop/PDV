@@ -264,6 +264,56 @@ app.get('/api/v1/cotizaciones/:id/qr', async (req, res) => {
   }
 });
 
+// Listar cotizaciones activas
+app.get('/api/v1/cotizaciones', async (req, res) => {
+  try {
+    const cotizaciones = await prisma.cotizacion.findMany({
+      where: { estado: 'ACTIVA' },
+      orderBy: { createdAt: 'desc' },
+      include: {
+        detalles: {
+          include: {
+            producto: true
+          }
+        }
+      }
+    });
+    res.json(cotizaciones);
+  } catch (error) {
+    console.error('Error al listar cotizaciones:', error);
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
+});
+
+// Buscar cotización por código corto de 4 dígitos
+app.get('/api/v1/cotizaciones/buscar/:codigoCorto', async (req, res) => {
+  const { codigoCorto } = req.params;
+  try {
+    const cotizacion = await prisma.cotizacion.findFirst({
+      where: { 
+        codigoCorto,
+        estado: 'ACTIVA'
+      },
+      include: {
+        detalles: {
+          include: {
+            producto: true
+          }
+        }
+      }
+    });
+
+    if (!cotizacion) {
+      return res.status(404).json({ error: 'Cotización no encontrada o expirada' });
+    }
+
+    res.json(cotizacion);
+  } catch (error) {
+    console.error('Error al buscar cotización:', error);
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
+});
+
 // ==========================================
 // 3. Módulo de Sincronización (Offline-First)
 // ==========================================

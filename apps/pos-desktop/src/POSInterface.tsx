@@ -2,12 +2,13 @@ import { useState, useEffect } from 'react';
 import { 
   Search, Wifi, User, Clock, 
   Trash2, Plus, Minus, AlertCircle, 
-  Wrench, CarFront, PackageOpen, Zap, Printer,
-  Sun, Moon, LayoutDashboard
+  Wrench, CarFront, PackageOpen, Printer,
+  Sun, Moon, LayoutDashboard, Bookmark, RotateCw, MessageCircle, CheckCircle2, X
 } from 'lucide-react';
 import { LocalDb } from './db/localDb';
 import { SyncService } from './services/SyncService';
 import AdminDashboard from './AdminDashboard';
+import { API_V1 } from './config';
 
 export default function POSInterface() {
   const [time, setTime] = useState(new Date().toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' }));
@@ -15,6 +16,17 @@ export default function POSInterface() {
   const [selectedItemId, setSelectedItemId] = useState(2); // Seleccionamos el cable por defecto
   const [isOnline, setIsOnline] = useState(true);
   const [pendingCount, setPendingCount] = useState(LocalDb.getUnsynced().length);
+
+  // Estados de Cotizaciones Centralizadas
+  const [activeQuotes, setActiveQuotes] = useState<any[]>([]);
+  const [loadingQuotes, setLoadingQuotes] = useState(false);
+  const [showImportQuote, setShowImportQuote] = useState(false);
+  const [importQuoteCode, setImportQuoteCode] = useState('');
+  const [showSaveQuoteModal, setShowSaveQuoteModal] = useState(false);
+  const [quoteClientName, setQuoteClientName] = useState('Público General');
+  const [savedQuoteResult, setSavedQuoteResult] = useState<any | null>(null);
+  const [showSuccessQuoteModal, setShowSuccessQuoteModal] = useState(false);
+  const [whatsAppPhone, setWhatsAppPhone] = useState('');
 
   // Estados de Autenticación y Tema
   const [currentUser, setCurrentUser] = useState<{ nombre: string; rol: string } | null>(null);
@@ -143,6 +155,141 @@ export default function POSInterface() {
       }
     }
   };
+
+  const fetchActiveQuotes = async () => {
+    setLoadingQuotes(true);
+    try {
+      const response = await fetch(`${API_V1}/cotizaciones`);
+      if (response.ok) {
+        const data = await response.json();
+        setActiveQuotes(data);
+      }
+    } catch (e) {
+      console.log('Error al obtener cotizaciones.');
+    } finally {
+      setLoadingQuotes(false);
+    }
+  };
+
+  const handleImportQuote = async (code: string) => {
+    if (code.trim().length !== 4) {
+      alert('Ingresa un código de cotización de 4 dígitos válido');
+      return;
+    }
+    try {
+      const response = await fetch(`${API_V1}/cotizaciones/buscar/${code.trim()}`);
+      if (!response.ok) {
+        throw new Error('Cotización no encontrada o ya expiró');
+      }
+      const quote = await response.json();
+      
+      setCart(prev => {
+        const updated = [...prev];
+        quote.detalles.forEach((detail: any) => {
+          const prod = detail.producto;
+          const idx = updated.findIndex(item => item.sku === prod.sku);
+          if (idx > -1) {
+            updated[idx].cantidad += detail.cantidad;
+          } else {
+            updated.push({
+              id: updated.length + 1,
+              sku: prod.sku,
+              nombre: prod.nombre,
+              tipo: prod.categoria.toLowerCase(),
+              metadata: prod.metadata || { marca: 'Genérica', ubicacion: 'Mostrador' },
+              precio: Number(prod.precio),
+              cantidad: detail.cantidad,
+              unidad: prod.unidad
+            });
+          }
+        });
+        return updated;
+      });
+
+      alert(`Cotización ${quote.folio} importada con éxito.`);
+      setShowImportQuote(false);
+      setImportQuoteCode('');
+      fetchActiveQuotes();
+    } catch (e: any) {
+      alert(e.message || 'Error al conectar con el servidor.');
+    }
+  };
+
+  const handleSaveQuote = async () => {
+    if (cart.length === 0) return;
+    try {
+      const response = await fetch(`${API_V1}/cotizaciones`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          sucursalId: 'suc-norte',
+          usuarioId: currentUser ? currentUser.nombre : 'cajero-principal',
+          clienteNombre: quoteClientName || 'Público General',
+          items: cart.map(item => {
+            const dbProd = products.find((p: any) => p.sku === item.sku);
+            return {
+              productoId: dbProd ? dbProd.id : item.id.toString(),
+              cantidad: item.cantidad
+            };
+          })
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('No se pudo guardar la cotización');
+      }
+
+      const result = await response.json();
+      setSavedQuoteResult(result);
+      setCart([]);
+      setShowSaveQuoteModal(false);
+      setWhatsAppPhone('');
+      setShowSuccessQuoteModal(true);
+      fetchActiveQuotes();
+    } catch (e: any) {
+      alert(e.message || 'Error al guardar la cotización.');
+    }
+  };
+
+  const shareQuoteOnWhatsApp = (quote: any, phone: string) => {
+    if (!phone) {
+      alert('Ingresa un número telefónico.');
+      return;
+    }
+    const cleanPhone = phone.replace(/\D/g, '');
+    const formattedPhone = cleanPhone.startsWith('52') ? cleanPhone : `521${cleanPhone}`;
+
+    let itemDetails = '';
+    quote.detalles.forEach((d: any) => {
+      const pName = d.producto ? d.producto.nombre : 'Producto';
+      itemDetails += `- ${d.cantidad}x ${pName} ($${Number(d.precioUnitario).toFixed(2)})\n`;
+    });
+
+    const textMessage = `¡Hola! Te compartimos la cotización de *${config.businessName}*:\n\n*Folio:* ${quote.folio}\n*Código de cobro rápido:* *${quote.codigoCorto}*\n\n*Productos:*\n${itemDetails}\n*Total estimado:* *$${Number(quote.total).toFixed(2)}*\n\nPresenta el código *${quote.codigoCorto}* en la caja rápida de la tienda para realizar tu pago. ¡Gracias por tu preferencia!`;
+    const waUrl = `https://wa.me/${formattedPhone}?text=${encodeURIComponent(textMessage)}`;
+    
+    if (window.open) {
+      window.open(waUrl, '_blank');
+    }
+  };
+
+  useEffect(() => {
+    fetchActiveQuotes();
+    const interval = setInterval(fetchActiveQuotes, 30000);
+    
+    const handleGlobalKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'F5') {
+        e.preventDefault();
+        setShowImportQuote(true);
+      }
+    };
+    window.addEventListener('keydown', handleGlobalKeyDown);
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('keydown', handleGlobalKeyDown);
+    };
+  }, []);
 
   const forceSync = async () => {
     if (!isOnline) {
@@ -694,14 +841,30 @@ export default function POSInterface() {
               </div>
             </div>
 
-            <button 
-              onClick={handleCheckout}
-              disabled={cart.length === 0}
-              className="w-full bg-emerald-600 hover:bg-emerald-500 text-white text-lg font-black py-3.5 rounded-xl shadow-lg shadow-emerald-900/50 active:scale-[0.98] transition-all flex items-center justify-center gap-3 border-0 disabled:bg-slate-800 disabled:text-slate-400 disabled:cursor-not-allowed cursor-pointer"
-            >
-              COBRAR TICKET
-              <span className="text-emerald-100 font-mono text-xs bg-emerald-800/50 px-2 py-1 rounded border border-emerald-500/30">F12</span>
-            </button>
+            <div className="flex gap-4">
+              <button 
+                onClick={handleCheckout}
+                disabled={cart.length === 0}
+                className="flex-grow bg-emerald-600 hover:bg-emerald-500 text-white text-lg font-black py-3.5 rounded-xl shadow-lg shadow-emerald-900/50 active:scale-[0.98] transition-all flex items-center justify-center gap-3 border-0 disabled:bg-slate-800 disabled:text-slate-400 disabled:cursor-not-allowed cursor-pointer"
+              >
+                COBRAR TICKET
+                <span className="text-emerald-100 font-mono text-xs bg-emerald-800/50 px-2 py-1 rounded border border-emerald-500/30">F12</span>
+              </button>
+              
+              <button 
+                onClick={() => {
+                  if (cart.length > 0) {
+                    setQuoteClientName('Público General');
+                    setShowSaveQuoteModal(true);
+                  }
+                }}
+                disabled={cart.length === 0}
+                className="bg-[#1a1c24] hover:bg-[#252837] border border-[#2b2d3d] text-amber-500 text-sm font-bold px-5 py-3.5 rounded-xl active:scale-[0.98] transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+              >
+                <Bookmark className="w-5 h-5" />
+                COTIZAR
+              </button>
+            </div>
           </div>
         </section>
 
@@ -782,46 +945,221 @@ export default function POSInterface() {
             <div className="flex items-center justify-between mb-3">
               <h3 className={`text-xs font-bold flex items-center gap-2 ${theme === 'dark' ? 'text-slate-200' : 'text-slate-800'}`}>
                 <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse shadow-[0_0_8px_rgba(245,158,11,0.8)]"></span>
-                Pedidos Móviles (2)
+                Pedidos Móviles ({activeQuotes.length})
               </h3>
-              <button className="text-[9px] text-amber-500 hover:text-amber-400 font-semibold flex items-center gap-1 bg-amber-500/10 px-1.5 py-0.5 rounded border border-transparent cursor-pointer">
-                Sync <Zap className="w-2.5 h-2.5" />
-              </button>
+              <div className="flex items-center gap-2">
+                <button 
+                  onClick={() => setShowImportQuote(true)}
+                  className="text-[10px] text-slate-100 bg-[#252837] hover:bg-[#32364c] font-semibold flex items-center gap-1.5 px-2 py-1 rounded border border-[#2c2f42] cursor-pointer border-0"
+                >
+                  Importar (F5)
+                </button>
+                <button 
+                  onClick={fetchActiveQuotes}
+                  className="text-[10px] text-amber-500 hover:text-amber-400 font-semibold flex items-center gap-1 bg-amber-500/10 px-2 py-1 rounded border border-transparent cursor-pointer border-0"
+                >
+                  {loadingQuotes ? '...' : 'Sync'} <RotateCw className="w-2.5 h-2.5" />
+                </button>
+              </div>
             </div>
             
             <div className="flex gap-3 overflow-x-auto pb-2 no-scrollbar">
-              <div className={`min-w-[180px] border rounded-lg p-3 hover:border-amber-500/50 cursor-pointer transition-all group flex flex-col justify-between ${
-                theme === 'dark' ? 'bg-[#0d0e12] border-[#20222b]' : 'bg-slate-50 border-slate-200 shadow-sm'
-              }`}>
-                <div className="flex justify-between items-start mb-2">
-                  <span className="text-[10px] font-bold text-slate-500 group-hover:text-amber-500/70">#COT-0921</span>
-                  <span className={`text-[9px] px-1.5 py-0.5 rounded ${theme === 'dark' ? 'bg-[#252837] text-slate-400' : 'bg-slate-200 text-slate-600'}`}>2m</span>
+              {activeQuotes.map((quote) => {
+                const date = new Date(quote.createdAt);
+                const timeDiff = Math.round((Date.now() - date.getTime()) / 60000);
+                const timeText = timeDiff < 1 ? 'Ahora' : `${timeDiff}m`;
+                
+                return (
+                  <div 
+                    key={quote.id}
+                    onClick={() => handleImportQuote(quote.codigoCorto)}
+                    className={`min-w-[180px] border rounded-lg p-3 hover:border-amber-500/50 cursor-pointer transition-all group flex flex-col justify-between ${
+                      theme === 'dark' ? 'bg-[#0d0e12] border-[#20222b]' : 'bg-slate-50 border-slate-200 shadow-sm'
+                    }`}
+                  >
+                    <div className="flex justify-between items-start mb-2">
+                      <span className="text-[10px] font-bold text-slate-500 group-hover:text-amber-500/70">#{quote.codigoCorto}</span>
+                      <span className={`text-[9px] px-1.5 py-0.5 rounded ${theme === 'dark' ? 'bg-[#252837] text-slate-400' : 'bg-slate-200 text-slate-600'}`}>{timeText}</span>
+                    </div>
+                    <div>
+                      <p className={`text-xs font-bold truncate ${theme === 'dark' ? 'text-slate-200' : 'text-slate-855'}`}>{quote.clienteNombre}</p>
+                      <p className="text-[10px] text-slate-500 mt-1">{quote.detalles.length} art. • Cod: {quote.codigoCorto}</p>
+                    </div>
+                    <p className="text-sm font-black text-amber-500 mt-2">${Number(quote.total).toFixed(2)}</p>
+                  </div>
+                );
+              })}
+              {activeQuotes.length === 0 && (
+                <div className="w-full flex items-center justify-center h-20">
+                  <p className="text-xs text-slate-500 italic">No hay cotizaciones pendientes</p>
                 </div>
-                <div>
-                  <p className={`text-xs font-bold truncate ${theme === 'dark' ? 'text-slate-200' : 'text-slate-850'}`}>Mecánico Taller Hnos.</p>
-                  <p className="text-[10px] text-slate-500 mt-1">4 art. • Vend: Juan</p>
-                </div>
-                <p className="text-sm font-black text-amber-500 mt-2">$1,240.00</p>
-              </div>
-
-              <div className={`min-w-[180px] border rounded-lg p-3 hover:border-amber-500/50 cursor-pointer transition-all group flex flex-col justify-between ${
-                theme === 'dark' ? 'bg-[#0d0e12] border-[#20222b]' : 'bg-slate-50 border-slate-200 shadow-sm'
-              }`}>
-                <div className="flex justify-between items-start mb-2">
-                  <span className="text-[10px] font-bold text-slate-500 group-hover:text-amber-500/70">#COT-0922</span>
-                  <span className={`text-[9px] px-1.5 py-0.5 rounded ${theme === 'dark' ? 'bg-[#252837] text-slate-400' : 'bg-slate-200 text-slate-600'}`}>5m</span>
-                </div>
-                <div>
-                  <p className={`text-xs font-bold truncate ${theme === 'dark' ? 'text-slate-200' : 'text-slate-850'}`}>Público General</p>
-                  <p className="text-[10px] text-slate-400 mt-1">1 art. • Vend: Ana</p>
-                </div>
-                <p className="text-sm font-black text-amber-500 mt-2">$85.00</p>
-              </div>
+              )}
             </div>
           </div>
 
         </section>
       </main>
+
+      {/* MODAL 1: IMPORTAR COTIZACIÓN (F5) */}
+      {showImportQuote && (
+        <div className="fixed inset-0 bg-black/75 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className={`w-full max-w-md rounded-2xl border p-6 shadow-2xl transition-colors ${
+            theme === 'dark' ? 'bg-[#13151b] border-[#262836] text-white' : 'bg-white border-slate-200 text-slate-800'
+          }`}>
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-bold flex items-center gap-2">
+                <PackageOpen className="w-5 h-5 text-amber-500" /> Importar Cotización Móvil
+              </h3>
+              <button 
+                onClick={() => setShowImportQuote(false)}
+                className="text-slate-500 hover:text-slate-400 border-0 bg-transparent cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <p className="text-xs text-slate-400 mb-6">
+              Ingresa el código de 4 dígitos generado desde la aplicación móvil del vendedor para jalar los productos.
+            </p>
+            <form onSubmit={(e) => { e.preventDefault(); handleImportQuote(importQuoteCode); }}>
+              <input
+                type="text"
+                maxLength={4}
+                placeholder="Ej: 5824"
+                className={`w-full text-center text-3xl font-mono font-black tracking-widest rounded-xl py-3 border focus:ring-2 focus:ring-amber-500 focus:outline-none focus:border-transparent ${
+                  theme === 'dark' ? 'bg-[#090a0d] border-[#20222b] text-amber-500' : 'bg-slate-100 border-slate-200 text-slate-800'
+                }`}
+                value={importQuoteCode}
+                onChange={(e) => setImportQuoteCode(e.target.value.replace(/\D/g, ''))}
+                autoFocus
+              />
+              <div className="flex gap-4 mt-6">
+                <button
+                  type="button"
+                  onClick={() => setShowImportQuote(false)}
+                  className={`flex-1 font-bold py-3 rounded-xl border transition-colors cursor-pointer text-sm ${
+                    theme === 'dark' ? 'border-[#262836] text-slate-400 bg-transparent hover:bg-slate-800' : 'border-slate-200 text-slate-500 hover:bg-slate-50'
+                  }`}
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  disabled={importQuoteCode.length !== 4}
+                  className="flex-1 bg-amber-500 hover:bg-amber-400 disabled:bg-slate-800 disabled:text-slate-500 text-slate-950 font-black py-3 rounded-xl transition-colors cursor-pointer border-0 text-sm"
+                >
+                  Importar
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL 2: GUARDAR COTIZACIÓN (DESDE CAJA) */}
+      {showSaveQuoteModal && (
+        <div className="fixed inset-0 bg-black/75 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className={`w-full max-w-md rounded-2xl border p-6 shadow-2xl transition-colors ${
+            theme === 'dark' ? 'bg-[#13151b] border-[#262836] text-white' : 'bg-white border-slate-200 text-slate-800'
+          }`}>
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-bold flex items-center gap-2">
+                <Bookmark className="w-5 h-5 text-amber-500" /> Guardar Cotización Actual
+              </h3>
+              <button 
+                onClick={() => setShowSaveQuoteModal(false)}
+                className="text-slate-500 hover:text-slate-400 border-0 bg-transparent cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <p className="text-xs text-slate-400 mb-6">
+              El ticket actual se guardará en la base de datos central. Podrá cobrarse después ingresando su folio o código.
+            </p>
+            <div className="space-y-4">
+              <div>
+                <label className="text-xs text-slate-500 font-bold mb-1 block">Nombre del Cliente / Referencia</label>
+                <input
+                  type="text"
+                  placeholder="Ej: Juan Pérez / Taller Mecánico"
+                  className={`w-full rounded-xl py-3 px-4 border focus:ring-2 focus:ring-amber-500 focus:outline-none focus:border-transparent ${
+                    theme === 'dark' ? 'bg-[#090a0d] border-[#20222b] text-white' : 'bg-slate-100 border-slate-200 text-slate-800'
+                  }`}
+                  value={quoteClientName}
+                  onChange={(e) => setQuoteClientName(e.target.value)}
+                />
+              </div>
+              <div className="flex gap-4 pt-2">
+                <button
+                  onClick={() => setShowSaveQuoteModal(false)}
+                  className={`flex-1 font-bold py-3 rounded-xl border transition-colors cursor-pointer text-sm ${
+                    theme === 'dark' ? 'border-[#262836] text-slate-400 bg-transparent hover:bg-slate-800' : 'border-slate-200 text-slate-500 hover:bg-slate-50'
+                  }`}
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={handleSaveQuote}
+                  className="flex-1 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black py-3 rounded-xl transition-colors cursor-pointer border-0 text-sm"
+                >
+                  Guardar Cotización
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL 3: ÉXITO COTIZACIÓN + ENVIAR A WHATSAPP */}
+      {showSuccessQuoteModal && savedQuoteResult && (
+        <div className="fixed inset-0 bg-black/75 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className={`w-full max-w-md rounded-2xl border p-6 shadow-2xl transition-colors text-center ${
+            theme === 'dark' ? 'bg-[#13151b] border-[#262836] text-white' : 'bg-white border-slate-200 text-slate-800'
+          }`}>
+            <CheckCircle2 className="w-16 h-16 text-emerald-500 mx-auto mb-4" />
+            <h3 className="text-xl font-black">Cotización Guardada</h3>
+            <p className="text-xs text-slate-500 mt-1 font-mono">{savedQuoteResult.folio}</p>
+            
+            <p className="text-sm text-slate-400 mt-4">Presenta este código de cobro rápido en caja:</p>
+            <div className={`my-4 inline-block px-8 py-3 rounded-2xl border-2 border-amber-500 ${
+              theme === 'dark' ? 'bg-[#090a0d]' : 'bg-amber-500/5'
+            }`}>
+              <span className="text-4xl font-black text-amber-500 font-mono tracking-widest">{savedQuoteResult.codigoCorto}</span>
+            </div>
+
+            <div className="border-t border-[#20222b]/50 pt-4 mt-6 text-left">
+              <h4 className="text-xs font-bold text-slate-400 mb-2 flex items-center gap-1.5">
+                <MessageCircle className="w-4 h-4 text-emerald-500" /> Compartir con el Cliente por WhatsApp
+              </h4>
+              <p className="text-[11px] text-slate-500 mb-3">Ingresa su número para pre-cargar el mensaje con el folio y detalles de compra.</p>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  placeholder="Ej: 4491234567"
+                  className={`flex-1 rounded-xl py-2 px-3 text-xs border focus:ring-1 focus:ring-emerald-500 focus:outline-none ${
+                    theme === 'dark' ? 'bg-[#090a0d] border-[#20222b] text-white' : 'bg-slate-100 border-slate-200 text-slate-800'
+                  }`}
+                  value={whatsAppPhone}
+                  onChange={(e) => setWhatsAppPhone(e.target.value.replace(/\D/g, ''))}
+                />
+                <button
+                  onClick={() => shareQuoteOnWhatsApp(savedQuoteResult, whatsAppPhone)}
+                  disabled={!whatsAppPhone}
+                  className="bg-emerald-600 hover:bg-emerald-500 disabled:bg-slate-800 disabled:text-slate-500 text-white font-bold px-4 py-2 rounded-xl text-xs flex items-center gap-1 transition-colors border-0 cursor-pointer"
+                >
+                  Enviar Link
+                </button>
+              </div>
+            </div>
+
+            <button
+              onClick={() => setShowSuccessQuoteModal(false)}
+              className="w-full mt-6 bg-[#1a1c24] hover:bg-[#252837] border border-[#2b2d3d] text-slate-300 font-bold py-3 rounded-xl transition-all cursor-pointer border-0 text-xs"
+            >
+              Cerrar Caja
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Panel de Administración (Overlay de Pantalla Completa) */}
       {currentView === 'admin' && currentUser && (
