@@ -5,13 +5,7 @@ import {
   Platform, PermissionsAndroid
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
-let CameraView: any = null;
-try {
-  const ExpoCamera = require('expo-camera');
-  CameraView = ExpoCamera.CameraView;
-} catch (e) {
-  console.warn('expo-camera native module is not available:', e);
-}
+const CameraView: any = null;
 
 class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { hasError: boolean; error: Error | null }> {
   constructor(props: any) {
@@ -107,10 +101,8 @@ function MainApp() {
         setHasPermission(isGranted);
         return isGranted;
       } else {
-        const { Camera } = require('expo-camera');
-        const status = await Camera.requestCameraPermissionsAsync();
-        setHasPermission(status.granted);
-        return status.granted;
+        setHasPermission(false);
+        return false;
       }
     } catch (err) {
       console.warn(err);
