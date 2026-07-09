@@ -1,10 +1,47 @@
 import React, { useState, useEffect } from 'react';
 import { 
   StyleSheet, Text, View, TextInput, TouchableOpacity, 
-  FlatList, ScrollView, SafeAreaView, ActivityIndicator, Alert, Linking 
+  FlatList, ScrollView, SafeAreaView, ActivityIndicator, Alert, Linking,
+  Platform, PermissionsAndroid
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
-import { CameraView, useCameraPermissions } from 'expo-camera';
+import { CameraView } from 'expo-camera';
+
+class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { hasError: boolean; error: Error | null }> {
+  constructor(props: any) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+
+  static getDerivedStateFromError(error: Error) {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error: Error, errorInfo: any) {
+    console.log('App Error:', error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <SafeAreaView style={{ flex: 1, backgroundColor: '#0d0e12', justifyContent: 'center', alignItems: 'center', padding: 20 }}>
+          <Text style={{ color: '#ef4444', fontSize: 18, fontWeight: 'bold', marginBottom: 10 }}>Error del Sistema</Text>
+          <ScrollView style={{ backgroundColor: '#1f2937', padding: 10, borderRadius: 8, width: '100%', maxHeight: 300 }}>
+            <Text style={{ color: '#fff', fontSize: 12, fontFamily: 'monospace' }}>{this.state.error?.toString()}</Text>
+            <Text style={{ color: '#9ca3af', fontSize: 10, fontFamily: 'monospace', marginTop: 10 }}>{this.state.error?.stack}</Text>
+          </ScrollView>
+          <TouchableOpacity 
+            style={{ marginTop: 20, backgroundColor: '#f59e0b', paddingHorizontal: 20, paddingVertical: 10, borderRadius: 8 }}
+            onPress={() => this.setState({ hasError: false, error: null })}
+          >
+            <Text style={{ color: '#000', fontWeight: 'bold' }}>Reintentar</Text>
+          </TouchableOpacity>
+        </SafeAreaView>
+      );
+    }
+    return this.props.children;
+  }
+}
 
 // API Central en producción
 const API_URL = 'https://pdventa.onrender.com/api/v1';
@@ -25,7 +62,7 @@ interface CartItem {
   quantity: number;
 }
 
-export default function App() {
+function MainApp() {
   const [currentView, setCurrentView] = useState<'catalog' | 'scanner' | 'cart' | 'result'>('catalog');
   const [searchQuery, setSearchQuery] = useState('');
   
@@ -44,15 +81,42 @@ export default function App() {
   const [whatsAppPhone, setWhatsAppPhone] = useState('');
 
   // Cámara para escaneo de códigos de barra
-  const [permission, requestPermission] = useCameraPermissions();
+  const [hasPermission, setHasPermission] = useState<boolean | null>(null);
   const [scanned, setScanned] = useState(false);
+
+  const requestCameraPermission = async () => {
+    try {
+      if (Platform.OS === 'android') {
+        const granted = await PermissionsAndroid.request(
+          PermissionsAndroid.PERMISSIONS.CAMERA,
+          {
+            title: 'Permiso de Cámara',
+            message: 'Apex requiere acceso a la cámara para escanear códigos de barras.',
+            buttonNeutral: 'Preguntar Después',
+            buttonNegative: 'Cancelar',
+            buttonPositive: 'OK',
+          }
+        );
+        const isGranted = granted === PermissionsAndroid.RESULTS.GRANTED;
+        setHasPermission(isGranted);
+        return isGranted;
+      } else {
+        const { Camera } = require('expo-camera');
+        const status = await Camera.requestCameraPermissionsAsync();
+        setHasPermission(status.granted);
+        return status.granted;
+      }
+    } catch (err) {
+      console.warn(err);
+      setHasPermission(false);
+      return false;
+    }
+  };
 
   useEffect(() => {
     // Cargar productos actualizados de la API central
     fetchProducts();
   }, []);
-
-  const hasPermission = permission ? permission.granted : null;
 
   const fetchProducts = async () => {
     try {
@@ -60,7 +124,17 @@ export default function App() {
       if (response.ok) {
         const data = await response.json();
         if (Array.isArray(data)) {
-          setProducts(data);
+          const mapped = data.map((p: any) => ({
+            id: String(p.id),
+            sku: String(p.sku),
+            codigoBarras: p.codigoBarras ? String(p.codigoBarras) : undefined,
+            nombre: String(p.nombre),
+            categoria: p.categoria ? String(p.categoria) : 'General',
+            precio: Number(p.precio) || 0,
+            stock: Number(p.stock) || 0,
+            unidad: p.unidad ? String(p.unidad) : 'pieza'
+          }));
+          setProducts(mapped);
         }
       }
     } catch (e) {
@@ -207,9 +281,9 @@ export default function App() {
               style={[styles.navButton, { backgroundColor: '#1a1c24' }]}
               onPress={async () => { 
                 setScanned(false); 
-                if (!permission || !permission.granted) {
-                  const res = await requestPermission();
-                  if (!res.granted) {
+                if (!hasPermission) {
+                  const resGranted = await requestCameraPermission();
+                  if (!resGranted) {
                     Alert.alert('Permiso requerido', 'Se requiere acceso a la cámara para usar el escáner de códigos de barras.');
                     return;
                   }
@@ -372,6 +446,14 @@ export default function App() {
         </View>
       )}
     </SafeAreaView>
+  );
+}
+
+export default function App() {
+  return (
+    <ErrorBoundary>
+      <MainApp />
+    </ErrorBoundary>
   );
 }
 
