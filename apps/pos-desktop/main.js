@@ -51,6 +51,7 @@ ipcMain.handle('get-printers', async () => {
   if (!mainWindow) return [];
   try {
     const printers = await mainWindow.webContents.getPrintersAsync();
+    console.log('[ELECTRON-MAIN] Impresoras detectadas en el sistema:', printers.map(p => ({ name: p.name, displayName: p.displayName })));
     return printers;
   } catch (error) {
     console.error('[ELECTRON-MAIN] Error al obtener impresoras:', error);
@@ -189,17 +190,38 @@ ipcMain.handle('print-ticket', async (event, ticketData) => {
         }
 
         printWindow.webContents.print(printOptions, (success, errorType) => {
-          printWindow.close();
           if (success) {
+            printWindow.close();
             resolve({
               success: true,
               message: `Ticket impreso con éxito en la impresora "${printerName || 'Predeterminada'}"`
             });
           } else {
-            console.error('[ELECTRON-MAIN] Falló la impresión:', errorType);
-            resolve({
-              success: false,
-              message: `Fallo al imprimir: ${errorType}`
+            console.warn('[ELECTRON-MAIN] Falló impresión silenciosa, intentando con diálogo interactivo. Error:', errorType);
+            
+            // Intentar con diálogo interactivo de impresión del sistema como fallback
+            const dialogOptions = {
+              silent: false,
+              printBackground: true
+            };
+            if (printerName) {
+              dialogOptions.deviceName = printerName;
+            }
+
+            printWindow.webContents.print(dialogOptions, (dialogSuccess, dialogError) => {
+              printWindow.close();
+              if (dialogSuccess) {
+                resolve({
+                  success: true,
+                  message: `Ticket impreso con éxito (vía diálogo de impresión)`
+                });
+              } else {
+                console.error('[ELECTRON-MAIN] Falló diálogo de impresión:', dialogError);
+                resolve({
+                  success: false,
+                  message: `Fallo al imprimir: ${dialogError || errorType}`
+                });
+              }
             });
           }
         });

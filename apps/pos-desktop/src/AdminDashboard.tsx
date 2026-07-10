@@ -141,7 +141,7 @@ export default function AdminDashboard({ currentUser, theme, onClose, config: in
     fetchCategoriesAndSuppliers();
   }, [activeTab]);
 
-  const [printersList, setPrintersList] = useState<string[]>([]);
+  const [printersList, setPrintersList] = useState<{ name: string; displayName: string }[]>([]);
 
   React.useEffect(() => {
     const fetchSystemPrinters = async () => {
@@ -150,7 +150,10 @@ export default function AdminDashboard({ currentUser, theme, onClose, config: in
         try {
           const list = await electronAPI.getPrinters();
           if (Array.isArray(list)) {
-            setPrintersList(list.map((p: any) => p.name));
+            setPrintersList(list.map((p: any) => ({
+              name: p.name,
+              displayName: p.displayName || p.name
+            })));
           }
         } catch (e) {
           console.error("Error loading system printers:", e);
@@ -1592,8 +1595,8 @@ export default function AdminDashboard({ currentUser, theme, onClose, config: in
                           }}
                         >
                           <option value="">(Impresora del Sistema)</option>
-                          {printersList.map(name => (
-                            <option key={name} value={name}>{name}</option>
+                          {printersList.map(p => (
+                            <option key={p.name} value={p.name}>{p.displayName}</option>
                           ))}
                         </select>
                       </div>
@@ -1612,8 +1615,8 @@ export default function AdminDashboard({ currentUser, theme, onClose, config: in
                           }}
                         >
                           <option value="">(Impresora del Sistema)</option>
-                          {printersList.map(name => (
-                            <option key={name} value={name}>{name}</option>
+                          {printersList.map(p => (
+                            <option key={p.name} value={p.name}>{p.displayName}</option>
                           ))}
                         </select>
                       </div>
@@ -1632,8 +1635,8 @@ export default function AdminDashboard({ currentUser, theme, onClose, config: in
                           }}
                         >
                           <option value="">(Impresora del Sistema)</option>
-                          {printersList.map(name => (
-                            <option key={name} value={name}>{name}</option>
+                          {printersList.map(p => (
+                            <option key={p.name} value={p.name}>{p.displayName}</option>
                           ))}
                         </select>
                       </div>
@@ -1652,8 +1655,8 @@ export default function AdminDashboard({ currentUser, theme, onClose, config: in
                           }}
                         >
                           <option value="">(Impresora del Sistema)</option>
-                          {printersList.map(name => (
-                            <option key={name} value={name}>{name}</option>
+                          {printersList.map(p => (
+                            <option key={p.name} value={p.name}>{p.displayName}</option>
                           ))}
                         </select>
                       </div>
