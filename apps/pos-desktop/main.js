@@ -197,18 +197,11 @@ ipcMain.handle('print-ticket', async (event, ticketData) => {
               message: `Ticket impreso con éxito en la impresora "${printerName || 'Predeterminada'}"`
             });
           } else {
-            console.warn('[ELECTRON-MAIN] Falló impresión silenciosa, intentando con diálogo interactivo. Error:', errorType);
+            console.warn('[ELECTRON-MAIN] Falló impresión silenciosa, intentando con diálogo interactivo limpio. Error:', errorType);
             
-            // Intentar con diálogo interactivo de impresión del sistema como fallback
-            const dialogOptions = {
-              silent: false,
-              printBackground: true
-            };
-            if (printerName) {
-              dialogOptions.deviceName = printerName;
-            }
-
-            printWindow.webContents.print(dialogOptions, (dialogSuccess, dialogError) => {
+            // Intentar con diálogo interactivo de impresión del sistema completamente limpio
+            // Esto evita pasar deviceName o printBackground que fallan con controladores láser
+            printWindow.webContents.print({ silent: false }, (dialogSuccess, dialogError) => {
               printWindow.close();
               if (dialogSuccess) {
                 resolve({
