@@ -1,5 +1,7 @@
 const { app, BrowserWindow, ipcMain } = require('electron');
 const path = require('path');
+const fs = require('fs');
+const os = require('os');
 
 let mainWindow;
 
@@ -66,15 +68,11 @@ ipcMain.handle('print-ticket', async (event, ticketData) => {
   
   console.log(`[ELECTRON-MAIN] [Printer: ${target}] [Dispositivo: ${printerName || 'Default'}] Iniciando impresión...`);
 
-  try {
-    const printWindow = new BrowserWindow({
-      show: false,
-      webPreferences: {
-        nodeIntegration: false,
-        contextIsolation: true
-      }
-    });
+  // Crear archivo temporal local para el ticket HTML ( Chromium confía en archivos file:// locales y no los bloquea como las Data URLs )
+  const tempDir = os.tmpdir();
+  const tempFilePath = path.join(tempDir, `ticket-${Date.now()}.html`);
 
+  try {
     const isThermal58 = ticketData.printerType === 'thermal_58';
     const paperWidth = isThermal58 ? '180px' : '260px'; // Anchura estimativa en pixeles para visor HTML
 
@@ -173,8 +171,20 @@ ipcMain.handle('print-ticket', async (event, ticketData) => {
       </html>
     `;
 
-    // Cargar contenido HTML via Data URL
-    printWindow.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(htmlContent)}`);
+    // Escribir archivo temporal físico
+    fs.writeFileSync(tempFilePath, htmlContent, 'utf8');
+
+    // Ventana oculta para el intento de impresión silenciosa
+    const printWindow = new BrowserWindow({
+      show: false,
+      webPreferences: {
+        nodeIntegration: false,
+        contextIsolation: true
+      }
+    });
+
+    // Cargar archivo local en la ventana de impresión
+    printWindow.loadFile(tempFilePath);
 
     // Retornar una promesa que se resuelva cuando termine la impresión
     return new Promise((resolve) => {
@@ -184,37 +194,55 @@ ipcMain.handle('print-ticket', async (event, ticketData) => {
           printBackground: true
         };
         
-        // Si el usuario especificó una impresora, usarla
         if (printerName) {
           printOptions.deviceName = printerName;
         }
 
         printWindow.webContents.print(printOptions, (success, errorType) => {
           if (success) {
+            // Eliminar archivo temporal y cerrar ventana
+            try { fs.unlinkSync(tempFilePath); } catch (e) {}
             printWindow.close();
             resolve({
               success: true,
               message: `Ticket impreso con éxito en la impresora "${printerName || 'Predeterminada'}"`
             });
           } else {
-            console.warn('[ELECTRON-MAIN] Falló impresión silenciosa, intentando con diálogo interactivo limpio. Error:', errorType);
+            console.warn('[ELECTRON-MAIN] Falló impresión silenciosa, abriendo ventana visible para diálogo nativo. Error:', errorType);
+            printWindow.close();
             
-            // Intentar con diálogo interactivo de impresión del sistema completamente limpio
-            // Esto evita pasar deviceName o printBackground que fallan con controladores láser
-            printWindow.webContents.print({ silent: false }, (dialogSuccess, dialogError) => {
-              printWindow.close();
-              if (dialogSuccess) {
-                resolve({
-                  success: true,
-                  message: `Ticket impreso con éxito (vía diálogo de impresión)`
-                });
-              } else {
-                console.error('[ELECTRON-MAIN] Falló diálogo de impresión:', dialogError);
-                resolve({
-                  success: false,
-                  message: `Fallo al imprimir: ${dialogError || errorType}`
-                });
+            // Crear una ventana visible de respaldo para que macOS pueda anclar el diálogo nativo (las ventanas ocultas fallan al abrir diálogos)
+            const fallbackWindow = new BrowserWindow({
+              width: 340,
+              height: 500,
+              show: true,
+              title: 'Imprimiendo Ticket...',
+              webPreferences: {
+                nodeIntegration: false,
+                contextIsolation: true
               }
+            });
+
+            fallbackWindow.loadFile(tempFilePath);
+
+            fallbackWindow.webContents.on('did-finish-load', () => {
+              fallbackWindow.webContents.print({ silent: false }, (dialogSuccess, dialogError) => {
+                // Eliminar archivo temporal
+                try { fs.unlinkSync(tempFilePath); } catch (e) {}
+                fallbackWindow.close();
+                if (dialogSuccess) {
+                  resolve({
+                    success: true,
+                    message: `Ticket impreso con éxito (vía diálogo de impresión)`
+                  });
+                } else {
+                  console.error('[ELECTRON-MAIN] Falló diálogo de impresión de respaldo:', dialogError);
+                  resolve({
+                    success: false,
+                    message: `Fallo al imprimir: ${dialogError || errorType}`
+                  });
+                }
+              });
             });
           }
         });
@@ -223,6 +251,8 @@ ipcMain.handle('print-ticket', async (event, ticketData) => {
 
   } catch (err) {
     console.error('[ELECTRON-MAIN] Error en proceso de impresión:', err);
+    // Eliminar archivo temporal en caso de excepción
+    try { if (fs.existsSync(tempFilePath)) fs.unlinkSync(tempFilePath); } catch (e) {}
     return {
       success: false,
       message: `Error interno de impresión: ${err.message}`
