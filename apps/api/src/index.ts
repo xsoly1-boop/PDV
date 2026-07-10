@@ -473,17 +473,22 @@ app.get('/api/v1/cotizaciones/:id/qr', async (req, res) => {
   }
 });
 
-// Listar cotizaciones activas
+// Listar cotizaciones (con opción de ver todas para el dashboard)
 app.get('/api/v1/cotizaciones', async (req, res) => {
+  const { all } = req.query;
   try {
     const cotizaciones = await prisma.cotizacion.findMany({
-      where: { estado: 'ACTIVA' },
+      where: all === 'true' ? {} : { estado: 'ACTIVA' },
       orderBy: { creadoAt: 'desc' },
+      take: all === 'true' ? 100 : undefined,
       include: {
         detalles: {
           include: {
             producto: true
           }
+        },
+        usuario: {
+          select: { nombre: true }
         }
       }
     });
@@ -491,6 +496,26 @@ app.get('/api/v1/cotizaciones', async (req, res) => {
   } catch (error) {
     console.error('Error al listar cotizaciones:', error);
     res.status(500).json({ error: 'Error interno del servidor' });
+  }
+});
+
+// PUT /api/v1/cotizaciones/:id/estado (actualizar estado manualmente)
+app.put('/api/v1/cotizaciones/:id/estado', async (req, res) => {
+  const { id } = req.params;
+  const { estado } = req.body;
+
+  if (!estado || !['ACTIVA', 'COMPLETADA', 'EXPIRADA', 'CANCELADA'].includes(estado)) {
+    return res.status(400).json({ error: 'Estado inválido' });
+  }
+
+  try {
+    const updated = await prisma.cotizacion.update({
+      where: { id },
+      data: { estado }
+    });
+    res.json({ success: true, cotizacion: updated });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
   }
 });
 

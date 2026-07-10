@@ -3,11 +3,13 @@ import {
   Search, Wifi, User, Clock, 
   Trash2, Plus, Minus, AlertCircle, 
   Wrench, CarFront, PackageOpen, Printer, Zap,
-  Sun, Moon, LayoutDashboard, Bookmark, RotateCw, MessageCircle, CheckCircle2, X, DollarSign
+  Sun, Moon, LayoutDashboard, Bookmark, RotateCw, MessageCircle, CheckCircle2, X, DollarSign,
+  ClipboardList
 } from 'lucide-react';
 import { LocalDb } from './db/localDb';
 import { SyncService } from './services/SyncService';
 import AdminDashboard from './AdminDashboard';
+import QuotesDashboard from './QuotesDashboard';
 import { API_V1, API_BASE_URL } from './config';
 import OnboardingWizard from './OnboardingWizard';
 interface CompanyConfig {
@@ -226,7 +228,7 @@ export default function POSInterface() {
     }
   }, [currentUser]);
   const [theme, setTheme] = useState<'dark' | 'light'>('dark');
-  const [currentView, setCurrentView] = useState<'pos' | 'admin'>('pos');
+  const [currentView, setCurrentView] = useState<'pos' | 'admin' | 'quotes'>('pos');
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [showCheckoutModal, setShowCheckoutModal] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<'EFECTIVO' | 'TARJETA' | 'TRANSFERENCIA' | 'MIXTO'>('EFECTIVO');
@@ -584,6 +586,48 @@ export default function POSInterface() {
     } catch (e: any) {
       alert(e.message || 'Error al conectar con el servidor.');
     }
+  };
+
+  const handleConvertToSale = (quote: any) => {
+    if (!quote || !quote.detalles) return;
+
+    setTabs(prev => prev.map(t => {
+      if (t.id === activeTabId) {
+        const newCart: any[] = [];
+        quote.detalles.forEach((detail: any) => {
+          const prod = detail.producto;
+          if (!prod) return;
+
+          const qty = Number(detail.cantidad);
+          const metadatos = prod.metadatos || {};
+          const categoria = metadatos.categoria || 'General';
+          const unidad = metadatos.unidad || 'pieza';
+
+          newCart.push({
+            id: newCart.length + 1,
+            productoId: prod.id,
+            sku: prod.sku,
+            nombre: prod.nombre,
+            tipo: categoria.toLowerCase(),
+            metadata: metadatos,
+            precio: Number(detail.precioUnitario),
+            cantidad: qty,
+            unidad: unidad
+          });
+        });
+
+        return {
+          ...t,
+          cart: newCart,
+          cotizacionId: quote.id,
+          clienteNombre: quote.clienteNombre || t.clienteNombre
+        };
+      }
+      return t;
+    }));
+
+    setCurrentView('pos');
+    alert(`Cotización ${quote.folio} convertida con éxito y cargada al carrito.`);
   };
 
   const handleSaveQuote = async () => {
@@ -1318,6 +1362,21 @@ export default function POSInterface() {
 
         <div className="flex items-center justify-end gap-4 w-fit">
           
+          {/* Botón de Cotizaciones */}
+          {currentUser && (
+            <button 
+              onClick={() => setCurrentView('quotes')}
+              className={`font-bold px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-all text-xs border cursor-pointer active:scale-95 ${
+                theme === 'dark' 
+                  ? 'bg-slate-800 hover:bg-slate-700 border-slate-700 text-amber-500 shadow-md' 
+                  : 'bg-white hover:bg-slate-50 border-slate-200 text-amber-600 shadow-sm'
+              }`}
+              title="Ir al Módulo de Cotizaciones"
+            >
+              <ClipboardList className="w-4 h-4" /> Cotizaciones
+            </button>
+          )}
+
           {/* Botón de Administración */}
           {currentUser && currentUser.rol === 'Administrador' && (
             <button 
@@ -2057,6 +2116,15 @@ export default function POSInterface() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Módulo de Gestión de Cotizaciones (Overlay de Pantalla Completa) */}
+      {currentView === 'quotes' && currentUser && (
+        <QuotesDashboard 
+          theme={theme} 
+          onClose={() => setCurrentView('pos')} 
+          onConvertToSale={handleConvertToSale}
+        />
       )}
 
       {/* Panel de Administración (Overlay de Pantalla Completa) */}
