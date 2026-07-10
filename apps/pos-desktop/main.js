@@ -187,9 +187,7 @@ ipcMain.handle('print-ticket', async (event, ticketData) => {
     return new Promise((resolve) => {
       printWindow.webContents.on('did-finish-load', () => {
         const printOptions = {
-          silent: true,
-          printBackground: true,
-          margins: { marginType: 'default' }
+          silent: true
         };
         
         if (printerName) {
@@ -206,14 +204,14 @@ ipcMain.handle('print-ticket', async (event, ticketData) => {
               message: `Ticket impreso con éxito en la impresora "${printerName || 'Predeterminada'}"`
             });
           } else {
-            console.warn('[ELECTRON-MAIN] Falló impresión silenciosa, abriendo ventana visible para diálogo nativo. Error:', errorType);
+            console.warn('[ELECTRON-MAIN] Falló impresión silenciosa, abriendo ventana visible de respaldo. Error:', errorType);
             printWindow.close();
             
-            // Crear una ventana visible de respaldo para que macOS pueda anclar el diálogo nativo (las ventanas ocultas fallan al abrir diálogos)
+            // Crear ventana oculta al inicio
             const fallbackWindow = new BrowserWindow({
               width: 340,
               height: 500,
-              show: true,
+              show: false,
               title: 'Imprimiendo Ticket...',
               webPreferences: {
                 nodeIntegration: false,
@@ -223,23 +221,38 @@ ipcMain.handle('print-ticket', async (event, ticketData) => {
 
             fallbackWindow.loadFile(tempFilePath);
 
-            fallbackWindow.webContents.on('did-finish-load', () => {
-              fallbackWindow.webContents.print({ silent: false, margins: { marginType: 'default' } }, (dialogSuccess, dialogError) => {
-                // Eliminar archivo temporal
-                try { fs.unlinkSync(tempFilePath); } catch (e) {}
-                fallbackWindow.close();
-                if (dialogSuccess) {
-                  resolve({
-                    success: true,
-                    message: `Ticket impreso con éxito (vía diálogo de impresión)`
-                  });
-                } else {
-                  console.error('[ELECTRON-MAIN] Falló diálogo de impresión de respaldo:', dialogError);
-                  resolve({
-                    success: false,
-                    message: `Fallo al imprimir: ${dialogError || errorType}`
-                  });
-                }
+            // Esperar a que la ventana esté lista para mostrarse y dibujada
+            fallbackWindow.once('ready-to-show', () => {
+              fallbackWindow.show();
+              
+              // Pequeña espera para asegurar que el sistema operativo ha inicializado el contexto gráfico de la ventana
+              setTimeout(() => {
+                fallbackWindow.webContents.print({ silent: false }, (dialogSuccess, dialogError) => {
+                  try { fs.unlinkSync(tempFilePath); } catch (e) {}
+                  fallbackWindow.close();
+                  if (dialogSuccess) {
+                    resolve({
+                      success: true,
+                      message: `Ticket impreso con éxito (vía diálogo de impresión)`
+                    });
+                  } else {
+                    console.error('[ELECTRON-MAIN] Falló diálogo de impresión de respaldo:', dialogError);
+                    resolve({
+                      success: false,
+                      message: `Fallo al imprimir: ${dialogError || errorType}`
+                    });
+                  }
+                });
+              }, 400); // 400ms de retraso para pintar la ventana
+            });
+
+            // Si hay un error cargando el archivo de respaldo
+            fallbackWindow.webContents.on('did-fail-load', () => {
+              try { fs.unlinkSync(tempFilePath); } catch (e) {}
+              fallbackWindow.close();
+              resolve({
+                success: false,
+                message: `Error al cargar plantilla de impresión de respaldo.`
               });
             });
           }
