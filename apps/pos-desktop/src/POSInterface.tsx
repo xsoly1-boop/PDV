@@ -468,7 +468,7 @@ export default function POSInterface() {
 
     const delayDebounceFn = setTimeout(() => {
       fetchProducts(searchQuery.trim());
-    }, 300);
+    }, 150);
 
     return () => clearTimeout(delayDebounceFn);
   }, [searchQuery]);

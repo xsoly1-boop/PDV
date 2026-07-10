@@ -25,7 +25,6 @@ app.get('/api/v1/productos/buscar', async (req, res) => {
       where: term ? {
         OR: [
           { nombre: { contains: term, mode: 'insensitive' } },
-          { descripcion: { contains: term, mode: 'insensitive' } },
           { sku: { contains: term, mode: 'insensitive' } },
           {
             codigos: {
