@@ -142,6 +142,46 @@ app.post('/api/v1/productos', async (req, res) => {
   }
 });
 
+// POST /api/v1/productos/:id/stock (sumar stock)
+app.post('/api/v1/productos/:id/stock', async (req, res) => {
+  const { id } = req.params;
+  const { cantidad, sucursalId } = req.body;
+
+  if (cantidad === undefined || isNaN(Number(cantidad)) || Number(cantidad) <= 0) {
+    return res.status(400).json({ error: 'Cantidad inválida para agregar al stock' });
+  }
+
+  try {
+    let targetSucursalId = sucursalId;
+    if (!targetSucursalId) {
+      const defaultSucursal = await prisma.sucursal.findFirst();
+      targetSucursalId = defaultSucursal?.id || 'suc-norte';
+    }
+
+    const balance = await prisma.inventarioBalance.upsert({
+      where: {
+        sucursalId_productoId: {
+          sucursalId: targetSucursalId,
+          productoId: id
+        }
+      },
+      update: {
+        stockReal: { increment: Number(cantidad) }
+      },
+      create: {
+        sucursalId: targetSucursalId,
+        productoId: id,
+        stockReal: Number(cantidad)
+      }
+    });
+
+    res.json({ success: true, balance });
+  } catch (error: any) {
+    console.error('Error al actualizar stock:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // PUT /api/v1/productos/:id (actualizar)
 app.put('/api/v1/productos/:id', async (req, res) => {
   const { id } = req.params;

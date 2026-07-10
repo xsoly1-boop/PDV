@@ -81,6 +81,39 @@ class ErrorBoundary extends React.Component<
   }
 }
 
+// ─── AuthGuard & Access Denied ─────────────────────────────────────────────
+interface AuthGuardProps {
+  user: AuthUser;
+  allowedRoles: Array<'admin' | 'gerente' | 'vendedor'>;
+  fallback?: React.ReactNode;
+  children: React.ReactNode;
+}
+
+function AuthGuard({ user, allowedRoles, fallback = null, children }: AuthGuardProps) {
+  if (allowedRoles.includes(user.role)) {
+    return <>{children}</>;
+  }
+  return <>{fallback}</>;
+}
+
+function AccessDeniedScreen({ onBack }: { onBack: () => void }) {
+  return (
+    <SafeAreaView style={{ flex: 1, backgroundColor: '#0d0e12', justifyContent: 'center', alignItems: 'center', padding: 24 }}>
+      <Text style={{ fontSize: 64, color: '#ef4444', marginBottom: 16 }}>🚫</Text>
+      <Text style={{ color: '#fff', fontSize: 22, fontWeight: '900', marginBottom: 8, textAlign: 'center' }}>Acceso Denegado</Text>
+      <Text style={{ color: '#666', fontSize: 14, textAlign: 'center', marginBottom: 32, paddingHorizontal: 16 }}>
+        Tu rol actual no tiene autorización para ingresar a este módulo. Por favor contacta al administrador del sistema.
+      </Text>
+      <TouchableOpacity
+        style={{ backgroundColor: '#f59e0b', borderRadius: 16, paddingVertical: 14, paddingHorizontal: 32, width: '100%', maxWidth: 260, alignItems: 'center' }}
+        onPress={onBack}
+      >
+        <Text style={{ color: '#000', fontWeight: 'bold', fontSize: 14 }}>Regresar al Inicio</Text>
+      </TouchableOpacity>
+    </SafeAreaView>
+  );
+}
+
 // ─── PIN Login Screen ──────────────────────────────────────────────────────
 function LoginScreen({ onLogin }: { onLogin: (user: AuthUser) => void }) {
   const [pin, setPin] = useState('');
@@ -187,7 +220,7 @@ function LoginScreen({ onLogin }: { onLogin: (user: AuthUser) => void }) {
 
 // ─── Main App ──────────────────────────────────────────────────────────────
 function MainApp({ user, onLogout }: { user: AuthUser; onLogout: () => void }) {
-  const [currentView, setCurrentView] = useState<'catalog' | 'scanner' | 'cart' | 'result'>('catalog');
+  const [currentView, setCurrentView] = useState<'catalog' | 'scanner' | 'cart' | 'result' | 'inventory'>('catalog');
   const [searchQuery, setSearchQuery] = useState('');
   const [products, setProducts] = useState<Product[]>([]);   // ← starts empty, no demo data
   const [cart, setCart] = useState<CartItem[]>([]);
@@ -202,6 +235,22 @@ function MainApp({ user, onLogout }: { user: AuthUser; onLogout: () => void }) {
   const [paymentMethod, setPaymentMethod] = useState<'EFECTIVO' | 'TARJETA' | 'TRANSFERENCIA'>('EFECTIVO');
   const [receivedAmount, setReceivedAmount] = useState('');
   const [changeAmount, setChangeAmount] = useState(0);
+
+  // Estados para el Módulo de Inventario
+  const [showAddStockModal, setShowAddStockModal] = useState(false);
+  const [showCreateProductModal, setShowCreateProductModal] = useState(false);
+  const [scannedInventoryCode, setScannedInventoryCode] = useState('');
+  const [scannedProduct, setScannedProduct] = useState<any>(null);
+  const [addStockQuantity, setAddStockQuantity] = useState('');
+  const [inventoryScanned, setInventoryScanned] = useState(false);
+
+  // Estados del Formulario de Alta Rápida (Producto Nuevo)
+  const [newProductName, setNewProductName] = useState('');
+  const [newProductDescription, setNewProductDescription] = useState('');
+  const [newProductCosto, setNewProductCosto] = useState('');
+  const [newProductPrecio, setNewProductPrecio] = useState('');
+  const [newProductStock, setNewProductStock] = useState('');
+  const [newProductUnidad, setNewProductUnidad] = useState('pieza');
 
   const requestCameraPermission = async () => {
     try {
@@ -398,6 +447,137 @@ function MainApp({ user, onLogout }: { user: AuthUser; onLogout: () => void }) {
     }
   };
 
+  const handleInventoryBarCodeScanned = async ({ type, data }: { type: string; data: string }) => {
+    setInventoryScanned(true);
+    setIsLoading(true);
+    try {
+      const response = await fetch(`${API_URL}/productos/escanear/${data}`);
+      if (response.ok) {
+        const product = await response.json();
+        // Escenario A: El producto YA existe
+        setScannedProduct(product.producto || product);
+        setScannedInventoryCode(data);
+        setAddStockQuantity('');
+        setShowAddStockModal(true);
+      } else if (response.status === 404) {
+        // Escenario B: El producto es NUEVO / No existe
+        setScannedProduct(null);
+        setScannedInventoryCode(data);
+        setNewProductName('');
+        setNewProductDescription('');
+        setNewProductCosto('');
+        setNewProductPrecio('');
+        setNewProductStock('');
+        setNewProductUnidad('pieza');
+        setShowCreateProductModal(true);
+      } else {
+        throw new Error('Respuesta inesperada del servidor');
+      }
+    } catch (e: any) {
+      console.warn('Error al verificar código en inventario:', e);
+      Alert.alert('Error', 'No se pudo verificar el código de barras. Intente nuevamente.', [
+        { text: 'Aceptar', onPress: () => setInventoryScanned(false) }
+      ]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleSaveAddStock = async () => {
+    const qty = Number(addStockQuantity);
+    if (isNaN(qty) || qty <= 0) {
+      Alert.alert('Cantidad Inválida', 'Por favor ingresa un número de piezas válido mayor a cero.');
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (user.token) headers['Authorization'] = `Bearer ${user.token}`;
+
+      const response = await fetch(`${API_URL}/productos/${scannedProduct.id}/stock`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ cantidad: qty })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Error al actualizar stock');
+      }
+
+      // Recargar catálogo y cerrar modal
+      fetchProducts();
+      setShowAddStockModal(false);
+      Alert.alert('Inventario Actualizado', `Se agregaron ${qty} unidades con éxito a "${scannedProduct.nombre}".`);
+    } catch (e: any) {
+      Alert.alert('Error', e.message || 'No se pudo guardar la actualización en la base de datos.');
+    } finally {
+      setIsLoading(false);
+      setInventoryScanned(false);
+    }
+  };
+
+  const handleSaveNewProduct = async () => {
+    if (!newProductName.trim()) {
+      Alert.alert('Requerido', 'Por favor ingresa el nombre del producto.');
+      return;
+    }
+
+    const costo = Number(newProductCosto);
+    const precio = Number(newProductPrecio);
+    const stockVal = Number(newProductStock);
+
+    if (isNaN(costo) || costo < 0) {
+      Alert.alert('Costo Inválido', 'El precio de compra debe ser un número válido.');
+      return;
+    }
+    if (isNaN(precio) || precio < 0) {
+      Alert.alert('Precio Inválido', 'El precio de venta debe ser un número válido.');
+      return;
+    }
+    if (isNaN(stockVal) || stockVal < 0) {
+      Alert.alert('Stock Inválido', 'La cantidad inicial debe ser un número válido.');
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (user.token) headers['Authorization'] = `Bearer ${user.token}`;
+
+      const response = await fetch(`${API_URL}/productos`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          sku: scannedInventoryCode,
+          codigoBarras: scannedInventoryCode,
+          nombre: newProductName.trim(),
+          descripcion: newProductDescription.trim(),
+          costo,
+          precio,
+          stock: stockVal,
+          unidad: newProductUnidad
+        })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Error al guardar el nuevo producto');
+      }
+
+      // Recargar catálogo y cerrar modal
+      fetchProducts();
+      setShowCreateProductModal(false);
+      Alert.alert('Producto Creado', `El producto "${newProductName}" se registró con éxito en la base de datos.`);
+    } catch (e: any) {
+      Alert.alert('Error', e.message || 'No se pudo crear el producto nuevo en el servidor.');
+    } finally {
+      setIsLoading(false);
+      setInventoryScanned(false);
+    }
+  };
+
   const shareQuoteOnWhatsApp = (quote: { codigoCorto: string; folio: string }) => {
     if (!whatsAppPhone) {
       Alert.alert('Requerido', 'Ingresa el número telefónico del cliente.');
@@ -488,7 +668,7 @@ function MainApp({ user, onLogout }: { user: AuthUser; onLogout: () => void }) {
 
           <View style={styles.bottomNav}>
             <TouchableOpacity
-              style={[styles.navButton, { backgroundColor: '#1a1c24' }]}
+              style={[styles.navButton, { backgroundColor: '#1a1c24', borderWidth: 1, borderColor: '#20222b' }]}
               onPress={async () => {
                 setScanned(false);
                 if (!hasPermission) {
@@ -498,8 +678,25 @@ function MainApp({ user, onLogout }: { user: AuthUser; onLogout: () => void }) {
                 setCurrentView('scanner');
               }}
             >
-              <Text style={styles.navButtonText}>📷 ESCANEAR</Text>
+              <Text style={[styles.navButtonText, { color: '#fff' }]}>📷 ESCANEAR</Text>
             </TouchableOpacity>
+
+            {(user.role === 'admin' || user.role === 'gerente') && (
+              <TouchableOpacity
+                style={[styles.navButton, { backgroundColor: '#1e3a8a', borderWidth: 1, borderColor: '#3b82f644' }]}
+                onPress={async () => {
+                  setScanned(false);
+                  if (!hasPermission) {
+                    const ok = await requestCameraPermission();
+                    if (!ok) { Alert.alert('Permiso requerido', 'Se requiere acceso a la cámara.'); return; }
+                  }
+                  setCurrentView('inventory');
+                }}
+              >
+                <Text style={[styles.navButtonText, { color: '#fff' }]}>📦 INVENTARIO</Text>
+              </TouchableOpacity>
+            )}
+
             <TouchableOpacity style={styles.navButton} onPress={() => setCurrentView('cart')}>
               <Text style={styles.navButtonText}>🛒 PEDIDO ({cart.length})</Text>
             </TouchableOpacity>
@@ -527,6 +724,47 @@ function MainApp({ user, onLogout }: { user: AuthUser; onLogout: () => void }) {
             <Text style={styles.navButtonText}>← Volver al Catálogo</Text>
           </TouchableOpacity>
         </View>
+      )}
+
+      {/* INVENTORY SCANNER VIEW (PROTECTED BY AUTHGUARD) */}
+      {currentView === 'inventory' && (
+        <AuthGuard
+          user={user}
+          allowedRoles={['admin', 'gerente']}
+          fallback={<AccessDeniedScreen onBack={() => setCurrentView('catalog')} />}
+        >
+          <View style={styles.content}>
+            {hasPermission === null ? (
+              <Text style={styles.emptyText}>Solicitando permiso de cámara…</Text>
+            ) : hasPermission === false ? (
+              <Text style={styles.emptyText}>Sin acceso a la cámara. Habilita permisos en ajustes.</Text>
+            ) : !CameraView ? (
+              <Text style={styles.emptyText}>Módulo de cámara no disponible.</Text>
+            ) : (
+              <CameraView
+                style={StyleSheet.absoluteFillObject}
+                facing="back"
+                onBarcodeScanned={inventoryScanned ? undefined : handleInventoryBarCodeScanned}
+              />
+            )}
+            <View style={{
+              position: 'absolute',
+              top: 20,
+              left: 20,
+              right: 20,
+              backgroundColor: 'rgba(0,0,0,0.7)',
+              padding: 12,
+              borderRadius: 12,
+              alignItems: 'center',
+            }}>
+              <Text style={{ color: '#fff', fontWeight: 'bold', fontSize: 12 }}>📦 MÓDULO DE INVENTARIO</Text>
+              <Text style={{ color: '#aaa', fontSize: 10, marginTop: 2 }}>Escanea el código de barras del producto</Text>
+            </View>
+            <TouchableOpacity style={styles.closeScannerButton} onPress={() => setCurrentView('catalog')}>
+              <Text style={styles.navButtonText}>← Volver al Catálogo</Text>
+            </TouchableOpacity>
+          </View>
+        </AuthGuard>
       )}
 
       {/* CART VIEW */}
@@ -752,6 +990,188 @@ function MainApp({ user, onLogout }: { user: AuthUser; onLogout: () => void }) {
               </TouchableOpacity>
             </View>
           </View>
+        </View>
+      </Modal>
+
+      {/* Modal A: Sumar Stock Rápido (Producto Existente) */}
+      <Modal
+        visible={showAddStockModal}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => {
+          setShowAddStockModal(false);
+          setInventoryScanned(false);
+        }}
+      >
+        <View style={modalStyles.overlay}>
+          <View style={modalStyles.content}>
+            <Text style={modalStyles.title}>📥 SUMAR STOCK</Text>
+            
+            {scannedProduct && (
+              <View style={modalStyles.totalContainer}>
+                <Text style={[modalStyles.totalLabel, { color: '#f59e0b', fontSize: 14 }]}>
+                  {scannedProduct.nombre}
+                </Text>
+                <Text style={[modalStyles.totalLabel, { marginTop: 8 }]}>
+                  Stock Actual: {scannedProduct.stock || (scannedProduct.balances ? scannedProduct.balances.reduce((sum: number, b: any) => sum + Number(b.stockReal), 0) : 0)} {scannedProduct.unidad || scannedProduct.metadatos?.unidad || 'pieza'}
+                </Text>
+                <Text style={{ color: '#666', fontSize: 10, marginTop: 4 }}>
+                  SKU: {scannedProduct.sku}
+                </Text>
+              </View>
+            )}
+
+            <Text style={modalStyles.sectionLabel}>Piezas a agregar:</Text>
+            <TextInput
+              style={[modalStyles.input, { marginBottom: 20 }]}
+              keyboardType="numeric"
+              placeholder="0"
+              placeholderTextColor="#777"
+              value={addStockQuantity}
+              onChangeText={setAddStockQuantity}
+            />
+
+            <View style={modalStyles.actionRow}>
+              <TouchableOpacity
+                style={[modalStyles.actionBtn, modalStyles.cancelBtn]}
+                onPress={() => {
+                  setShowAddStockModal(false);
+                  setInventoryScanned(false);
+                }}
+              >
+                <Text style={modalStyles.cancelBtnText}>Cancelar</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity
+                style={[modalStyles.actionBtn, modalStyles.confirmBtn]}
+                onPress={handleSaveAddStock}
+                disabled={isLoading}
+              >
+                {isLoading ? (
+                  <ActivityIndicator color="#fff" />
+                ) : (
+                  <Text style={modalStyles.confirmBtnText}>Agregar</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Modal B: Alta Rápida de Producto Nuevo (Producto Inexistente) */}
+      <Modal
+        visible={showCreateProductModal}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => {
+          setShowCreateProductModal(false);
+          setInventoryScanned(false);
+        }}
+      >
+        <View style={modalStyles.overlay}>
+          <ScrollView contentContainerStyle={{ flexGrow: 1, justifyContent: 'center', alignItems: 'center', width: '100%' }}>
+            <View style={[modalStyles.content, { marginVertical: 40 }]}>
+              <Text style={modalStyles.title}>✨ NUEVO PRODUCTO</Text>
+              
+              <Text style={modalStyles.sectionLabel}>SKU / Código (Leído):</Text>
+              <TextInput
+                style={[modalStyles.input, { backgroundColor: '#1f2937', color: '#888', marginBottom: 12, fontSize: 14 }]}
+                editable={false}
+                value={scannedInventoryCode}
+              />
+
+              <Text style={modalStyles.sectionLabel}>Nombre (*):</Text>
+              <TextInput
+                style={[modalStyles.input, { marginBottom: 12, fontSize: 14, textAlign: 'left', paddingHorizontal: 12 }]}
+                placeholder="Nombre del producto"
+                placeholderTextColor="#777"
+                value={newProductName}
+                onChangeText={setNewProductName}
+              />
+
+              <Text style={modalStyles.sectionLabel}>Descripción:</Text>
+              <TextInput
+                style={[modalStyles.input, { marginBottom: 12, fontSize: 14, textAlign: 'left', paddingHorizontal: 12 }]}
+                placeholder="Descripción opcional"
+                placeholderTextColor="#777"
+                value={newProductDescription}
+                onChangeText={setNewProductDescription}
+              />
+
+              <View style={{ flexDirection: 'row', gap: 12 }}>
+                <View style={{ flex: 1 }}>
+                  <Text style={modalStyles.sectionLabel}>Costo ($):</Text>
+                  <TextInput
+                    style={[modalStyles.input, { marginBottom: 12, fontSize: 14 }]}
+                    keyboardType="numeric"
+                    placeholder="0.00"
+                    placeholderTextColor="#777"
+                    value={newProductCosto}
+                    onChangeText={setNewProductCosto}
+                  />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={modalStyles.sectionLabel}>Precio ($):</Text>
+                  <TextInput
+                    style={[modalStyles.input, { marginBottom: 12, fontSize: 14 }]}
+                    keyboardType="numeric"
+                    placeholder="0.00"
+                    placeholderTextColor="#777"
+                    value={newProductPrecio}
+                    onChangeText={setNewProductPrecio}
+                  />
+                </View>
+              </View>
+
+              <View style={{ flexDirection: 'row', gap: 12 }}>
+                <View style={{ flex: 1 }}>
+                  <Text style={modalStyles.sectionLabel}>Stock Inicial:</Text>
+                  <TextInput
+                    style={[modalStyles.input, { marginBottom: 16, fontSize: 14 }]}
+                    keyboardType="numeric"
+                    placeholder="0"
+                    placeholderTextColor="#777"
+                    value={newProductStock}
+                    onChangeText={setNewProductStock}
+                  />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={modalStyles.sectionLabel}>Unidad:</Text>
+                  <TextInput
+                    style={[modalStyles.input, { marginBottom: 16, fontSize: 14, textAlign: 'left', paddingHorizontal: 12 }]}
+                    placeholder="pieza / kg / etc"
+                    placeholderTextColor="#777"
+                    value={newProductUnidad}
+                    onChangeText={setNewProductUnidad}
+                  />
+                </View>
+              </View>
+
+              <View style={modalStyles.actionRow}>
+                <TouchableOpacity
+                  style={[modalStyles.actionBtn, modalStyles.cancelBtn]}
+                  onPress={() => {
+                    setShowCreateProductModal(false);
+                    setInventoryScanned(false);
+                  }}
+                >
+                  <Text style={modalStyles.cancelBtnText}>Cancelar</Text>
+                </TouchableOpacity>
+                
+                <TouchableOpacity
+                  style={[modalStyles.actionBtn, modalStyles.confirmBtn]}
+                  onPress={handleSaveNewProduct}
+                  disabled={isLoading}
+                >
+                  {isLoading ? (
+                    <ActivityIndicator color="#fff" />
+                  ) : (
+                    <Text style={modalStyles.confirmBtnText}>Guardar</Text>
+                  )}
+                </TouchableOpacity>
+              </View>
+            </View>
+          </ScrollView>
         </View>
       </Modal>
     </SafeAreaView>
