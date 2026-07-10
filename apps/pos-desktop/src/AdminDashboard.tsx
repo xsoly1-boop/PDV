@@ -19,6 +19,10 @@ interface CompanyConfig {
   giro?: string;
   ticketMessage?: string;
   printerType?: 'thermal_58' | 'thermal_80' | 'pdf_a4' | 'virtual';
+  printerCaja?: string;
+  printerCliente?: string;
+  printerMovil?: string;
+  printerBodega?: string;
   allowCash?: boolean;
   allowCard?: boolean;
   allowTransfer?: boolean;
@@ -136,6 +140,25 @@ export default function AdminDashboard({ currentUser, theme, onClose, config: in
     fetchFinanzasReport();
     fetchCategoriesAndSuppliers();
   }, [activeTab]);
+
+  const [printersList, setPrintersList] = useState<string[]>([]);
+
+  React.useEffect(() => {
+    const fetchSystemPrinters = async () => {
+      const electronAPI = (window as any).electronAPI;
+      if (electronAPI && electronAPI.getPrinters) {
+        try {
+          const list = await electronAPI.getPrinters();
+          if (Array.isArray(list)) {
+            setPrintersList(list.map((p: any) => p.name));
+          }
+        } catch (e) {
+          console.error("Error loading system printers:", e);
+        }
+      }
+    };
+    fetchSystemPrinters();
+  }, []);
 
   // Modals / Form States
   const [showProductModal, setShowProductModal] = useState(false);
@@ -1514,6 +1537,97 @@ export default function AdminDashboard({ currentUser, theme, onClose, config: in
                         value={config.ticketMessage || ''}
                         onChange={e => setConfig({ ...config, ticketMessage: e.target.value })}
                       />
+                    </div>
+                  </div>
+
+                  {/* Selección de Impresoras del Sistema */}
+                  <div className="border-t border-slate-750/30 pt-4 mt-4">
+                    <h4 className="text-xs font-bold uppercase tracking-wider mb-3 text-slate-500">Asignación de Impresoras Físicas (Local por PC)</h4>
+                    {!(window as any).electronAPI && (
+                      <p className="text-xs text-amber-500 mb-4 bg-amber-500/10 p-3 rounded-xl border border-amber-500/20 font-medium">
+                        ⚠️ <strong>Modo Navegador Detectado</strong>: No se detectó la aplicación de escritorio. Para poder ver y seleccionar las impresoras físicas instaladas en esta computadora (como tu Samsung ML-2240), debes abrir la aplicación desde el cliente de escritorio o ejecutarla usando <code>npm run electron:dev</code>.
+                      </p>
+                    )}
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                      <div>
+                        <label className="block text-[10px] font-bold uppercase text-slate-500 mb-2">Impresora Caja</label>
+                        <select
+                          className={`w-full rounded-xl p-3 border focus:outline-none focus:ring-2 focus:ring-amber-500 text-xs ${
+                            theme === 'dark' ? 'bg-[#1a1c24] border-[#262836] text-white' : 'bg-slate-50 border-slate-200 text-slate-800'
+                          }`}
+                          value={config.printerCaja || ''}
+                          onChange={e => {
+                            const val = e.target.value;
+                            localStorage.setItem('pos_printer_caja', val);
+                            setConfig({ ...config, printerCaja: val });
+                          }}
+                        >
+                          <option value="">(Impresora del Sistema)</option>
+                          {printersList.map(name => (
+                            <option key={name} value={name}>{name}</option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-[10px] font-bold uppercase text-slate-500 mb-2">Impresora Clientes</label>
+                        <select
+                          className={`w-full rounded-xl p-3 border focus:outline-none focus:ring-2 focus:ring-amber-500 text-xs ${
+                            theme === 'dark' ? 'bg-[#1a1c24] border-[#262836] text-white' : 'bg-slate-50 border-slate-200 text-slate-800'
+                          }`}
+                          value={config.printerCliente || ''}
+                          onChange={e => {
+                            const val = e.target.value;
+                            localStorage.setItem('pos_printer_cliente', val);
+                            setConfig({ ...config, printerCliente: val });
+                          }}
+                        >
+                          <option value="">(Impresora del Sistema)</option>
+                          {printersList.map(name => (
+                            <option key={name} value={name}>{name}</option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-[10px] font-bold uppercase text-slate-500 mb-2">Impresora Móvil</label>
+                        <select
+                          className={`w-full rounded-xl p-3 border focus:outline-none focus:ring-2 focus:ring-amber-500 text-xs ${
+                            theme === 'dark' ? 'bg-[#1a1c24] border-[#262836] text-white' : 'bg-slate-50 border-slate-200 text-slate-800'
+                          }`}
+                          value={config.printerMovil || ''}
+                          onChange={e => {
+                            const val = e.target.value;
+                            localStorage.setItem('pos_printer_movil', val);
+                            setConfig({ ...config, printerMovil: val });
+                          }}
+                        >
+                          <option value="">(Impresora del Sistema)</option>
+                          {printersList.map(name => (
+                            <option key={name} value={name}>{name}</option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-[10px] font-bold uppercase text-slate-500 mb-2">Impresora Bodega</label>
+                        <select
+                          className={`w-full rounded-xl p-3 border focus:outline-none focus:ring-2 focus:ring-amber-500 text-xs ${
+                            theme === 'dark' ? 'bg-[#1a1c24] border-[#262836] text-white' : 'bg-slate-50 border-slate-200 text-slate-800'
+                          }`}
+                          value={config.printerBodega || ''}
+                          onChange={e => {
+                            const val = e.target.value;
+                            localStorage.setItem('pos_printer_bodega', val);
+                            setConfig({ ...config, printerBodega: val });
+                          }}
+                        >
+                          <option value="">(Impresora del Sistema)</option>
+                          {printersList.map(name => (
+                            <option key={name} value={name}>{name}</option>
+                          ))}
+                        </select>
+                      </div>
                     </div>
                   </div>
 
