@@ -289,6 +289,23 @@ app.post('/api/v1/cotizaciones', async (req, res) => {
   }
 
   try {
+    // Resolver usuarioId (id de base de datos) a partir de un ID o del Nombre enviado por el cliente
+    let finalUsuarioId = usuarioId;
+    const userExist = await prisma.usuario.findFirst({
+      where: {
+        OR: [
+          { id: usuarioId },
+          { nombre: usuarioId }
+        ]
+      }
+    });
+    if (userExist) {
+      finalUsuarioId = userExist.id;
+    } else {
+      const firstUser = await prisma.usuario.findFirst();
+      finalUsuarioId = firstUser?.id || usuarioId;
+    }
+
     // Generar un código de 4 dígitos aleatorio para la importación rápida en caja
     const codigoCorto = Math.floor(1000 + Math.random() * 9000).toString();
     const folio = `COT-${Date.now()}-${codigoCorto}`;
@@ -355,7 +372,7 @@ app.post('/api/v1/cotizaciones', async (req, res) => {
           folio,
           codigoCorto,
           sucursalId,
-          usuarioId,
+          usuarioId: finalUsuarioId,
           clienteNombre,
           subtotal,
           total: subtotal,
