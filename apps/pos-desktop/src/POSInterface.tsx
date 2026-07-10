@@ -605,7 +605,8 @@ export default function POSInterface() {
       });
 
       if (!response.ok) {
-        throw new Error('No se pudo guardar la cotización');
+        const errorText = await response.text().catch(() => '');
+        throw new Error(`No se pudo guardar la cotización. Servidor respondió con código ${response.status}. Detalle: ${errorText || 'Ninguno'}`);
       }
 
       const result = await response.json();
@@ -616,7 +617,7 @@ export default function POSInterface() {
       setShowSuccessQuoteModal(true);
       fetchActiveQuotes();
     } catch (e: any) {
-      alert(e.message || 'Error al guardar la cotización.');
+      alert(`Error al guardar cotización: ${e.message}\n\n[Configuración API_V1: ${API_V1}]`);
     }
   };
 
