@@ -46,17 +46,171 @@ app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') app.quit();
 });
 
+// IPC Handler para obtener la lista de impresoras instaladas en el sistema
+ipcMain.handle('get-printers', async () => {
+  if (!mainWindow) return [];
+  try {
+    const printers = await mainWindow.webContents.getPrintersAsync();
+    return printers;
+  } catch (error) {
+    console.error('[ELECTRON-MAIN] Error al obtener impresoras:', error);
+    return [];
+  }
+});
+
 // IPC Handler para recibir peticiones nativas del frontend con enrutamiento de impresoras
 ipcMain.handle('print-ticket', async (event, ticketData) => {
   const target = (ticketData.printerTarget || 'caja').toUpperCase();
-  console.log(`[ELECTRON-MAIN] [Printer: ${target}] Recibida orden de impresión para ticket ${ticketData.ticketId}:`);
-  console.log(`- Cajero/Cliente: ${ticketData.cajero}`);
-  console.log(`- Total: $${Number(ticketData.total).toFixed(2)}`);
-  console.log(`- Artículos:`, ticketData.items.map(i => `${i.cantidad}x ${i.nombre}`).join(', '));
+  const printerName = ticketData.printerName;
   
-  // Aquí se enviaría el búfer ESC/POS al puerto correspondiente de la impresora (Caja, Bodega o Mostrador)
-  return { 
-    success: true, 
-    message: `Ticket enviado con éxito a la impresora de ${target}` 
-  };
+  console.log(`[ELECTRON-MAIN] [Printer: ${target}] [Dispositivo: ${printerName || 'Default'}] Iniciando impresión...`);
+
+  try {
+    const printWindow = new BrowserWindow({
+      show: false,
+      webPreferences: {
+        nodeIntegration: false,
+        contextIsolation: true
+      }
+    });
+
+    const isThermal58 = ticketData.printerType === 'thermal_58';
+    const paperWidth = isThermal58 ? '180px' : '260px'; // Anchura estimativa en pixeles para visor HTML
+
+    const htmlContent = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <meta charset="utf-8">
+          <style>
+            @page {
+              margin: 0;
+            }
+            body {
+              font-family: 'Courier New', Courier, monospace;
+              font-size: 11px;
+              color: #000;
+              margin: 0;
+              padding: 10px;
+              width: ${paperWidth};
+              box-sizing: border-box;
+            }
+            .text-center { text-align: center; }
+            .text-right { text-align: right; }
+            .bold { font-weight: bold; }
+            .title { font-size: 14px; font-weight: bold; margin-bottom: 4px; }
+            .subtitle { font-size: 9px; margin-bottom: 2px; }
+            .divider { border-top: 1px dashed #000; margin: 8px 0; }
+            .info-table { width: 100%; font-size: 10px; margin-bottom: 8px; }
+            .items-table { width: 100%; border-collapse: collapse; font-size: 10px; }
+            .items-table th { border-bottom: 1px dashed #000; text-align: left; padding-bottom: 4px; }
+            .items-table td { padding: 4px 0; vertical-align: top; }
+            .total-section { margin-top: 10px; font-size: 12px; }
+            .footer { margin-top: 15px; font-size: 9px; }
+          </style>
+        </head>
+        <body>
+          <div class="text-center">
+            <div class="title">${ticketData.businessName || 'APEX POS'}</div>
+            ${ticketData.address ? `<div class="subtitle">${ticketData.address}</div>` : ''}
+            ${ticketData.phone ? `<div class="subtitle">Tel: ${ticketData.phone}</div>` : ''}
+          </div>
+          
+          <div class="divider"></div>
+          
+          <table class="info-table">
+            <tr>
+              <td><strong>Folio:</strong> ${ticketData.ticketId}</td>
+            </tr>
+            <tr>
+              <td><strong>Fecha:</strong> ${new Date().toLocaleString('es-MX')}</td>
+            </tr>
+            <tr>
+              <td><strong>Cajero:</strong> ${ticketData.cajero}</td>
+            </tr>
+            <tr>
+              <td><strong>Terminal:</strong> ${target}</td>
+            </tr>
+          </table>
+          
+          <table class="items-table">
+            <thead>
+              <tr>
+                <th style="width: 70%;">Descripción</th>
+                <th style="width: 30%; text-align: right;">Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${ticketData.items.map(item => `
+                <tr>
+                  <td>
+                    ${item.cantidad} x ${item.nombre}
+                    <br><span style="font-size: 8px; color: #555;">SKU: ${item.sku}</span>
+                  </td>
+                  <td class="text-right">$${(Number(item.precio) * Number(item.cantidad)).toFixed(2)}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+          
+          <div class="divider"></div>
+          
+          <table class="info-table total-section">
+            <tr class="bold">
+              <td>TOTAL:</td>
+              <td class="text-right">$${Number(ticketData.total).toFixed(2)}</td>
+            </tr>
+          </table>
+          
+          ${ticketData.ticketMessage ? `
+            <div class="divider"></div>
+            <div class="text-center footer">
+              ${ticketData.ticketMessage}
+            </div>
+          ` : ''}
+        </body>
+      </html>
+    `;
+
+    // Cargar contenido HTML via Data URL
+    printWindow.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(htmlContent)}`);
+
+    // Retornar una promesa que se resuelva cuando termine la impresión
+    return new Promise((resolve) => {
+      printWindow.webContents.on('did-finish-load', () => {
+        const printOptions = {
+          silent: true,
+          printBackground: true
+        };
+        
+        // Si el usuario especificó una impresora, usarla
+        if (printerName) {
+          printOptions.deviceName = printerName;
+        }
+
+        printWindow.webContents.print(printOptions, (success, errorType) => {
+          printWindow.close();
+          if (success) {
+            resolve({
+              success: true,
+              message: `Ticket impreso con éxito en la impresora "${printerName || 'Predeterminada'}"`
+            });
+          } else {
+            console.error('[ELECTRON-MAIN] Falló la impresión:', errorType);
+            resolve({
+              success: false,
+              message: `Fallo al imprimir: ${errorType}`
+            });
+          }
+        });
+      });
+    });
+
+  } catch (err) {
+    console.error('[ELECTRON-MAIN] Error en proceso de impresión:', err);
+    return {
+      success: false,
+      message: `Error interno de impresión: ${err.message}`
+    };
+  }
 });

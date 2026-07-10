@@ -1668,7 +1668,8 @@ app.post('/api/v1/configuracion-empresa', async (req, res) => {
     allowScale, scalePort, scaleBaudRate, scaleModel,
     sessionTimeout, businessStartHour, businessEndHour,
     allowGerenteLogin, allowCajeroLogin, allowVendedorMovilLogin,
-    restrictGerenteSchedule, restrictCajeroSchedule, restrictVendedorMovilSchedule
+    restrictGerenteSchedule, restrictCajeroSchedule, restrictVendedorMovilSchedule,
+    printerCaja, printerCliente, printerMovil, printerBodega
   } = req.body;
 
   let mappedGiro: any = 'ABARROTES';
@@ -1706,7 +1707,11 @@ app.post('/api/v1/configuracion-empresa', async (req, res) => {
         allowVendedorMovilLogin: allowVendedorMovilLogin !== false,
         restrictGerenteSchedule: restrictGerenteSchedule || false,
         restrictCajeroSchedule: restrictCajeroSchedule || false,
-        restrictVendedorMovilSchedule: restrictVendedorMovilSchedule !== false
+        restrictVendedorMovilSchedule: restrictVendedorMovilSchedule !== false,
+        printerCaja: printerCaja || '',
+        printerCliente: printerCliente || '',
+        printerMovil: printerMovil || '',
+        printerBodega: printerBodega || ''
       } as any,
     };
 

@@ -21,6 +21,10 @@ interface CompanyConfig {
   giro?: string;
   ticketMessage?: string;
   printerType?: 'thermal_58' | 'thermal_80' | 'pdf_a4' | 'virtual';
+  printerCaja?: string;
+  printerCliente?: string;
+  printerMovil?: string;
+  printerBodega?: string;
   allowCash?: boolean;
   allowCard?: boolean;
   allowTransfer?: boolean;
@@ -242,7 +246,7 @@ export default function POSInterface() {
   const [mixedTransfer, setMixedTransfer] = useState('');
   const [config, setConfig] = useState<CompanyConfig>(() => {
     const saved = localStorage.getItem('pos_config');
-    return saved ? JSON.parse(saved) : {
+    const base = saved ? JSON.parse(saved) : {
       businessName: 'Ferretería y Refaccionaria El Mazo',
       rfc: 'MAZO890412H34',
       currency: 'MXN ($)',
@@ -274,6 +278,13 @@ export default function POSInterface() {
       allowGerenteCheckout: true,
       allowCajeroCheckout: true,
       allowVendedorMovilCheckout: false
+    };
+    return {
+      ...base,
+      printerCaja: localStorage.getItem('pos_printer_caja') || base.printerCaja || '',
+      printerCliente: localStorage.getItem('pos_printer_cliente') || base.printerCliente || '',
+      printerMovil: localStorage.getItem('pos_printer_movil') || base.printerMovil || '',
+      printerBodega: localStorage.getItem('pos_printer_bodega') || base.printerBodega || ''
     };
   });
 
@@ -495,7 +506,13 @@ export default function POSInterface() {
                 cajero: quote.clienteNombre || 'Cliente Móvil',
                 items: formattedItems,
                 total: Number(quote.total),
-                printerTarget: 'mostrador' // Ruteado a Impresora 3 (Mostrador)
+                printerTarget: 'mostrador',
+                printerName: config.printerMovil || localStorage.getItem('pos_printer_movil') || '',
+                businessName: config.businessName,
+                address: config.address,
+                phone: config.phone,
+                ticketMessage: config.ticketMessage,
+                printerType: config.printerType
               });
             }
             
@@ -809,6 +826,34 @@ export default function POSInterface() {
       alert('Modo Offline Activo: Venta guardada localmente. Pendiente por sincronizar.');
     }
 
+    // Imprimir ticket de venta para el cliente
+    const electronAPI = (window as any).electronAPI;
+    if (electronAPI) {
+      try {
+        await electronAPI.printTicket({
+          ticketId: ticketRef,
+          cajero: currentUser?.nombre || 'Dorian',
+          items: cart.map((item: any) => ({
+            sku: item.sku,
+            nombre: item.nombre,
+            precio: Number(item.precio),
+            cantidad: Number(item.cantidad),
+            unidad: item.unidad
+          })),
+          total: total,
+          printerTarget: 'cliente',
+          printerName: config.printerCliente || localStorage.getItem('pos_printer_cliente') || '',
+          businessName: config.businessName,
+          address: config.address,
+          phone: config.phone,
+          ticketMessage: config.ticketMessage,
+          printerType: config.printerType
+        });
+      } catch (err) {
+        console.warn('Error al imprimir ticket de cliente:', err);
+      }
+    }
+
     // Avanzar al siguiente ticket y persistirlo
     const nextTicket = ticketNumber + 1;
     localStorage.setItem('pos_last_ticket', String(ticketNumber));
@@ -889,7 +934,13 @@ export default function POSInterface() {
         cajero: currentUser?.nombre || 'Dorian',
         items: cart,
         total,
-        printerTarget: 'caja'
+        printerTarget: 'caja',
+        printerName: config.printerCaja || localStorage.getItem('pos_printer_caja') || '',
+        businessName: config.businessName,
+        address: config.address,
+        phone: config.phone,
+        ticketMessage: config.ticketMessage,
+        printerType: config.printerType
       });
       alert(res.message);
     } else {
@@ -916,7 +967,13 @@ export default function POSInterface() {
         cajero: currentUser?.nombre || 'Dorian',
         items: formattedItems,
         total: Number(quote.total) || total,
-        printerTarget: 'mostrador'
+        printerTarget: 'mostrador',
+        printerName: config.printerMovil || localStorage.getItem('pos_printer_movil') || '',
+        businessName: config.businessName,
+        address: config.address,
+        phone: config.phone,
+        ticketMessage: config.ticketMessage,
+        printerType: config.printerType
       });
       alert(`Impresión de Cotización: ${res.message}`);
     } else {
@@ -964,7 +1021,11 @@ export default function POSInterface() {
               allowScale: data.formatoTicket?.allowScale || false,
               scalePort: data.formatoTicket?.scalePort || 'COM1',
               scaleBaudRate: data.formatoTicket?.scaleBaudRate || 9600,
-              scaleModel: data.formatoTicket?.scaleModel || 'torrey'
+              scaleModel: data.formatoTicket?.scaleModel || 'torrey',
+              printerCaja: localStorage.getItem('pos_printer_caja') || data.formatoTicket?.printerCaja || '',
+              printerCliente: localStorage.getItem('pos_printer_cliente') || data.formatoTicket?.printerCliente || '',
+              printerMovil: localStorage.getItem('pos_printer_movil') || data.formatoTicket?.printerMovil || '',
+              printerBodega: localStorage.getItem('pos_printer_bodega') || data.formatoTicket?.printerBodega || ''
             };
             setConfig(mapped);
             localStorage.setItem('pos_config', JSON.stringify(mapped));
@@ -2025,7 +2086,11 @@ export default function POSInterface() {
                   restrictVendedorMovilSchedule: newConfig.restrictVendedorMovilSchedule !== false,
                   allowGerenteCheckout: newConfig.allowGerenteCheckout !== false,
                   allowCajeroCheckout: newConfig.allowCajeroCheckout !== false,
-                  allowVendedorMovilCheckout: newConfig.allowVendedorMovilCheckout || false
+                  allowVendedorMovilCheckout: newConfig.allowVendedorMovilCheckout || false,
+                  printerCaja: newConfig.printerCaja || '',
+                  printerCliente: newConfig.printerCliente || '',
+                  printerMovil: newConfig.printerMovil || '',
+                  printerBodega: newConfig.printerBodega || ''
                 })
               });
             } catch (err) {
