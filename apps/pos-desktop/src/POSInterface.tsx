@@ -360,6 +360,7 @@ export default function POSInterface() {
       }
       return [...prev, {
         id: prev.length + 1,
+        productoId: product.id,
         sku: product.sku,
         nombre: product.nombre,
         tipo: product.categoria.toLowerCase(),
@@ -551,6 +552,7 @@ export default function POSInterface() {
 
             updated.push({
               id: updated.length + 1,
+              productoId: prod.id,
               sku: prod.sku,
               nombre: prod.nombre,
               tipo: categoria.toLowerCase(),
@@ -594,13 +596,10 @@ export default function POSInterface() {
           sucursalId: 'suc-norte',
           usuarioId: currentUser ? currentUser.nombre : 'cajero-principal',
           clienteNombre: quoteClientName || 'Público General',
-          items: cart.map((item: any) => {
-            const dbProd = products.find((p: any) => p.sku === item.sku);
-            return {
-              productoId: dbProd ? dbProd.id : item.id.toString(),
-              cantidad: item.cantidad
-            };
-          })
+          items: cart.map((item: any) => ({
+            productoId: item.productoId || item.id.toString(),
+            cantidad: item.cantidad
+          }))
         })
       });
 
@@ -801,7 +800,7 @@ export default function POSInterface() {
           metodo: finalMetodo,
           cotizacionId: activeTab.cotizacionId || null,
           detalles: cart.map((item: any) => ({
-            productoId: item.sku,
+            productoId: item.productoId || item.sku,
             cantidad: item.cantidad,
             precioUnitario: item.precio,
             subtotal: item.precio * item.cantidad
