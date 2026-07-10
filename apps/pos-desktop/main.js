@@ -171,9 +171,13 @@ ipcMain.handle('print-ticket', async (event, ticketData) => {
     // Escribir archivo temporal físico
     fs.writeFileSync(tempFilePath, htmlContent, 'utf8');
 
-    // Ventana oculta para el intento de impresión silenciosa
+    // Ventana fuera de la pantalla para obligar al sistema a inicializar el motor de renderizado (backing store)
     const printWindow = new BrowserWindow({
-      show: false,
+      width: 340,
+      height: 600,
+      x: -2000,
+      y: -2000,
+      show: true,
       webPreferences: {
         nodeIntegration: false,
         contextIsolation: true
@@ -185,78 +189,60 @@ ipcMain.handle('print-ticket', async (event, ticketData) => {
 
     // Retornar una promesa que se resuelva cuando termine la impresión
     return new Promise((resolve) => {
-      printWindow.webContents.on('did-finish-load', () => {
-        const printOptions = {
-          silent: true
-        };
-        
-        if (printerName) {
-          printOptions.deviceName = printerName;
-        }
+      printWindow.once('ready-to-show', async () => {
+        try {
+          const pdfOptions = {
+            printBackground: true
+          };
 
-        printWindow.webContents.print(printOptions, (success, errorType) => {
-          if (success) {
-            // Eliminar archivo temporal y cerrar ventana
+          // Renderizar a PDF buffer nativamente en memoria
+          const pdfBuffer = await printWindow.webContents.printToPDF(pdfOptions);
+          
+          // Escribir archivo temporal PDF
+          const tempPdfPath = path.join(tempDir, `ticket-${Date.now()}.pdf`);
+          fs.writeFileSync(tempPdfPath, pdfBuffer);
+
+          printWindow.close();
+
+          // Ejecutar comando lpr para imprimir el PDF de forma directa y limpia
+          const { exec } = require('child_process');
+          let cmd = `lpr `;
+          if (printerName) {
+            cmd += `-P "${printerName}" `;
+          }
+          cmd += `"${tempPdfPath}"`;
+
+          console.log(`[ELECTRON-MAIN] Ejecutando comando de impresión nativo: ${cmd}`);
+
+          exec(cmd, (execErr, stdout, stderr) => {
+            // Eliminar archivos temporales creados
             try { fs.unlinkSync(tempFilePath); } catch (e) {}
-            printWindow.close();
-            resolve({
-              success: true,
-              message: `Ticket impreso con éxito en la impresora "${printerName || 'Predeterminada'}"`
-            });
-          } else {
-            console.warn('[ELECTRON-MAIN] Falló impresión silenciosa, abriendo ventana visible de respaldo. Error:', errorType);
-            printWindow.close();
-            
-            // Crear ventana oculta al inicio
-            const fallbackWindow = new BrowserWindow({
-              width: 340,
-              height: 500,
-              show: false,
-              title: 'Imprimiendo Ticket...',
-              webPreferences: {
-                nodeIntegration: false,
-                contextIsolation: true
-              }
-            });
+            try { fs.unlinkSync(tempPdfPath); } catch (e) {}
 
-            fallbackWindow.loadFile(tempFilePath);
-
-            // Esperar a que la ventana esté lista para mostrarse y dibujada
-            fallbackWindow.once('ready-to-show', () => {
-              fallbackWindow.show();
-              
-              // Pequeña espera para asegurar que el sistema operativo ha inicializado el contexto gráfico de la ventana
-              setTimeout(() => {
-                fallbackWindow.webContents.print({ silent: false }, (dialogSuccess, dialogError) => {
-                  try { fs.unlinkSync(tempFilePath); } catch (e) {}
-                  fallbackWindow.close();
-                  if (dialogSuccess) {
-                    resolve({
-                      success: true,
-                      message: `Ticket impreso con éxito (vía diálogo de impresión)`
-                    });
-                  } else {
-                    console.error('[ELECTRON-MAIN] Falló diálogo de impresión de respaldo:', dialogError);
-                    resolve({
-                      success: false,
-                      message: `Fallo al imprimir: ${dialogError || errorType}`
-                    });
-                  }
-                });
-              }, 400); // 400ms de retraso para pintar la ventana
-            });
-
-            // Si hay un error cargando el archivo de respaldo
-            fallbackWindow.webContents.on('did-fail-load', () => {
-              try { fs.unlinkSync(tempFilePath); } catch (e) {}
-              fallbackWindow.close();
+            if (execErr) {
+              console.error('[ELECTRON-MAIN] Error al ejecutar lpr:', execErr, stderr);
               resolve({
                 success: false,
-                message: `Error al cargar plantilla de impresión de respaldo.`
+                message: `Error al imprimir por comando nativo: ${execErr.message}`
               });
-            });
-          }
-        });
+            } else {
+              console.log('[ELECTRON-MAIN] Comando lpr ejecutado con éxito.');
+              resolve({
+                success: true,
+                message: `Ticket enviado a la cola de impresión nativa.`
+              });
+            }
+          });
+
+        } catch (pdfErr) {
+          console.error('[ELECTRON-MAIN] Error al generar PDF:', pdfErr);
+          try { fs.unlinkSync(tempFilePath); } catch (e) {}
+          printWindow.close();
+          resolve({
+            success: false,
+            message: `Error al generar PDF: ${pdfErr.message}`
+          });
+        }
       });
     });
 
