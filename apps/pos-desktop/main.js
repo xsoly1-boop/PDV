@@ -82,9 +82,6 @@ ipcMain.handle('print-ticket', async (event, ticketData) => {
         <head>
           <meta charset="utf-8">
           <style>
-            @page {
-              margin: 0;
-            }
             body {
               font-family: 'Courier New', Courier, monospace;
               font-size: 11px;
@@ -191,7 +188,8 @@ ipcMain.handle('print-ticket', async (event, ticketData) => {
       printWindow.webContents.on('did-finish-load', () => {
         const printOptions = {
           silent: true,
-          printBackground: true
+          printBackground: true,
+          margins: { marginType: 'default' }
         };
         
         if (printerName) {
@@ -226,7 +224,7 @@ ipcMain.handle('print-ticket', async (event, ticketData) => {
             fallbackWindow.loadFile(tempFilePath);
 
             fallbackWindow.webContents.on('did-finish-load', () => {
-              fallbackWindow.webContents.print({ silent: false }, (dialogSuccess, dialogError) => {
+              fallbackWindow.webContents.print({ silent: false, margins: { marginType: 'default' } }, (dialogSuccess, dialogError) => {
                 // Eliminar archivo temporal
                 try { fs.unlinkSync(tempFilePath); } catch (e) {}
                 fallbackWindow.close();
