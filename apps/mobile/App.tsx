@@ -281,16 +281,12 @@ function MainApp({ user, onLogout }: { user: AuthUser; onLogout: () => void }) {
     }
   };
 
-  useEffect(() => {
-    fetchProducts();
-  }, []);
-
-  const fetchProducts = async () => {
+  const fetchProducts = async (q: string = searchQuery) => {
     setIsFetching(true);
     try {
       const headers: Record<string, string> = { 'Content-Type': 'application/json' };
       if (user.token) headers['Authorization'] = `Bearer ${user.token}`;
-      const response = await fetch(`${API_URL}/productos/buscar?q=`, { headers });
+      const response = await fetch(`${API_URL}/productos/buscar?q=${encodeURIComponent(q)}`, { headers });
       if (response.ok) {
         const data = await response.json();
         if (Array.isArray(data)) {
@@ -315,6 +311,16 @@ function MainApp({ user, onLogout }: { user: AuthUser; onLogout: () => void }) {
       setIsFetching(false);
     }
   };
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      fetchProducts(searchQuery);
+    }, 150);
+
+    return () => {
+      clearTimeout(handler);
+    };
+  }, [searchQuery]);
 
   const handleAddToCart = (product: Product) => {
     setCart(prev => {
@@ -591,12 +597,6 @@ function MainApp({ user, onLogout }: { user: AuthUser; onLogout: () => void }) {
     );
   };
 
-  const filteredProducts = products.filter(p =>
-    p.nombre.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    p.sku.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    (p.codigoBarras && p.codigoBarras.includes(searchQuery))
-  );
-
   const cartTotal = cart.reduce((acc, item) => acc + item.product.precio * item.quantity, 0);
 
   const handleLogout = () => {
@@ -639,7 +639,7 @@ function MainApp({ user, onLogout }: { user: AuthUser; onLogout: () => void }) {
             </View>
           ) : (
             <FlatList
-              data={filteredProducts}
+              data={products}
               keyExtractor={item => item.id}
               renderItem={({ item }) => (
                 <View style={styles.productCard}>
@@ -658,7 +658,7 @@ function MainApp({ user, onLogout }: { user: AuthUser; onLogout: () => void }) {
                 <View style={{ alignItems: 'center', marginTop: 60 }}>
                   <Text style={{ fontSize: 40 }}>📦</Text>
                   <Text style={[styles.emptyText, { marginTop: 12 }]}>No se encontraron productos</Text>
-                  <TouchableOpacity onPress={fetchProducts} style={{ marginTop: 16, padding: 12, backgroundColor: '#20222b', borderRadius: 12 }}>
+                  <TouchableOpacity onPress={() => fetchProducts()} style={{ marginTop: 16, padding: 12, backgroundColor: '#20222b', borderRadius: 12 }}>
                     <Text style={{ color: '#f59e0b', fontWeight: 'bold' }}>Reintentar</Text>
                   </TouchableOpacity>
                 </View>
