@@ -119,7 +119,12 @@ function LoginScreen({ onLogin }: { onLogin: (user: AuthUser) => void }) {
       const user: AuthUser = {
         id: String(u.id ?? u.userId ?? 'unknown'),
         nombre: String(u.nombre ?? u.name ?? 'Vendedor'),
-        role: u.rol ?? u.role ?? 'vendedor',
+        role: (() => {
+          const rawRole = String(u.rol ?? u.role ?? 'vendedor').toLowerCase();
+          if (rawRole.includes('admin')) return 'admin';
+          if (rawRole.includes('gerente')) return 'gerente';
+          return 'vendedor';
+        })(),
         token: data.token ?? '',
       };
       await AsyncStorage.setItem(STORAGE_USER_KEY, JSON.stringify(user));
@@ -193,6 +198,10 @@ function MainApp({ user, onLogout }: { user: AuthUser; onLogout: () => void }) {
   const [hasPermission, setHasPermission] = useState<boolean | null>(null);
   const [scanned, setScanned] = useState(false);
   const [isFetching, setIsFetching] = useState(true);
+  const [showCheckoutModal, setShowCheckoutModal] = useState(false);
+  const [paymentMethod, setPaymentMethod] = useState<'EFECTIVO' | 'TARJETA' | 'TRANSFERENCIA'>('EFECTIVO');
+  const [receivedAmount, setReceivedAmount] = useState('');
+  const [changeAmount, setChangeAmount] = useState(0);
 
   const requestCameraPermission = async () => {
     try {
@@ -319,6 +328,71 @@ function MainApp({ user, onLogout }: { user: AuthUser; onLogout: () => void }) {
       setCurrentView('result');
     } catch (e: any) {
       Alert.alert('Error de Red', 'No se pudo sincronizar el pedido con la caja central. Intenta de nuevo.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleCompleteSale = async () => {
+    if (cart.length === 0) return;
+    
+    const numericReceived = Number(receivedAmount);
+    if (paymentMethod === 'EFECTIVO' && (isNaN(numericReceived) || numericReceived < cartTotal)) {
+      Alert.alert('Pago Insuficiente', 'El monto recibido debe ser igual o mayor al total de la venta.');
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (user.token) headers['Authorization'] = `Bearer ${user.token}`;
+
+      // Formatear detalles para el endpoint POST /api/v1/ventas
+      const detalles = cart.map(item => ({
+        productoId: item.product.id,
+        cantidad: item.quantity,
+        precioUnitario: item.product.precio,
+        subtotal: item.product.precio * item.quantity
+      }));
+
+      const payload = {
+        folio: `MOV-${Date.now()}`,
+        sucursalId: 'suc-norte',
+        usuarioId: user.id,
+        total: cartTotal,
+        subtotal: cartTotal,
+        descuento: 0,
+        metodo: paymentMethod,
+        detalles
+      };
+
+      const response = await fetch(`${API_URL}/ventas`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Error al completar la venta');
+      }
+
+      // Vaciar carrito, ocultar modal y limpiar estados
+      setCart([]);
+      setShowCheckoutModal(false);
+      setReceivedAmount('');
+      setChangeAmount(0);
+      setClientName('');
+
+      // Mostrar confirmación
+      Alert.alert(
+        'Venta Exitosa',
+        `Venta registrada correctamente.\n\nFolio: ${payload.folio}\n${paymentMethod === 'EFECTIVO' ? `Cambio: $${(numericReceived - cartTotal).toFixed(2)}` : ''}`,
+        [{ text: 'Aceptar' }]
+      );
+    } catch (e: any) {
+      console.error('[Sale Error]:', e);
+      Alert.alert('Error al cobrar', e.message || 'No se pudo registrar la venta en la base de datos central.');
     } finally {
       setIsLoading(false);
     }
@@ -524,9 +598,16 @@ function MainApp({ user, onLogout }: { user: AuthUser; onLogout: () => void }) {
               {isLoading ? (
                 <ActivityIndicator color="#f59e0b" style={{ marginVertical: 12 }} />
               ) : (
-                <TouchableOpacity style={styles.checkoutBtn} onPress={handleCreateQuote}>
-                  <Text style={styles.checkoutBtnText}>📤 ENVIAR A CAJA CENTRAL</Text>
-                </TouchableOpacity>
+                <View style={{ gap: 8 }}>
+                  <TouchableOpacity style={[styles.checkoutBtn, { backgroundColor: '#f59e0b' }]} onPress={handleCreateQuote}>
+                    <Text style={styles.checkoutBtnText}>📤 ENVIAR A CAJA CENTRAL</Text>
+                  </TouchableOpacity>
+                  {(user.role === 'admin' || user.role === 'gerente') && (
+                    <TouchableOpacity style={[styles.checkoutBtn, { backgroundColor: '#10b981' }]} onPress={() => setShowCheckoutModal(true)}>
+                      <Text style={styles.checkoutBtnText}>💰 COBRAR VENTA</Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
               )}
             </View>
           )}
@@ -573,6 +654,106 @@ function MainApp({ user, onLogout }: { user: AuthUser; onLogout: () => void }) {
           </TouchableOpacity>
         </View>
       )}
+
+      {/* Checkout Modal for Admin/Gerente */}
+      <Modal
+        visible={showCheckoutModal}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => setShowCheckoutModal(false)}
+      >
+        <View style={modalStyles.overlay}>
+          <View style={modalStyles.content}>
+            <Text style={modalStyles.title}>💰 COBRAR VENTA</Text>
+            
+            <View style={modalStyles.totalContainer}>
+              <Text style={modalStyles.totalLabel}>Total a Pagar:</Text>
+              <Text style={modalStyles.totalVal}>${cartTotal.toFixed(2)}</Text>
+            </View>
+
+            <Text style={modalStyles.sectionLabel}>Método de Pago:</Text>
+            <View style={modalStyles.methodRow}>
+              {(['EFECTIVO', 'TARJETA', 'TRANSFERENCIA'] as const).map(method => (
+                <TouchableOpacity
+                  key={method}
+                  style={[
+                    modalStyles.methodBtn,
+                    paymentMethod === method && modalStyles.methodBtnActive
+                  ]}
+                  onPress={() => {
+                    setPaymentMethod(method);
+                    if (method !== 'EFECTIVO') {
+                      setReceivedAmount('');
+                      setChangeAmount(0);
+                    }
+                  }}
+                >
+                  <Text style={[
+                    modalStyles.methodBtnText,
+                    paymentMethod === method && modalStyles.methodBtnTextActive
+                  ]}>
+                    {method}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            {paymentMethod === 'EFECTIVO' && (
+              <View style={modalStyles.cashSection}>
+                <Text style={modalStyles.sectionLabel}>Monto Recibido ($):</Text>
+                <TextInput
+                  style={modalStyles.input}
+                  keyboardType="numeric"
+                  placeholder="0.00"
+                  placeholderTextColor="#777"
+                  value={receivedAmount}
+                  onChangeText={(val) => {
+                    setReceivedAmount(val);
+                    const numericVal = Number(val);
+                    if (!isNaN(numericVal) && numericVal >= cartTotal) {
+                      setChangeAmount(numericVal - cartTotal);
+                    } else {
+                      setChangeAmount(0);
+                    }
+                  }}
+                />
+                
+                {Number(receivedAmount) >= cartTotal && (
+                  <View style={modalStyles.changeRow}>
+                    <Text style={modalStyles.changeLabel}>Cambio:</Text>
+                    <Text style={modalStyles.changeVal}>${changeAmount.toFixed(2)}</Text>
+                  </View>
+                )}
+              </View>
+            )}
+
+            <View style={modalStyles.actionRow}>
+              <TouchableOpacity
+                style={[modalStyles.actionBtn, modalStyles.cancelBtn]}
+                onPress={() => {
+                  setShowCheckoutModal(false);
+                  setReceivedAmount('');
+                  setChangeAmount(0);
+                }}
+              >
+                <Text style={modalStyles.cancelBtnText}>Cancelar</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity
+                style={[modalStyles.actionBtn, modalStyles.confirmBtn]}
+                onPress={handleCompleteSale}
+                disabled={isLoading}
+              >
+                {isLoading ? (
+                  <ActivityIndicator color="#fff" />
+                ) : (
+                  <Text style={modalStyles.confirmBtnText}>Confirmar Pago</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -800,4 +981,141 @@ const styles = StyleSheet.create({
   whatsappInput: { flex: 1, backgroundColor: '#0d0e12', color: '#fff', borderWidth: 1, borderColor: '#20222b', borderRadius: 8, paddingHorizontal: 12, paddingVertical: 8, fontSize: 12 },
   whatsappBtn: { backgroundColor: '#10b981', borderRadius: 8, justifyContent: 'center', paddingHorizontal: 16 },
   whatsappBtnText: { color: '#fff', fontSize: 12, fontWeight: 'bold' },
+});
+
+const modalStyles = StyleSheet.create({
+  overlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.85)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  content: {
+    backgroundColor: '#0d0e12',
+    borderWidth: 1,
+    borderColor: '#20222b',
+    borderRadius: 24,
+    padding: 24,
+    width: '100%',
+    maxWidth: 380,
+  },
+  title: {
+    color: '#fff',
+    fontSize: 20,
+    fontWeight: 'bold',
+    textAlign: 'center',
+    marginBottom: 20,
+  },
+  totalContainer: {
+    backgroundColor: '#13151b',
+    borderRadius: 16,
+    padding: 16,
+    alignItems: 'center',
+    marginBottom: 20,
+    borderWidth: 1,
+    borderColor: '#f59e0b33',
+  },
+  totalLabel: {
+    color: '#aaa',
+    fontSize: 12,
+    fontWeight: 'bold',
+    marginBottom: 4,
+  },
+  totalVal: {
+    color: '#f59e0b',
+    fontSize: 32,
+    fontWeight: '900',
+  },
+  sectionLabel: {
+    color: '#aaa',
+    fontSize: 11,
+    fontWeight: 'bold',
+    marginBottom: 8,
+    textTransform: 'uppercase',
+  },
+  methodRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: 8,
+    marginBottom: 20,
+  },
+  methodBtn: {
+    flex: 1,
+    backgroundColor: '#13151b',
+    borderWidth: 1,
+    borderColor: '#20222b',
+    borderRadius: 12,
+    paddingVertical: 12,
+    alignItems: 'center',
+  },
+  methodBtnActive: {
+    backgroundColor: '#10b981',
+    borderColor: '#10b981',
+  },
+  methodBtnText: {
+    color: '#888',
+    fontSize: 10,
+    fontWeight: 'bold',
+  },
+  methodBtnTextActive: {
+    color: '#fff',
+  },
+  cashSection: {
+    marginBottom: 20,
+  },
+  input: {
+    backgroundColor: '#13151b',
+    color: '#fff',
+    borderWidth: 1,
+    borderColor: '#20222b',
+    borderRadius: 12,
+    padding: 14,
+    fontSize: 18,
+    fontWeight: 'bold',
+    textAlign: 'center',
+  },
+  changeRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 12,
+    paddingHorizontal: 4,
+  },
+  changeLabel: {
+    color: '#aaa',
+    fontSize: 14,
+    fontWeight: 'bold',
+  },
+  changeVal: {
+    color: '#10b981',
+    fontSize: 20,
+    fontWeight: 'bold',
+  },
+  actionRow: {
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: 10,
+  },
+  actionBtn: {
+    flex: 1,
+    paddingVertical: 14,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  cancelBtn: {
+    backgroundColor: '#1f2937',
+  },
+  cancelBtnText: {
+    color: '#aaa',
+    fontWeight: 'bold',
+  },
+  confirmBtn: {
+    backgroundColor: '#10b981',
+  },
+  confirmBtnText: {
+    color: '#fff',
+    fontWeight: 'bold',
+  },
 });
