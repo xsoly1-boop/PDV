@@ -597,7 +597,7 @@ export default function POSInterface() {
           usuarioId: currentUser ? currentUser.nombre : 'cajero-principal',
           clienteNombre: quoteClientName || 'Público General',
           items: cart.map((item: any) => ({
-            productoId: item.productoId || item.id.toString(),
+            productoId: item.productoId || item.sku || item.id.toString(),
             cantidad: item.cantidad
           }))
         })

@@ -314,13 +314,22 @@ app.post('/api/v1/cotizaciones', async (req, res) => {
     const expiraAt = new Date();
     expiraAt.setMinutes(expiraAt.getMinutes() + 30);
 
-    // Obtener los productos involucrados para calcular costos/totales
+    // Obtener los productos involucrados para calcular costos/totales (buscando por ID o por SKU)
     const productoIds = items.map(item => item.productoId);
     const dbProductos = await prisma.producto.findMany({
-      where: { id: { in: productoIds } }
+      where: {
+        OR: [
+          { id: { in: productoIds } },
+          { sku: { in: productoIds } }
+        ]
+      }
     });
 
-    const productosMap = new Map(dbProductos.map(p => [p.id, p]));
+    const productosMap = new Map<string, any>();
+    dbProductos.forEach(p => {
+      productosMap.set(p.id, p);
+      productosMap.set(p.sku, p);
+    });
 
     let subtotal = 0;
     const detallesData: Array<{
@@ -341,7 +350,7 @@ app.post('/api/v1/cotizaciones', async (req, res) => {
     for (const item of items) {
       const producto = productosMap.get(item.productoId);
       if (!producto) {
-        return res.status(404).json({ error: `Producto con ID ${item.productoId} no existe` });
+        return res.status(404).json({ error: `Producto con ID o SKU "${item.productoId}" no existe` });
       }
 
       const precioUnitario = Number(producto.precio);
