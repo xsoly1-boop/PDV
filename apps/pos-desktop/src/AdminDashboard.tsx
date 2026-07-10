@@ -239,6 +239,35 @@ export default function AdminDashboard({ currentUser, theme, onClose, config: in
     setShowTestTicketModal(true);
   };
 
+  const handleSendTestPrintToPhysicalDevice = async () => {
+    const electronAPI = (window as any).electronAPI;
+    if (electronAPI) {
+      try {
+        const res = await electronAPI.printTicket({
+          ticketId: 'DEMO-12345',
+          cajero: currentUser?.nombre || 'Administrador',
+          items: [
+            { sku: 'DEMO-A', nombre: 'Producto Demo A', precio: 65.00, cantidad: 1, unidad: 'Pza' },
+            { sku: 'DEMO-B', nombre: 'Producto Demo B', precio: 14.00, cantidad: 2.5, unidad: 'Kg' }
+          ],
+          total: 100.00,
+          printerTarget: 'caja',
+          printerName: config.printerCaja || localStorage.getItem('pos_printer_caja') || '',
+          businessName: config.businessName,
+          address: config.address,
+          phone: config.phone,
+          ticketMessage: config.ticketMessage || '¡Gracias por su compra de prueba!',
+          printerType: config.printerType
+        });
+        alert(res.message);
+      } catch (err: any) {
+        alert(`Error al enviar impresión: ${err.message}`);
+      }
+    } else {
+      alert("La API de impresión física no está disponible en este navegador web.");
+    }
+  };
+
   const handleCancelSale = async (dbId: string, folio: string) => {
     if (!window.confirm(`¿Estás seguro de cancelar la venta con Folio ${folio}? El inventario de los artículos se restaurará en sucursal.`)) {
       return;
@@ -2173,12 +2202,27 @@ export default function AdminDashboard({ currentUser, theme, onClose, config: in
               Ancho de impresión: {config.printerType === 'thermal_58' ? '32 caracteres (58mm)' : '48 caracteres (80mm)'}
             </p>
 
-            <button
-              onClick={() => setShowTestTicketModal(false)}
-              className="w-full mt-6 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold py-3 rounded-xl text-xs transition-colors border-0 cursor-pointer"
-            >
-              Cerrar Vista Previa
-            </button>
+            <div className="mt-6 flex flex-col gap-3">
+              <button
+                type="button"
+                onClick={handleSendTestPrintToPhysicalDevice}
+                className="w-full bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold py-3 rounded-xl text-xs transition-colors border-0 cursor-pointer flex items-center justify-center gap-2"
+              >
+                <Printer className="w-4 h-4" /> Imprimir Físicamente (Test)
+              </button>
+              
+              <button
+                type="button"
+                onClick={() => setShowTestTicketModal(false)}
+                className={`w-full font-bold py-3 rounded-xl text-xs transition-colors border cursor-pointer ${
+                  theme === 'dark' 
+                    ? 'bg-transparent border-[#262836] text-slate-300 hover:bg-[#1a1c24]' 
+                    : 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100'
+                }`}
+              >
+                Cerrar Vista Previa
+              </button>
+            </div>
           </div>
         </div>
       )}
