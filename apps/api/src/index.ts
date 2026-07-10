@@ -1912,7 +1912,7 @@ app.get('/api/v1/ventas', async (req, res) => {
 
 // POST /api/v1/ventas — Crear/Registrar una nueva venta
 app.post('/api/v1/ventas', async (req, res) => {
-  const { folio, sucursalId, usuarioId, clienteId, total, subtotal, descuento, metodo, detalles } = req.body;
+  const { folio, sucursalId, usuarioId, clienteId, total, subtotal, descuento, metodo, detalles, cotizacionId } = req.body;
 
   if (!folio || !usuarioId || !detalles || !Array.isArray(detalles)) {
     return res.status(400).json({ error: 'Datos de venta incompletos' });
@@ -1973,6 +1973,37 @@ app.post('/api/v1/ventas', async (req, res) => {
               cantidad: Number(d.cantidad),
               precioUnitario: Number(d.precioUnitario),
               subtotal: Number(d.subtotal)
+            }
+          });
+        }
+      }
+
+      if (cotizacionId) {
+        // 1. Marcar la cotización como COMPLETADA
+        await tx.cotizacion.update({
+          where: { id: cotizacionId },
+          data: { estado: 'COMPLETADA' }
+        });
+
+        // 2. Marcar las reservas temporales asociadas como COMPLETADAS
+        await tx.reservaTemporal.updateMany({
+          where: { cotizacionId: cotizacionId },
+          data: { estado: 'COMPLETADA' }
+        });
+
+        // 3. Decrementar el campo 'reservado' en InventarioBalance
+        const reservas = await tx.reservaTemporal.findMany({
+          where: { cotizacionId: cotizacionId }
+        });
+
+        for (const resItem of reservas) {
+          await tx.inventarioBalance.updateMany({
+            where: {
+              sucursalId: resItem.sucursalId,
+              productoId: resItem.productoId
+            },
+            data: {
+              reservado: { decrement: resItem.cantidad }
             }
           });
         }

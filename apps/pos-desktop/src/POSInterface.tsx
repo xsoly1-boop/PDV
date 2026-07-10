@@ -124,17 +124,7 @@ export default function POSInterface() {
       return t;
     }));
   };
-
-  const setTicketNumber = (num: any | ((prev: number) => number)) => {
-    setTabs(prev => prev.map(t => {
-      if (t.id === activeTabId) {
-        const nextNum = typeof num === 'function' ? num(t.ticketNumber) : num;
-        return { ...t, ticketNumber: nextNum };
-      }
-      return t;
-    }));
-  };
-
+  
   const handleAddTab = (clienteNombre?: string) => {
     const nextTicketNum = Math.max(...tabs.map(t => t.ticketNumber), 0) + 1;
     const newTabId = `tab-${Date.now()}`;
@@ -574,6 +564,17 @@ export default function POSInterface() {
         return updated;
       });
 
+      setTabs(prev => prev.map(t => {
+        if (t.id === activeTabId) {
+          return {
+            ...t,
+            cotizacionId: quote.id,
+            clienteNombre: quote.clienteNombre || t.clienteNombre
+          };
+        }
+        return t;
+      }));
+
       alert(`Cotización ${quote.folio} importada con éxito.`);
       setShowImportQuote(false);
       setImportQuoteCode('');
@@ -797,6 +798,7 @@ export default function POSInterface() {
           subtotal: subtotal,
           descuento: discount,
           metodo: finalMetodo,
+          cotizacionId: activeTab.cotizacionId || null,
           detalles: cart.map((item: any) => ({
             productoId: item.sku,
             cantidad: item.cantidad,
@@ -857,11 +859,25 @@ export default function POSInterface() {
     // Avanzar al siguiente ticket y persistirlo
     const nextTicket = ticketNumber + 1;
     localStorage.setItem('pos_last_ticket', String(ticketNumber));
-    setTicketNumber(nextTicket);
-    setCart([]);
-    setSelectedItemId(null);
+    
+    setTabs(prev => prev.map(t => {
+      if (t.id === activeTabId) {
+        return {
+          ...t,
+          ticketNumber: nextTicket,
+          cart: [],
+          selectedItemId: null,
+          discount: 0,
+          clienteNombre: '',
+          cotizacionId: null
+        };
+      }
+      return t;
+    }));
+    
     setShowCheckoutModal(false);
     setPendingCount(LocalDb.getUnsynced().length);
+    fetchActiveQuotes();
   };
 
   // Manejador del Teclado Numérico para el PIN
