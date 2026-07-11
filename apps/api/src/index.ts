@@ -2048,6 +2048,10 @@ app.post('/api/v1/ventas', async (req, res) => {
 
     res.json({ success: true, ventaId: venta.id });
   } catch (error: any) {
+    if (error.code === 'P2002' && (error.meta?.target?.includes('folio') || error.message?.includes('Unique constraint failed'))) {
+      console.log(`[Sync Warning] Folio duplicado detectado. Venta ya existía: ${folio}`);
+      return res.json({ success: true, message: 'La venta ya estaba registrada en el servidor.', yaExistia: true });
+    }
     res.status(500).json({ error: error.message });
   }
 });

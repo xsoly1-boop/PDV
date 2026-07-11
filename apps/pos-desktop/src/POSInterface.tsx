@@ -241,13 +241,19 @@ export default function POSInterface() {
         });
 
         if (response.ok) {
+          await response.json();
           await offlineStore.desencolarVenta(venta.id);
           console.log(`[Offline] Venta offline ${venta.folio} sincronizada correctamente.`);
         } else {
-          console.warn(`[Offline] Servidor rechazó la venta ${venta.folio}.`);
+          const errData = await response.json().catch(() => ({}));
+          const errMsg = errData.error || 'Error desconocido del servidor';
+          console.warn(`[Offline] Servidor rechazó la venta ${venta.folio}: ${errMsg}`);
+          alert(`Error al sincronizar venta ${venta.folio}: ${errMsg}\nPor favor, verifica la conexión o reintenta.`);
+          break;
         }
-      } catch (err) {
-        console.error(`[Offline] Error al subir venta ${venta.folio}:`, err);
+      } catch (err: any) {
+        console.error(`[Offline] Error de red al subir venta ${venta.folio}:`, err);
+        alert(`Error de red al subir venta ${venta.folio}: ${err.message || err}`);
         break;
       }
     }
@@ -1720,7 +1726,14 @@ export default function POSInterface() {
 
 
           <div 
-            onClick={() => setIsOnline(!isOnline)}
+            onClick={() => {
+              const nextOnline = !isOnline;
+              setIsOnline(nextOnline);
+              if (nextOnline) {
+                procesarColaVentasOffline();
+                sincronizarCatalogoLocal();
+              }
+            }}
             className={`flex items-center gap-2 cursor-pointer text-sm font-medium px-2.5 py-1 rounded-lg border transition-colors ${
               isOnline ? 'text-amber-500 border-amber-500/20 bg-amber-500/5' : 'text-rose-500 border-rose-500/20 bg-rose-500/5'
             }`}
