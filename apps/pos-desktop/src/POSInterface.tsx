@@ -39,6 +39,7 @@ interface CompanyConfig {
   scaleBaudRate?: number;
   scaleModel?: string;
   sessionTimeout?: number;
+  cotizacionExpiracionMins?: number;
   businessStartHour?: string;
   businessEndHour?: string;
   allowGerenteLogin?: boolean;
@@ -451,6 +452,7 @@ export default function POSInterface() {
       scaleBaudRate: 9605,
       scaleModel: 'torrey',
       sessionTimeout: 0,
+      cotizacionExpiracionMins: 1440,
       businessStartHour: '08:00',
       businessEndHour: '20:00',
       allowGerenteLogin: true,
@@ -1398,6 +1400,8 @@ export default function POSInterface() {
               allowTransfer: data.formatoTicket?.allowTransfer !== false,
               allowDrawer: data.formatoTicket?.allowDrawer !== false,
               drawerCommand: data.formatoTicket?.drawerCommand || '27,112,0,25,250',
+              sessionTimeout: Number(data.formatoTicket?.sessionTimeout) || 0,
+              cotizacionExpiracionMins: Number(data.formatoTicket?.cotizacionExpiracionMins) || 1440,
               allowScale: data.formatoTicket?.allowScale || false,
               scalePort: data.formatoTicket?.scalePort || 'COM1',
               scaleBaudRate: data.formatoTicket?.scaleBaudRate || 9600,
@@ -2558,6 +2562,7 @@ export default function POSInterface() {
                   allowGerenteCheckout: newConfig.allowGerenteCheckout !== false,
                   allowCajeroCheckout: newConfig.allowCajeroCheckout !== false,
                   allowVendedorMovilCheckout: newConfig.allowVendedorMovilCheckout || false,
+                  cotizacionExpiracionMins: newConfig.cotizacionExpiracionMins || 1440,
                   printerCaja: newConfig.printerCaja || '',
                   printerCliente: newConfig.printerCliente || '',
                   printerMovil: newConfig.printerMovil || '',

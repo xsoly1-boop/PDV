@@ -33,6 +33,7 @@ interface CompanyConfig {
   scaleBaudRate?: number;
   scaleModel?: string;
   sessionTimeout?: number;
+  cotizacionExpiracionMins?: number;
   businessStartHour?: string;
   businessEndHour?: string;
   allowGerenteLogin?: boolean;
@@ -1829,22 +1830,43 @@ export default function AdminDashboard({ currentUser, theme, onClose, config: in
                   <h3 className="text-sm font-bold uppercase tracking-wider mb-4 text-slate-400">Seguridad y Sesión</h3>
                   
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-xs font-bold uppercase text-slate-550 mb-2">Bloqueo por Inactividad (Cerrar Sesión)</label>
-                      <select
-                        className={`w-full rounded-xl p-3 border focus:outline-none focus:ring-2 focus:ring-amber-500 text-xs ${
-                          theme === 'dark' ? 'bg-[#1a1c24] border-[#262836] text-white' : 'bg-slate-50 border-slate-200 text-slate-800'
-                        }`}
-                        value={config.sessionTimeout || 0}
-                        onChange={e => setConfig({ ...config, sessionTimeout: parseInt(e.target.value) || 0 })}
-                      >
-                        <option value={0}>Nunca (Mantener sesión abierta)</option>
-                        <option value={1}>Después de 1 minuto</option>
-                        <option value={5}>Después de 5 minutos</option>
-                        <option value={15}>Después de 15 minutos</option>
-                        <option value={30}>Después de 30 minutos</option>
-                        <option value={60}>Después de 60 minutos</option>
-                      </select>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 flex-1">
+                      <div>
+                        <label className="block text-xs font-bold uppercase text-slate-550 mb-2">Bloqueo por Inactividad (Cerrar Sesión)</label>
+                        <select
+                          className={`w-full rounded-xl p-3 border focus:outline-none focus:ring-2 focus:ring-amber-500 text-xs ${
+                            theme === 'dark' ? 'bg-[#1a1c24] border-[#262836] text-white' : 'bg-slate-50 border-slate-200 text-slate-800'
+                          }`}
+                          value={config.sessionTimeout || 0}
+                          onChange={e => setConfig({ ...config, sessionTimeout: parseInt(e.target.value) || 0 })}
+                        >
+                          <option value={0}>Nunca (Mantener sesión abierta)</option>
+                          <option value={1}>Después de 1 minuto</option>
+                          <option value={5}>Después de 5 minutos</option>
+                          <option value={15}>Después de 15 minutos</option>
+                          <option value={30}>Después de 30 minutos</option>
+                          <option value={60}>Después de 60 minutos</option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-bold uppercase text-slate-550 mb-2">Expiración de Cotizaciones</label>
+                        <select
+                          className={`w-full rounded-xl p-3 border focus:outline-none focus:ring-2 focus:ring-amber-500 text-xs ${
+                            theme === 'dark' ? 'bg-[#1a1c24] border-[#262836] text-white' : 'bg-slate-50 border-slate-200 text-slate-800'
+                          }`}
+                          value={config.cotizacionExpiracionMins || 1440}
+                          onChange={e => setConfig({ ...config, cotizacionExpiracionMins: parseInt(e.target.value) || 1440 })}
+                        >
+                          <option value={30}>30 Minutos (Corta)</option>
+                          <option value={120}>2 Horas</option>
+                          <option value={720}>12 Horas (Medio día)</option>
+                          <option value={1440}>24 Horas (1 día - Recomendado)</option>
+                          <option value={2880}>48 Horas (2 días)</option>
+                          <option value={10080}>7 Días (1 semana)</option>
+                          <option value={43200}>30 Días (1 mes)</option>
+                        </select>
+                      </div>
                     </div>
 
                     <div>

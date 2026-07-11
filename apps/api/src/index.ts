@@ -310,9 +310,12 @@ app.post('/api/v1/cotizaciones', async (req, res) => {
     const codigoCorto = Math.floor(1000 + Math.random() * 9000).toString();
     const folio = `COT-${Date.now()}-${codigoCorto}`;
     
-    // La cotización expira en 24 horas (1440 minutos)
+    // Cargar expiración personalizada desde configuracion-empresa
+    const companyConfig = await prisma.configuracionEmpresa.findFirst();
+    const expiracionMins = Number((companyConfig?.formatoTicket as any)?.cotizacionExpiracionMins) || 1440;
+
     const expiraAt = new Date();
-    expiraAt.setMinutes(expiraAt.getMinutes() + 1440);
+    expiraAt.setMinutes(expiraAt.getMinutes() + expiracionMins);
 
     // Obtener los productos involucrados para calcular costos/totales (buscando por ID o por SKU)
     const productoIds = items.map(item => item.productoId);
@@ -1759,7 +1762,8 @@ app.post('/api/v1/configuracion-empresa', async (req, res) => {
     sessionTimeout, businessStartHour, businessEndHour,
     allowGerenteLogin, allowCajeroLogin, allowVendedorMovilLogin,
     restrictGerenteSchedule, restrictCajeroSchedule, restrictVendedorMovilSchedule,
-    printerCaja, printerCliente, printerMovil, printerBodega
+    printerCaja, printerCliente, printerMovil, printerBodega,
+    cotizacionExpiracionMins
   } = req.body;
 
   let mappedGiro: any = 'ABARROTES';
@@ -1801,7 +1805,8 @@ app.post('/api/v1/configuracion-empresa', async (req, res) => {
         printerCaja: printerCaja || '',
         printerCliente: printerCliente || '',
         printerMovil: printerMovil || '',
-        printerBodega: printerBodega || ''
+        printerBodega: printerBodega || '',
+        cotizacionExpiracionMins: Number(cotizacionExpiracionMins) || 1440
       } as any,
     };
 
