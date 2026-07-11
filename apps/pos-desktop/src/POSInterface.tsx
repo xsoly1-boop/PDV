@@ -2201,9 +2201,6 @@ export default function POSInterface() {
             <span className="text-amber-500 font-bold">Cant*Código</span>
             <span>Multiplicador (ej: 5*SKU)</span>
           </span>
-        </div>
-        <div className="flex items-center gap-3">
-          <span>Apex POS v2.0 • {!isOnline ? '🔴 Fuera de línea' : '🟢 En línea'}</span>
 
           {/* Toggle de Tema */}
           <button 
@@ -2234,6 +2231,9 @@ export default function POSInterface() {
             <Wifi className={`w-3 h-3 ${isOnline ? 'animate-pulse' : ''}`} /> 
             <span>{isOnline ? 'Sincronizado' : 'Offline'}</span>
           </div>
+        </div>
+        <div>
+          <span>Apex POS v2.0 • {!isOnline ? '🔴 Fuera de línea' : '🟢 En línea'}</span>
         </div>
       </footer>
 
