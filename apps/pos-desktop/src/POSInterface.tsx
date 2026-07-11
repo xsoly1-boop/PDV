@@ -2190,6 +2190,14 @@ export default function POSInterface() {
             <span>Buscar</span>
           </span>
           <span className="flex items-center gap-1 flex-wrap">
+            <kbd className={`px-1.5 py-0.5 rounded text-[10px] font-bold border ${theme === 'dark' ? 'bg-[#1b1c24] border-[#2b2d3a] text-amber-500' : 'bg-white border-slate-300 text-amber-600'}`}>F5</kbd>
+            <span>Importar Cot.</span>
+          </span>
+          <span className="flex items-center gap-1 flex-wrap">
+            <kbd className={`px-1.5 py-0.5 rounded text-[10px] font-bold border ${theme === 'dark' ? 'bg-[#1b1c24] border-[#2b2d3a] text-amber-500' : 'bg-white border-slate-300 text-amber-600'}`}>F6</kbd>
+            <span>Nuevo Ticket</span>
+          </span>
+          <span className="flex items-center gap-1 flex-wrap">
             <kbd className={`px-1.5 py-0.5 rounded text-[10px] font-bold border ${theme === 'dark' ? 'bg-[#1b1c24] border-[#2b2d3a] text-amber-500' : 'bg-white border-slate-300 text-amber-600'}`}>F12</kbd>
             <span>Cobrar</span>
           </span>
