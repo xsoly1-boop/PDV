@@ -72,6 +72,7 @@ model Usuario {
   traspasosEnviados  TraspasoMercancia[] @relation("UsuarioEnvia")
   traspasosRecibidos TraspasoMercancia[] @relation("UsuarioRecibe")
   turnos             TurnoCaja[]
+  auditorias         BitacoraAuditoria[]
 }
 
 model Sucursal {
@@ -85,6 +86,7 @@ model Sucursal {
   cotizaciones     Cotizacion[]
   traspasosOrigen  TraspasoMercancia[] @relation("SucursalOrigen")
   traspasosDestino TraspasoMercancia[] @relation("SucursalDestino")
+  lotes            LoteStock[]
 }
 
 model Producto {
@@ -108,6 +110,7 @@ model Producto {
   detallesVenta      DetalleVenta[]
   detallesCotizacion DetalleCotizacion[]
   detallesTraspaso   DetalleTraspaso[]
+  lotes              LoteStock[]
 }
 
 model CodigoBarras {
@@ -396,4 +399,32 @@ model FlujoEfectivo {
   monto       Decimal   @db.Decimal(10, 2)
   motivo      String
   creadoAt    DateTime  @default(now())
+}
+
+model BitacoraAuditoria {
+  id          String   @id @default(uuid())
+  usuarioId   String
+  usuario     Usuario  @relation(fields: [usuarioId], references: [id])
+  accion      String   // E.g., "CANCELACION_TICKET", "AJUSTE_INVENTARIO", "EDICION_PRECIO"
+  tabla       String?  // Nombre de la tabla afectada
+  registroId  String?  // ID del registro
+  detalles    String   // JSON o cadena descriptiva del cambio realizado
+  creadoAt    DateTime @default(now())
+
+  @@index([creadoAt])
+  @@index([usuarioId])
+}
+
+model LoteStock {
+  id             String    @id @default(uuid())
+  lote           String
+  productoId     String
+  sucursalId     String
+  stock          Decimal   @default(0) @db.Decimal(10, 3)
+  fechaCaducidad DateTime?
+  producto       Producto  @relation(fields: [productoId], references: [id], onDelete: Cascade)
+  sucursal       Sucursal  @relation(fields: [sucursalId], references: [id], onDelete: Cascade)
+  creadoAt       DateTime  @default(now())
+
+  @@unique([sucursalId, productoId, lote])
 }

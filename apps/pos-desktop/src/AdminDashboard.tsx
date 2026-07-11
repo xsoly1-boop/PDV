@@ -5,7 +5,7 @@ import {
   DollarSign, CheckCircle, Store,
   PlusCircle, FileSpreadsheet,
   Wrench, Database, Download, Upload, Play, RefreshCw, Printer,
-  Truck, Receipt
+  Truck, Receipt, FileText, Layers, Calendar, Activity
 } from 'lucide-react';
 import { API_V1 } from './config';
 import { exportKardexCSV } from './services/exportUtils';
@@ -50,7 +50,7 @@ interface CompanyConfig {
 }
 
 interface AdminDashboardProps {
-  currentUser: { nombre: string; rol: string };
+  currentUser: { id?: string; nombre: string; rol: string };
   theme: 'dark' | 'light';
   onClose: () => void;
   config: CompanyConfig;
@@ -80,7 +80,7 @@ interface Employee {
 }
 
 export default function AdminDashboard({ currentUser, theme, onClose, config: initialConfig, onConfigChange, products, onProductsChange }: AdminDashboardProps) {
-  const [activeTab, setActiveTab] = useState<'summary' | 'products' | 'employees' | 'sales' | 'config' | 'maintenance' | 'clientes' | 'proveedores' | 'gastos'>('summary');
+  const [activeTab, setActiveTab] = useState<'summary' | 'products' | 'employees' | 'sales' | 'config' | 'maintenance' | 'clientes' | 'proveedores' | 'gastos' | 'facturas' | 'lotes' | 'antiguedad_saldos' | 'auditoria'>('summary');
   const [searchQuery, setSearchQuery] = useState('');
   const [maintenanceLogs, setMaintenanceLogs] = useState<string>('Iniciado módulo de Mantenimiento. Listo para operar.\n');
   const [isOptimizing, setIsOptimizing] = useState<boolean>(false);
@@ -120,6 +120,20 @@ export default function AdminDashboard({ currentUser, theme, onClose, config: in
   const [gastoCategoryFilter, setGastoCategoryFilter] = useState('');
   const [gastoStartDateFilter, setGastoStartDateFilter] = useState('');
   const [gastoEndDateFilter, setGastoEndDateFilter] = useState('');
+
+  // Facturación, Lotes, Antigüedad de Saldos, Auditoría States
+  const [facturasList, setFacturasList] = useState<any[]>([]);
+  const [showFacturaModal, setShowFacturaModal] = useState(false);
+  const [facturarVenta, setFacturarVenta] = useState<any>(null);
+  const [facturaForm, setFacturaForm] = useState({ rfc: '', razonSocial: '', usoCFDI: 'G03' });
+
+  const [lotesList, setLotesList] = useState<any[]>([]);
+  const [showLoteModal, setShowLoteModal] = useState(false);
+  const [currentLote, setCurrentLote] = useState<any>({});
+
+  const [antiguedadList, setAntiguedadList] = useState<any[]>([]);
+  const [auditoriaLogs, setAuditoriaLogs] = useState<any[]>([]);
+  const [auditoriaFilterAccion, setAuditoriaFilterAccion] = useState('');
 
   const fetchGastos = async () => {
     try {
@@ -161,6 +175,93 @@ export default function AdminDashboard({ currentUser, theme, onClose, config: in
     }
   };
 
+  const fetchFacturas = async () => {
+    try {
+      const res = await fetch(`${API_V1}/facturas`);
+      if (res.ok) setFacturasList(await res.json());
+    } catch (e) { console.error('Error fetching facturas:', e); }
+  };
+
+  const fetchLotes = async () => {
+    try {
+      const res = await fetch(`${API_V1}/lotes`);
+      if (res.ok) setLotesList(await res.json());
+    } catch (e) { console.error('Error fetching lotes:', e); }
+  };
+
+  const fetchAntiguedad = async () => {
+    try {
+      const res = await fetch(`${API_V1}/clientes/reportes/antiguedad`);
+      if (res.ok) setAntiguedadList(await res.json());
+    } catch (e) { console.error('Error fetching credit aging:', e); }
+  };
+
+  const fetchAuditoriaLogs = async () => {
+    try {
+      const res = await fetch(`${API_V1}/auditoria`);
+      if (res.ok) setAuditoriaLogs(await res.json());
+    } catch (e) { console.error('Error fetching audit logs:', e); }
+  };
+
+  const handleSaveLote = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!currentLote.productoId || !currentLote.lote || currentLote.stock === undefined) return;
+    try {
+      const sucursalId = currentLote.sucursalId || 'suc-norte';
+      const res = await fetch(`${API_V1}/lotes`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...currentLote, sucursalId })
+      });
+      if (res.ok) {
+        setShowLoteModal(false);
+        fetchLotes();
+        // Log auditing action
+        await fetch(`${API_V1}/auditoria`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            usuarioId: currentUser.id,
+            accion: 'AJUSTE_INVENTARIO',
+            tabla: 'LoteStock',
+            detalles: `Registro o modificación de stock para lote ${currentLote.lote} del producto ${currentLote.productoId} a cantidad ${currentLote.stock}`
+          })
+        });
+      }
+    } catch (e) { console.error(e); }
+  };
+
+  const handleCreateFactura = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!facturarVenta) return;
+    try {
+      const res = await fetch(`${API_V1}/ventas/${facturarVenta.dbId || facturarVenta.id}/facturar`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(facturaForm)
+      });
+      if (res.ok) {
+        setShowFacturaModal(false);
+        fetchFacturas();
+        setFacturarVenta(null);
+        // Log auditing action
+        await fetch(`${API_V1}/auditoria`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            usuarioId: currentUser.id || 'ADMIN',
+            accion: 'TIMBRADO_FACTURA',
+            tabla: 'FacturaCFDI',
+            detalles: `Facturación timbrada exitosamente para la venta con folio ${facturarVenta.folio || facturarVenta.id}`
+          })
+        });
+      } else {
+        const data = await res.json();
+        alert(data.error || 'Error al timbrar la factura');
+      }
+    } catch (e) { console.error(e); }
+  };
+
   const fetchFinanzasReport = async () => {
     try {
       const res = await fetch(`${API_V1}/reportes/finanzas`);
@@ -179,6 +280,10 @@ export default function AdminDashboard({ currentUser, theme, onClose, config: in
     if (activeTab === 'gastos') {
       fetchGastos();
     }
+    if (activeTab === 'facturas') fetchFacturas();
+    if (activeTab === 'lotes') fetchLotes();
+    if (activeTab === 'antiguedad_saldos') fetchAntiguedad();
+    if (activeTab === 'auditoria') fetchAuditoriaLogs();
   }, [activeTab, gastoCategoryFilter, gastoStartDateFilter, gastoEndDateFilter]);
 
   const [printersList, setPrintersList] = useState<{ name: string; displayName: string }[]>([]);
@@ -1130,6 +1235,50 @@ export default function AdminDashboard({ currentUser, theme, onClose, config: in
               }`}
             >
               <Receipt className="w-5 h-5" /> Gastos Generales
+            </button>
+
+            <button 
+              onClick={() => setActiveTab('facturas')}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-bold text-sm transition-all border-0 cursor-pointer ${
+                activeTab === 'facturas' 
+                  ? 'bg-amber-500 text-[#0d0e12] shadow-lg shadow-amber-500/10' 
+                  : theme === 'dark' ? 'text-slate-400 hover:bg-[#1a1c24] hover:text-slate-200' : 'text-slate-600 hover:bg-slate-100'
+              }`}
+            >
+              <FileText className="w-5 h-5" /> Facturación CFDI
+            </button>
+
+            <button 
+              onClick={() => setActiveTab('lotes')}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-bold text-sm transition-all border-0 cursor-pointer ${
+                activeTab === 'lotes' 
+                  ? 'bg-amber-500 text-[#0d0e12] shadow-lg shadow-amber-500/10' 
+                  : theme === 'dark' ? 'text-slate-400 hover:bg-[#1a1c24] hover:text-slate-200' : 'text-slate-600 hover:bg-slate-100'
+              }`}
+            >
+              <Layers className="w-5 h-5" /> Lotes / Expiración
+            </button>
+
+            <button 
+              onClick={() => setActiveTab('antiguedad_saldos')}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-bold text-sm transition-all border-0 cursor-pointer ${
+                activeTab === 'antiguedad_saldos' 
+                  ? 'bg-amber-500 text-[#0d0e12] shadow-lg shadow-amber-500/10' 
+                  : theme === 'dark' ? 'text-slate-400 hover:bg-[#1a1c24] hover:text-slate-200' : 'text-slate-600 hover:bg-slate-100'
+              }`}
+            >
+              <Calendar className="w-5 h-5" /> Antigüedad de Saldos
+            </button>
+
+            <button 
+              onClick={() => setActiveTab('auditoria')}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-bold text-sm transition-all border-0 cursor-pointer ${
+                activeTab === 'auditoria' 
+                  ? 'bg-amber-500 text-[#0d0e12] shadow-lg shadow-amber-500/10' 
+                  : theme === 'dark' ? 'text-slate-400 hover:bg-[#1a1c24] hover:text-slate-200' : 'text-slate-600 hover:bg-slate-100'
+              }`}
+            >
+              <Activity className="w-5 h-5" /> Auditoría de Caja
             </button>
             
             <button 
@@ -2581,6 +2730,329 @@ export default function AdminDashboard({ currentUser, theme, onClose, config: in
             </div>
           )}
 
+          {/* TAB: FACTURAS */}
+          {activeTab === 'facturas' && (
+            <div className="space-y-6 animate-fadeIn font-sans">
+              <div>
+                <h2 className="text-lg font-bold uppercase tracking-wider text-slate-100">Facturación CFDI 4.0</h2>
+                <p className="text-xs text-slate-500 mt-1">Timbrado de ventas pasadas y consulta de CFDI generados.</p>
+              </div>
+
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                {/* Panel Izquierdo: Ventas pendientes de facturar */}
+                <div className={`lg:col-span-2 p-6 rounded-2xl border ${
+                  theme === 'dark' ? 'bg-[#13151b] border-[#20222b]' : 'bg-white border-slate-200 shadow-sm'
+                }`}>
+                  <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-4">Ventas Recientes (Pendientes de Facturar)</h3>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left border-collapse">
+                      <thead>
+                        <tr className="border-b border-slate-800 text-[10px] font-bold uppercase text-slate-500 tracking-wider">
+                          <th className="pb-3 pl-3">Folio</th>
+                          <th className="pb-3">Fecha</th>
+                          <th className="pb-3">Cliente</th>
+                          <th className="pb-3 text-right">Total</th>
+                          <th className="pb-3 text-center">Acción</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {sales.filter(s => !s.factura).slice(0, 10).map(s => (
+                          <tr key={s.dbId || s.id} className="border-b border-slate-850/50 hover:bg-slate-500/5 transition-colors">
+                            <td className="py-3.5 pl-3 font-mono font-bold text-xs">{(s.folio || s.id || '').split('|')[0]}</td>
+                            <td className="py-3.5 text-xs text-slate-400">{s.fecha || 'N/A'}</td>
+                            <td className="py-3.5 text-xs">{s.clienteObj?.nombre || s.cliente || 'Público en General'}</td>
+                            <td className="py-3.5 text-xs text-right font-bold text-emerald-400">${Number(s.total).toFixed(2)}</td>
+                            <td className="py-3.5 text-center">
+                              <button
+                                onClick={() => {
+                                  setFacturarVenta(s);
+                                  setFacturaForm({
+                                    rfc: s.clienteObj?.rfc || '',
+                                    razonSocial: s.clienteObj?.razonSocial || s.clienteObj?.nombre || s.cliente || '',
+                                    usoCFDI: 'G03'
+                                  });
+                                  setShowFacturaModal(true);
+                                }}
+                                className="bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold py-1.5 px-3 rounded-lg border-0 cursor-pointer text-[10px] transition-all active:scale-95 uppercase tracking-wider"
+                              >
+                                Timbrar CFDI
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                        {sales.filter(s => !s.factura).length === 0 && (
+                          <tr>
+                            <td colSpan={5} className="py-6 text-center text-xs text-slate-500 font-medium">No hay ventas pendientes por facturar</td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+                {/* Panel Derecho: Historial de facturas */}
+                <div className={`p-6 rounded-2xl border ${
+                  theme === 'dark' ? 'bg-[#13151b] border-[#20222b]' : 'bg-white border-slate-200 shadow-sm'
+                }`}>
+                  <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-4">Últimos CFDI Emitidos</h3>
+                  <div className="space-y-4 max-h-[450px] overflow-y-auto pr-1">
+                    {facturasList.map(f => (
+                      <div key={f.id} className={`p-4 rounded-xl border text-xs relative ${
+                        theme === 'dark' ? 'bg-[#181a22] border-[#262836]' : 'bg-slate-50 border-slate-200'
+                      }`}>
+                        <div className="flex justify-between items-center mb-1">
+                          <span className="font-bold text-slate-200">{f.razonSocial}</span>
+                          <span className="text-[9px] font-black bg-emerald-500/20 text-emerald-400 py-0.5 px-1.5 rounded uppercase">TIMBRADA</span>
+                        </div>
+                        <div className="text-[10px] text-slate-500 font-mono mb-2">RFC: {f.rfcReceptor}</div>
+                        <div className="text-[9px] text-slate-400 font-mono select-all">UUID: {f.uuidSat}</div>
+                        <div className="text-[9px] text-slate-500 mt-2">Fecha: {new Date(f.timbradaAt || f.creadoAt).toLocaleString()}</div>
+                        <div className="flex gap-2 mt-3 pt-3 border-t border-slate-800/30">
+                          <a
+                            href="#"
+                            onClick={(e) => { e.preventDefault(); alert('XML Descargado (Simulado)'); }}
+                            className="flex items-center gap-1 text-[10px] font-bold text-amber-500 hover:text-amber-400 no-underline"
+                          >
+                            <Download className="w-3 h-3" /> XML
+                          </a>
+                          <a
+                            href="#"
+                            onClick={(e) => { e.preventDefault(); alert('PDF Descargado (Simulado)'); }}
+                            className="flex items-center gap-1 text-[10px] font-bold text-amber-500 hover:text-amber-400 no-underline"
+                          >
+                            <Download className="w-3 h-3" /> PDF
+                          </a>
+                        </div>
+                      </div>
+                    ))}
+                    {facturasList.length === 0 && (
+                      <p className="text-xs text-slate-500 text-center py-6">No se han emitido facturas aún.</p>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* TAB: LOTES Y EXPIRACIÓN */}
+          {activeTab === 'lotes' && (
+            <div className="space-y-6 animate-fadeIn font-sans">
+              <div className="flex justify-between items-center">
+                <div>
+                  <h2 className="text-lg font-bold uppercase tracking-wider text-slate-100">Lotes y Fechas de Caducidad</h2>
+                  <p className="text-xs text-slate-500 mt-1">Control de trazabilidad de stock por lote y monitoreo de caducidades.</p>
+                </div>
+                <button
+                  onClick={() => {
+                    setCurrentLote({ stock: 0 });
+                    setShowLoteModal(true);
+                  }}
+                  className="bg-amber-500 hover:bg-amber-400 text-slate-955 font-bold px-4 py-2.5 rounded-xl shadow-md flex items-center gap-2 border-0 cursor-pointer transition-all active:scale-95 text-xs uppercase tracking-wider"
+                >
+                  <PlusCircle className="w-4 h-4" /> Registrar Lote
+                </button>
+              </div>
+
+              <div className={`p-6 rounded-2xl border ${
+                theme === 'dark' ? 'bg-[#13151b] border-[#20222b]' : 'bg-white border-slate-200 shadow-sm'
+              }`}>
+                <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-4">Monitoreo de Lotes Activos</h3>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left border-collapse">
+                    <thead>
+                      <tr className="border-b border-slate-800 text-[10px] font-bold uppercase text-slate-500 tracking-wider">
+                        <th className="pb-3 pl-3">Producto</th>
+                        <th className="pb-3">Código Lote</th>
+                        <th className="pb-3">Sucursal</th>
+                        <th className="pb-3">Fecha Caducidad</th>
+                        <th className="pb-3 text-right">Existencia</th>
+                        <th className="pb-3 text-center">Estado</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {lotesList.map(l => {
+                        const hoy = new Date();
+                        const caducidad = l.fechaCaducidad ? new Date(l.fechaCaducidad) : null;
+                        let estadoLabel = 'Al corriente';
+                        let estadoClass = 'bg-emerald-500/10 text-emerald-400';
+                        if (caducidad) {
+                          const diffMs = caducidad.getTime() - hoy.getTime();
+                          const dias = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+                          if (dias <= 0) {
+                            estadoLabel = 'CADUCADO';
+                            estadoClass = 'bg-rose-500/20 text-rose-500';
+                          } else if (dias <= 60) {
+                            estadoLabel = `Por expirar (${dias} días)`;
+                            estadoClass = 'bg-amber-500/20 text-amber-500';
+                          }
+                        } else {
+                          estadoLabel = 'Sin caducidad';
+                          estadoClass = 'bg-slate-500/10 text-slate-400';
+                        }
+
+                        return (
+                          <tr key={l.id} className="border-b border-slate-850/50 hover:bg-slate-500/5 transition-colors">
+                            <td className="py-3.5 pl-3">
+                              <div className="font-bold text-xs text-slate-200">{l.producto?.nombre}</div>
+                              <div className="text-[10px] text-slate-500">SKU: {l.producto?.sku}</div>
+                            </td>
+                            <td className="py-3.5 font-mono text-xs text-slate-300 font-bold">{l.lote}</td>
+                            <td className="py-3.5 text-xs text-slate-400">{l.sucursal?.nombre || 'Sucursal Principal'}</td>
+                            <td className="py-3.5 text-xs text-slate-400">
+                              {caducidad ? caducidad.toLocaleDateString() : '-'}
+                            </td>
+                            <td className="py-3.5 text-xs text-right font-mono font-bold text-slate-200">
+                              {Number(l.stock).toFixed(2)}
+                            </td>
+                            <td className="py-3.5 text-center">
+                              <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold ${estadoClass}`}>
+                                {estadoLabel}
+                              </span>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                      {lotesList.length === 0 && (
+                        <tr>
+                          <td colSpan={6} className="py-6 text-center text-xs text-slate-500 font-medium">No hay lotes registrados actualmente</td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* TAB: ANTIGÜEDAD DE SALDOS */}
+          {activeTab === 'antiguedad_saldos' && (
+            <div className="space-y-6 animate-fadeIn font-sans">
+              <div>
+                <h2 className="text-lg font-bold uppercase tracking-wider text-slate-100">Antigüedad de Saldos</h2>
+                <p className="text-xs text-slate-500 mt-1">Análisis por rangos de tiempo de las cuentas por cobrar de clientes a crédito.</p>
+              </div>
+
+              <div className={`p-6 rounded-2xl border ${
+                theme === 'dark' ? 'bg-[#13151b] border-[#20222b]' : 'bg-white border-slate-200 shadow-sm'
+              }`}>
+                <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-6">Reporte de Antigüedad de Cuentas por Cobrar</h3>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left border-collapse">
+                    <thead>
+                      <tr className="border-b border-slate-800 text-[10px] font-bold uppercase text-slate-500 tracking-wider">
+                        <th className="pb-3 pl-3">Cliente</th>
+                        <th className="pb-3 text-right">Límite</th>
+                        <th className="pb-3 text-right">Saldo Total</th>
+                        <th className="pb-3 text-right">Al Corriente</th>
+                        <th className="pb-3 text-right">1-30 Días</th>
+                        <th className="pb-3 text-right">31-60 Días</th>
+                        <th className="pb-3 text-right">61-90 Días</th>
+                        <th className="pb-3 text-right">90+ Días</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {antiguedadList.map(a => (
+                        <tr key={a.id} className="border-b border-slate-850/50 hover:bg-slate-500/5 transition-colors text-xs">
+                          <td className="py-4 pl-3 font-bold text-slate-200">{a.cliente}</td>
+                          <td className="py-4 text-right text-slate-500 font-mono">${a.limiteCredito.toFixed(2)}</td>
+                          <td className="py-4 text-right font-black text-rose-500 font-mono">${a.saldoTotal.toFixed(2)}</td>
+                          <td className="py-4 text-right text-emerald-400 font-mono">${a.alCorriente.toFixed(2)}</td>
+                          <td className="py-4 text-right text-slate-300 font-mono">${a.de1a30.toFixed(2)}</td>
+                          <td className="py-4 text-right text-amber-500/80 font-mono">${a.de31a60.toFixed(2)}</td>
+                          <td className="py-4 text-right text-orange-500 font-mono">${a.de61a90.toFixed(2)}</td>
+                          <td className="py-4 text-right text-rose-500 font-mono font-bold">${a.masDe90.toFixed(2)}</td>
+                        </tr>
+                      ))}
+                      {antiguedadList.length === 0 && (
+                        <tr>
+                          <td colSpan={8} className="py-6 text-center text-slate-500 font-medium">No hay saldos deudores pendientes</td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* TAB: BITÁCORA DE AUDITORÍA */}
+          {activeTab === 'auditoria' && (
+            <div className="space-y-6 animate-fadeIn font-sans">
+              <div className="flex justify-between items-center">
+                <div>
+                  <h2 className="text-lg font-bold uppercase tracking-wider text-slate-100">Bitácora de Auditoría</h2>
+                  <p className="text-xs text-slate-500 mt-1">Registro inmutable de las operaciones sensibles y autorizaciones del sistema.</p>
+                </div>
+                <div className="flex gap-2">
+                  <select
+                    className={`rounded-xl py-2 px-3 text-xs focus:outline-none focus:ring-1 focus:ring-amber-500 border ${
+                      theme === 'dark' ? 'bg-[#13151b] border-[#20222b] text-white' : 'bg-white border-slate-255 text-slate-800'
+                    }`}
+                    value={auditoriaFilterAccion}
+                    onChange={e => setAuditoriaFilterAccion(e.target.value)}
+                  >
+                    <option value="">Todas las Acciones</option>
+                    <option value="AJUSTE_INVENTARIO">Ajuste de Inventario</option>
+                    <option value="TIMBRADO_FACTURA">Timbrado de Facturas</option>
+                    <option value="AUTORIZACION_CREDITO">Autorización de Crédito</option>
+                    <option value="CANCELACION_TICKET">Cancelación de Ticket</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className={`p-6 rounded-2xl border ${
+                theme === 'dark' ? 'bg-[#13151b] border-[#20222b]' : 'bg-white border-slate-200 shadow-sm'
+              }`}>
+                <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-4">Registro Histórico de Auditoría</h3>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left border-collapse">
+                    <thead>
+                      <tr className="border-b border-slate-800 text-[10px] font-bold uppercase text-slate-500 tracking-wider">
+                        <th className="pb-3 pl-3">Fecha y Hora</th>
+                        <th className="pb-3">Operario / Rol</th>
+                        <th className="pb-3">Acción</th>
+                        <th className="pb-3">Detalle del Movimiento</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {auditoriaLogs
+                        .filter(l => !auditoriaFilterAccion || l.accion === auditoriaFilterAccion)
+                        .map(l => (
+                          <tr key={l.id} className="border-b border-slate-850/50 hover:bg-slate-500/5 transition-colors">
+                            <td className="py-3 px-3 text-[11px] text-slate-400 font-mono">
+                              {new Date(l.creadoAt).toLocaleString()}
+                            </td>
+                            <td className="py-3 text-xs">
+                              <span className="font-bold text-slate-200">{l.usuario?.nombre}</span>
+                              <span className="text-[10px] text-slate-500 block">{l.usuario?.rol}</span>
+                            </td>
+                            <td className="py-3 text-xs">
+                              <span className={`px-2 py-0.5 rounded text-[9px] font-bold font-mono ${
+                                l.accion === 'TIMBRADO_FACTURA' ? 'bg-blue-500/10 text-blue-400' :
+                                l.accion === 'AUTORIZACION_CREDITO' ? 'bg-amber-500/10 text-amber-400' :
+                                l.accion === 'CANCELACION_TICKET' ? 'bg-rose-500/10 text-rose-450' :
+                                'bg-purple-500/10 text-purple-400'
+                              }`}>
+                                {l.accion}
+                              </span>
+                            </td>
+                            <td className="py-3 text-xs text-slate-300 max-w-xs truncate" title={l.detalles}>
+                              {l.detalles}
+                            </td>
+                          </tr>
+                        ))}
+                      {auditoriaLogs.length === 0 && (
+                        <tr>
+                          <td colSpan={4} className="py-6 text-center text-xs text-slate-500 font-medium">No se han registrado auditorías aún</td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          )}
+
         </main>
       </div>
 
@@ -2634,6 +3106,174 @@ export default function AdminDashboard({ currentUser, theme, onClose, config: in
                 Cerrar Vista Previa
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Facturación Form Modal */}
+      {showFacturaModal && facturarVenta && (
+        <div className="fixed inset-0 bg-[#000000]/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className={`p-8 rounded-3xl border w-full max-w-md shadow-2xl relative ${
+            theme === 'dark' ? 'bg-[#13151b] border-[#20222b] text-white' : 'bg-white border-slate-200 text-slate-800'
+          }`}>
+            <button 
+              onClick={() => setShowFacturaModal(false)}
+              className="absolute top-4 right-4 text-slate-500 hover:text-white bg-transparent border-0 cursor-pointer"
+            >
+              <X className="w-5 h-5" />
+            </button>
+            <h3 className="text-md font-bold uppercase tracking-wider mb-6 flex items-center gap-2">
+              <FileText className="w-5 h-5 text-amber-500" /> Timbrado de Factura CFDI 4.0
+            </h3>
+            <p className="text-xs text-slate-500 mb-4">
+              Venta Folio: <strong className="text-slate-300 font-mono">{facturarVenta.folio.split('|')[0]}</strong> | Total: <strong className="text-emerald-400">${Number(facturarVenta.total).toFixed(2)}</strong>
+            </p>
+
+            <form onSubmit={handleCreateFactura} className="space-y-4">
+              <div>
+                <label className="block text-[10px] font-bold uppercase text-slate-500 mb-1.5">RFC Receptor *</label>
+                <input 
+                  type="text" 
+                  required
+                  placeholder="XAXX010101000"
+                  className={`w-full rounded-xl p-3 border text-xs focus:outline-none focus:ring-1 focus:ring-amber-500 ${
+                    theme === 'dark' ? 'bg-[#0d0e12] border-[#20222b]' : 'bg-slate-50 border-slate-250'
+                  }`}
+                  value={facturaForm.rfc}
+                  onChange={e => setFacturaForm({ ...facturaForm, rfc: e.target.value.toUpperCase() })}
+                />
+              </div>
+
+              <div>
+                <label className="block text-[10px] font-bold uppercase text-slate-500 mb-1.5">Razón Social *</label>
+                <input 
+                  type="text" 
+                  required
+                  placeholder="Nombre o denominación social"
+                  className={`w-full rounded-xl p-3 border text-xs focus:outline-none focus:ring-1 focus:ring-amber-500 ${
+                    theme === 'dark' ? 'bg-[#0d0e12] border-[#20222b]' : 'bg-slate-50 border-slate-250'
+                  }`}
+                  value={facturaForm.razonSocial}
+                  onChange={e => setFacturaForm({ ...facturaForm, razonSocial: e.target.value })}
+                />
+              </div>
+
+              <div>
+                <label className="block text-[10px] font-bold uppercase text-slate-500 mb-1.5">Uso de CFDI *</label>
+                <select
+                  required
+                  className={`w-full rounded-xl p-3 border text-xs focus:outline-none focus:ring-1 focus:ring-amber-500 ${
+                    theme === 'dark' ? 'bg-[#0d0e12] border-[#20222b] text-white' : 'bg-slate-50 border-slate-250 text-slate-800'
+                  }`}
+                  value={facturaForm.usoCFDI}
+                  onChange={e => setFacturaForm({ ...facturaForm, usoCFDI: e.target.value })}
+                >
+                  <option value="G03">G03 - Gastos en general</option>
+                  <option value="G01">G01 - Adquisición de mercancías</option>
+                  <option value="D01">D01 - Honorarios médicos, dentales y gastos hospitalarios</option>
+                  <option value="D02">D02 - Gastos médicos por incapacidad o discapacidad</option>
+                  <option value="S01">S01 - Sin efectos fiscales</option>
+                </select>
+              </div>
+
+              <div className="flex gap-4 pt-4 border-t border-slate-700/30">
+                <button type="submit" className="flex-grow bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold py-3 rounded-xl border-0 cursor-pointer text-xs transition-all active:scale-95">
+                  ✓ Confirmar y Timbrar
+                </button>
+                <button type="button" onClick={() => setShowFacturaModal(false)} className={`py-3 px-6 rounded-xl border bg-transparent cursor-pointer text-xs transition-all hover:bg-slate-500/10 ${theme === 'dark' ? 'border-[#20222b] text-slate-400' : 'border-slate-350 text-slate-655'}`}>
+                  Cancelar
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Lote Form Modal */}
+      {showLoteModal && (
+        <div className="fixed inset-0 bg-[#000000]/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className={`p-8 rounded-3xl border w-full max-w-md shadow-2xl relative ${
+            theme === 'dark' ? 'bg-[#13151b] border-[#20222b] text-white' : 'bg-white border-slate-200 text-slate-800'
+          }`}>
+            <button 
+              onClick={() => setShowLoteModal(false)}
+              className="absolute top-4 right-4 text-slate-500 hover:text-white bg-transparent border-0 cursor-pointer"
+            >
+              <X className="w-5 h-5" />
+            </button>
+            <h3 className="text-md font-bold uppercase tracking-wider mb-6 flex items-center gap-2">
+              <Layers className="w-5 h-5 text-amber-500" /> Registrar Lote de Producto
+            </h3>
+
+            <form onSubmit={handleSaveLote} className="space-y-4">
+              <div>
+                <label className="block text-[10px] font-bold uppercase text-slate-500 mb-1.5">Producto *</label>
+                <select
+                  required
+                  className={`w-full rounded-xl p-3 border text-xs focus:outline-none focus:ring-1 focus:ring-amber-500 ${
+                    theme === 'dark' ? 'bg-[#0d0e12] border-[#20222b] text-white' : 'bg-slate-50 border-slate-250 text-slate-800'
+                  }`}
+                  value={currentLote.productoId || ''}
+                  onChange={e => setCurrentLote({ ...currentLote, productoId: e.target.value })}
+                >
+                  <option value="">Selecciona un producto...</option>
+                  {products.map(p => (
+                    <option key={p.id} value={p.id}>{p.nombre} (SKU: {p.sku})</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-[10px] font-bold uppercase text-slate-500 mb-1.5">Código de Lote *</label>
+                <input 
+                  type="text" 
+                  required
+                  placeholder="Ej. LOT-2026-07"
+                  className={`w-full rounded-xl p-3 border text-xs focus:outline-none focus:ring-1 focus:ring-amber-500 ${
+                    theme === 'dark' ? 'bg-[#0d0e12] border-[#20222b]' : 'bg-slate-50 border-slate-250'
+                  }`}
+                  value={currentLote.lote || ''}
+                  onChange={e => setCurrentLote({ ...currentLote, lote: e.target.value })}
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-[10px] font-bold uppercase text-slate-500 mb-1.5">Cantidad en Stock *</label>
+                  <input 
+                    type="number" 
+                    step="0.001"
+                    required
+                    placeholder="0.000"
+                    className={`w-full rounded-xl p-3 border text-xs focus:outline-none focus:ring-1 focus:ring-amber-500 font-mono font-bold ${
+                      theme === 'dark' ? 'bg-[#0d0e12] border-[#20222b]' : 'bg-slate-50 border-slate-250'
+                    }`}
+                    value={currentLote.stock === undefined ? '' : currentLote.stock}
+                    onChange={e => setCurrentLote({ ...currentLote, stock: Number(e.target.value) })}
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold uppercase text-slate-500 mb-1.5">Fecha Caducidad</label>
+                  <input 
+                    type="date" 
+                    className={`w-full rounded-xl p-3 border text-xs focus:outline-none focus:ring-1 focus:ring-amber-500 ${
+                      theme === 'dark' ? 'bg-[#0d0e12] border-[#20222b]' : 'bg-slate-50 border-slate-250'
+                    }`}
+                    value={currentLote.fechaCaducidad || ''}
+                    onChange={e => setCurrentLote({ ...currentLote, fechaCaducidad: e.target.value })}
+                  />
+                </div>
+              </div>
+
+              <div className="flex gap-4 pt-4 border-t border-slate-700/30">
+                <button type="submit" className="flex-grow bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold py-3 rounded-xl border-0 cursor-pointer text-xs transition-all active:scale-95">
+                  ✓ Registrar Lote
+                </button>
+                <button type="button" onClick={() => setShowLoteModal(false)} className={`py-3 px-6 rounded-xl border bg-transparent cursor-pointer text-xs transition-all hover:bg-slate-500/10 ${theme === 'dark' ? 'border-[#20222b] text-slate-400' : 'border-slate-350 text-slate-655'}`}>
+                  Cancelar
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

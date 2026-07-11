@@ -2072,7 +2072,8 @@ app.get('/api/v1/ventas', async (req, res) => {
         },
         usuario: true,
         cliente: true,
-        sucursal: true
+        sucursal: true,
+        factura: true
       },
       orderBy: { creadoAt: 'desc' }
     });
@@ -2086,8 +2087,11 @@ app.get('/api/v1/ventas', async (req, res) => {
       return {
         id: folioReal,
         dbId: v.id,
+        folio: v.folio,
         fecha: new Date(v.creadoAt).toLocaleString('es-MX', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: 'short' }),
         cliente: v.cliente?.nombre || 'Público General',
+        clienteObj: v.cliente,
+        factura: v.factura,
         total: Number(v.total),
         items: itemsCount,
         metodo: metodo,
@@ -2724,6 +2728,200 @@ app.get('/api/v1/reportes/cuentas-por-cobrar', async (req, res) => {
     const total = clientes.reduce((s, c) => s + Number(c.saldoDeudor), 0);
     res.json({ clientes, total, count: clientes.length });
   } catch (e: any) { res.status(500).json({ error: e.message }); }
+});
+
+// ==========================================
+// 8. Facturación CFDI (Simulada)
+// ==========================================
+app.post('/api/v1/ventas/:id/facturar', async (req, res) => {
+  const { id } = req.params;
+  const { rfc, razonSocial, usoCFDI } = req.body;
+  if (!rfc || !razonSocial || !usoCFDI) {
+    return res.status(400).json({ error: 'Faltan datos fiscales requeridos para facturar' });
+  }
+  try {
+    const venta = await prisma.venta.findUnique({
+      where: { id },
+      include: { factura: true }
+    });
+    if (!venta) return res.status(404).json({ error: 'Venta no encontrada' });
+    if (venta.factura) return res.status(400).json({ error: 'Esta venta ya se encuentra facturada' });
+
+    const mockUuid = `CFDI40-${Math.random().toString(36).substring(2, 10).toUpperCase()}-4D2F-A5C1-${Math.random().toString(36).substring(2, 10).toUpperCase()}`;
+    const factura = await prisma.facturaCFDI.create({
+      data: {
+        ventaId: id,
+        rfcReceptor: rfc,
+        razonSocial,
+        usoCFDI,
+        uuidSat: mockUuid,
+        estado: 'TIMBRADA',
+        xmlUrl: `/facturas/xml/${mockUuid}.xml`,
+        pdfUrl: `/facturas/pdf/${mockUuid}.pdf`,
+        timbradaAt: new Date()
+      }
+    });
+    res.json({ success: true, factura });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.get('/api/v1/facturas', async (req, res) => {
+  try {
+    const facturas = await prisma.facturaCFDI.findMany({
+      include: { venta: { include: { cliente: true, usuario: { select: { nombre: true } } } } },
+      orderBy: { creadoAt: 'desc' }
+    });
+    res.json(facturas);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ==========================================
+// 9. Lotes e Inventario de Caducidad
+// ==========================================
+app.get('/api/v1/lotes', async (req, res) => {
+  try {
+    const lotes = await prisma.loteStock.findMany({
+      include: { producto: true, sucursal: true },
+      orderBy: { fechaCaducidad: 'asc' }
+    });
+    res.json(lotes);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.post('/api/v1/lotes', async (req, res) => {
+  const { lote, productoId, sucursalId, stock, fechaCaducidad } = req.body;
+  if (!lote || !productoId || !sucursalId || stock === undefined) {
+    return res.status(400).json({ error: 'Faltan campos obligatorios para registrar el lote' });
+  }
+  try {
+    const loteStock = await prisma.loteStock.upsert({
+      where: {
+        sucursalId_productoId_lote: { sucursalId, productoId, lote }
+      },
+      update: {
+        stock: Number(stock),
+        fechaCaducidad: fechaCaducidad ? new Date(fechaCaducidad) : null
+      },
+      create: {
+        lote,
+        productoId,
+        sucursalId,
+        stock: Number(stock),
+        fechaCaducidad: fechaCaducidad ? new Date(fechaCaducidad) : null
+      }
+    });
+    res.json(loteStock);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ==========================================
+// 10. Antigüedad de Saldos (Cuentas por Cobrar)
+// ==========================================
+app.get('/api/v1/clientes/reportes/antiguedad', async (req, res) => {
+  try {
+    const clientes = await prisma.cliente.findMany({
+      where: { activo: true, saldoDeudor: { gt: 0 } }
+    });
+    
+    const report = [];
+    const hoy = new Date();
+    
+    for (const c of clientes) {
+      const txs = await prisma.creditoTransaccion.findMany({
+        where: { clienteId: c.id, tipo: 'CARGO' },
+        orderBy: { creadoAt: 'desc' }
+      });
+      
+      let saldoRestante = Number(c.saldoDeudor);
+      let alCorriente = 0; // 0-7 días
+      let de1a30 = 0;      // 8-30 días
+      let de31a60 = 0;     // 31-60 días
+      let de61a90 = 0;     // 61-90 días
+      let masDe90 = 0;     // 90+ días
+      
+      for (const tx of txs) {
+        if (saldoRestante <= 0) break;
+        const montoTx = Number(tx.monto);
+        const afectacion = Math.min(saldoRestante, montoTx);
+        saldoRestante -= afectacion;
+        
+        const diffMs = hoy.getTime() - new Date(tx.creadoAt).getTime();
+        const dias = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+        
+        if (dias <= 7) alCorriente += afectacion;
+        else if (dias <= 30) de1a30 += afectacion;
+        else if (dias <= 60) de31a60 += afectacion;
+        else if (dias <= 90) de61a90 += afectacion;
+        else masDe90 += afectacion;
+      }
+      
+      if (saldoRestante > 0) {
+        masDe90 += saldoRestante;
+      }
+      
+      report.push({
+        id: c.id,
+        cliente: c.nombre,
+        limiteCredito: Number(c.limiteCredito),
+        saldoTotal: Number(c.saldoDeudor),
+        alCorriente,
+        de1a30,
+        de31a60,
+        de61a90,
+        masDe90
+      });
+    }
+    
+    res.json(report);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ==========================================
+// 11. Bitácora de Auditoría
+// ==========================================
+app.post('/api/v1/auditoria', async (req, res) => {
+  const { usuarioId, accion, tabla, registroId, detalles } = req.body;
+  if (!usuarioId || !accion || !detalles) {
+    return res.status(400).json({ error: 'Faltan campos obligatorios para registrar la auditoría' });
+  }
+  try {
+    const log = await prisma.bitacoraAuditoria.create({
+      data: {
+        usuarioId,
+        accion,
+        tabla,
+        registroId,
+        detalles
+      },
+      include: { usuario: { select: { nombre: true, rol: true } } }
+    });
+    res.json(log);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.get('/api/v1/auditoria', async (req, res) => {
+  try {
+    const logs = await prisma.bitacoraAuditoria.findMany({
+      include: { usuario: { select: { nombre: true, rol: true } } },
+      orderBy: { creadoAt: 'desc' },
+      take: 200
+    });
+    res.json(logs);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
 });
 
 seedDatabase().then(() => {

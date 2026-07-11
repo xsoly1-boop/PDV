@@ -4,7 +4,7 @@ import {
   Trash2, Plus, Minus, AlertCircle, 
   Wrench, CarFront, PackageOpen, Printer, Zap,
   Sun, Moon, LayoutDashboard, Bookmark, RotateCw, MessageCircle, CheckCircle2, X, DollarSign,
-  ClipboardList, Check, TrendingUp
+  ClipboardList, Check, TrendingUp, Lock, ShieldCheck
 } from 'lucide-react';
 import { LocalDb } from './db/localDb';
 import { SyncService } from './services/SyncService';
@@ -427,6 +427,52 @@ export default function POSInterface() {
   const [mixedCash, setMixedCash] = useState('');
   const [mixedCard, setMixedCard] = useState('');
   const [mixedTransfer, setMixedTransfer] = useState('');
+
+  // Credit Limit Authorization States
+  const [showAuthorizeCreditModal, setShowAuthorizeCreditModal] = useState(false);
+  const [managerPin, setManagerPin] = useState('');
+  const [isCreditAuthorized, setIsCreditAuthorized] = useState(false);
+
+  const handleVerifyManagerPin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      const res = await fetch(`${API_V1}/usuarios`);
+      if (res.ok) {
+        const users = await res.json();
+        const authorizedUser = users.find((u: any) => u.pin === managerPin && u.activo && (u.rol === 'ADMINISTRADOR' || u.rol === 'GERENTE'));
+        if (authorizedUser) {
+          setIsCreditAuthorized(true);
+          setShowAuthorizeCreditModal(false);
+          setManagerPin('');
+          alert('Crédito autorizado por: ' + authorizedUser.nombre);
+          // Wait briefly for state update to complete, then checkout
+          setTimeout(() => {
+            handleCheckout('CREDITO');
+          }, 100);
+          // Log auditing action
+          await fetch(`${API_V1}/auditoria`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              usuarioId: authorizedUser.id,
+              accion: 'AUTORIZACION_CREDITO',
+              tabla: 'Cliente',
+              registroId: activeTab.clienteId,
+              detalles: `Autorización de crédito excedido para el cliente ${activeTab.clienteNombre} en la venta con monto $${total}`
+            })
+          });
+        } else {
+          alert('PIN incorrecto o el usuario no tiene permisos de autorización (Gerente o Administrador).');
+          setManagerPin('');
+        }
+      } else {
+        alert('Error al verificar el PIN con el servidor.');
+      }
+    } catch (e) {
+      console.error(e);
+      alert('Error de conexión al verificar el PIN.');
+    }
+  };
 
   // Estados de CRM Clientes y WhatsApp Post-venta
   const [showAssignClientModal, setShowAssignClientModal] = useState(false);
@@ -1111,6 +1157,14 @@ export default function POSInterface() {
 
   const handleCheckout = async (metodoPago: string) => {
     if (cart.length === 0) return;
+
+    const availableCredit = Number(activeTab.clienteObj?.limiteCredito || 0) - Number(activeTab.clienteObj?.saldoDeudor || 0);
+    if (metodoPago === 'CREDITO' && availableCredit < total && !isCreditAuthorized) {
+      setShowAuthorizeCreditModal(true);
+      return;
+    }
+
+    setIsCreditAuthorized(false);
 
     if (!activeTurno && (currentUser?.rol === 'Administrador' || currentUser?.rol === 'Gerente' || currentUser?.rol === 'Cajero')) {
       alert('Operación Bloqueada: Debes abrir el turno de caja antes de realizar ventas.');
@@ -3148,11 +3202,17 @@ ${articulosTexto}
                 disabled={
                   (paymentMethod === 'EFECTIVO' && Number(amountPaid) < total) ||
                   (paymentMethod === 'MIXTO' && (Number(mixedCash || 0) + Number(mixedCard || 0) + Number(mixedTransfer || 0)) < total) ||
-                  (paymentMethod === 'CREDITO' && (!activeTab.clienteId || (Number(activeTab.clienteObj?.limiteCredito || 0) - Number(activeTab.clienteObj?.saldoDeudor || 0)) < total))
+                  (paymentMethod === 'CREDITO' && !activeTab.clienteId)
                 }
                 className="flex-grow bg-emerald-600 hover:bg-emerald-500 text-white font-black py-3 rounded-xl shadow-lg border-0 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer text-sm flex items-center justify-center gap-1.5"
               >
-                ✓ Registrar Cobro
+                {paymentMethod === 'CREDITO' && (Number(activeTab.clienteObj?.limiteCredito || 0) - Number(activeTab.clienteObj?.saldoDeudor || 0)) < total ? (
+                  <>
+                    <Lock className="w-4 h-4 text-amber-400 animate-pulse" /> Autorizar y Cobrar
+                  </>
+                ) : (
+                  <>✓ Registrar Cobro</>
+                )}
               </button>
             </div>
           </div>
@@ -3332,6 +3392,56 @@ ${articulosTexto}
                 Enviar por WhatsApp
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal: Autorización de Crédito Excedido (PIN de Gerente / Admin) */}
+      {showAuthorizeCreditModal && (
+        <div className="fixed inset-0 bg-[#000000]/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className={`p-8 rounded-3xl border w-full max-w-sm shadow-2xl relative ${
+            theme === 'dark' ? 'bg-[#13151b] border-[#262836] text-white' : 'bg-white border-slate-200 text-slate-800'
+          }`}>
+            <button 
+              onClick={() => setShowAuthorizeCreditModal(false)}
+              className="absolute top-4 right-4 text-slate-400 hover:text-white bg-transparent border-0 cursor-pointer"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <div className="text-center mb-6">
+              <div className="mx-auto w-12 h-12 bg-amber-500/10 text-amber-500 rounded-full flex items-center justify-center mb-3">
+                <ShieldCheck className="w-6 h-6 animate-pulse" />
+              </div>
+              <h3 className="text-md font-bold uppercase tracking-wider">Autorizar Límite de Crédito</h3>
+              <p className="text-xs text-slate-500 mt-2">
+                El saldo deudor del cliente <strong className="text-slate-350">{activeTab.clienteNombre}</strong> excede su límite de crédito. Se requiere el PIN de un Gerente o Administrador.
+              </p>
+            </div>
+
+            <form onSubmit={handleVerifyManagerPin} className="space-y-4">
+              <div>
+                <label className="block text-[10px] font-bold uppercase text-slate-500 mb-1.5 text-center">Ingresa el PIN de Autorización</label>
+                <input 
+                  type="password" 
+                  required
+                  maxLength={6}
+                  placeholder="••••••"
+                  className="w-full text-center tracking-widest text-lg font-black rounded-xl p-3 border focus:outline-none focus:ring-2 focus:ring-amber-500 bg-[#0d0e12] border-[#20222b] text-white"
+                  value={managerPin}
+                  onChange={e => setManagerPin(e.target.value.replace(/\D/g, ''))}
+                />
+              </div>
+
+              <div className="flex flex-col gap-3 pt-3">
+                <button type="submit" className="w-full bg-amber-500 hover:bg-amber-400 text-slate-950 font-black py-3 rounded-xl border-0 cursor-pointer text-xs uppercase tracking-wider transition-all active:scale-95">
+                  ✓ Autorizar Crédito
+                </button>
+                <button type="button" onClick={() => setShowAuthorizeCreditModal(false)} className="w-full bg-transparent border border-slate-700/50 hover:bg-slate-800 text-slate-400 font-bold py-3 rounded-xl cursor-pointer text-xs">
+                  Cancelar
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
