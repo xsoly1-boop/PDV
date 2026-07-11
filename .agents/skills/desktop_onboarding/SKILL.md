@@ -266,8 +266,10 @@ Para permitir el aprovisionamiento de la licencia:
 3.  Se añaden campos de entrada para **Email del Cliente** y **License Key (Licencia)**.
 4.  Si los campos están vacíos, el usuario ingresa simplemente con su PIN y opera en modo Demo.
 
-### 6.3 Setup Super Admin Híbrido (Supabase + Render)
-Si el cliente contrata el modo nube híbrido, se utiliza la pantalla oculta del Super Admin (Master Key `APEX2401`) para configurar el Servidor API remoto y las llaves de Supabase.
+### 6.3 Acceso Oculto al Setup Super Admin (Híbrido)
+Para configurar las llaves de Supabase + Render en el Server, el panel se mantiene invisible usando exclusivamente dos métodos de entrada:
+1.  **Vía A - Atajo de Teclado**: Presionar `Ctrl + Shift + A` (Windows) o `Cmd + Shift + A` (macOS) en la pantalla de PIN de login abre una ventana flotante pidiendo la contraseña maestra (**`APEX2401`**).
+2.  **Vía B - Dongle USB Físico**: Al insertar una memoria USB con el archivo criptográfico `apex_superadmin.key`, Electron detecta el dispositivo y abre directamente la pantalla de configuración híbrida (sin escribir contraseñas).
 
 ![Mockup de la Pantalla de Configuración Super Admin](./super_admin_hybrid_setup_mockup.jpg)
 ```
