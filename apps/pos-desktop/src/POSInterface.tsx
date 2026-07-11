@@ -1712,35 +1712,7 @@ export default function POSInterface() {
             </button>
           )}
 
-          {/* Toggle de Tema */}
-          <button 
-            onClick={handleThemeToggle}
-            className={`p-1.5 rounded-lg border transition-all cursor-pointer bg-transparent ${
-              theme === 'dark' ? 'border-[#20222b] text-slate-400 hover:text-amber-500' : 'border-slate-200 text-slate-600 hover:text-amber-500 hover:bg-slate-50 shadow-sm'
-            }`}
-            title="Alternar tema visual Claro / Oscuro (Solo Administradores)"
-          >
-            {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-          </button>
 
-
-          <div 
-            onClick={() => {
-              const nextOnline = !isOnline;
-              setIsOnline(nextOnline);
-              if (nextOnline) {
-                procesarColaVentasOffline();
-                sincronizarCatalogoLocal();
-              }
-            }}
-            className={`flex items-center gap-2 cursor-pointer text-sm font-medium px-2.5 py-1 rounded-lg border transition-colors ${
-              isOnline ? 'text-amber-500 border-amber-500/20 bg-amber-500/5' : 'text-rose-500 border-rose-500/20 bg-rose-500/5'
-            }`}
-            title="Simular cambio de red (Clic para alternar)"
-          >
-            <Wifi className={`w-4 h-4 ${isOnline ? 'animate-pulse' : ''}`} /> 
-            <span>{isOnline ? 'Sincronizado' : 'Offline'}</span>
-          </div>
 
           {pendingCount > 0 && (
             <button 
@@ -2230,8 +2202,38 @@ export default function POSInterface() {
             <span>Multiplicador (ej: 5*SKU)</span>
           </span>
         </div>
-        <div>
+        <div className="flex items-center gap-3">
           <span>Apex POS v2.0 • {!isOnline ? '🔴 Fuera de línea' : '🟢 En línea'}</span>
+
+          {/* Toggle de Tema */}
+          <button 
+            onClick={handleThemeToggle}
+            className={`p-1.5 rounded-lg border transition-all cursor-pointer bg-transparent ${
+              theme === 'dark' ? 'border-[#20222b] text-slate-400 hover:text-amber-500' : 'border-slate-200 text-slate-600 hover:text-amber-500 hover:bg-slate-50 shadow-sm'
+            }`}
+            title="Alternar tema visual Claro / Oscuro (Solo Administradores)"
+          >
+            {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+          </button>
+
+          {/* Badge de Red */}
+          <div 
+            onClick={() => {
+              const nextOnline = !isOnline;
+              setIsOnline(nextOnline);
+              if (nextOnline) {
+                procesarColaVentasOffline();
+                sincronizarCatalogoLocal();
+              }
+            }}
+            className={`flex items-center gap-1.5 cursor-pointer text-xs font-medium px-2 py-0.5 rounded-md border transition-colors ${
+              isOnline ? 'text-amber-500 border-amber-500/20 bg-amber-500/5' : 'text-rose-500 border-rose-500/20 bg-rose-500/5'
+            }`}
+            title="Clic para alternar modo red"
+          >
+            <Wifi className={`w-3 h-3 ${isOnline ? 'animate-pulse' : ''}`} /> 
+            <span>{isOnline ? 'Sincronizado' : 'Offline'}</span>
+          </div>
         </div>
       </footer>
 
