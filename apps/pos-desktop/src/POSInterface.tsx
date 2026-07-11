@@ -1604,7 +1604,7 @@ export default function POSInterface() {
             <input
               id="pos-search-input"
               type="text"
-              placeholder="Escanear código de barras o escribir SKU/Nombre... (Enter para agregar)"
+              placeholder="[F3] Buscar artículo... o Cantidad*Código (ej: 5*SKU)"
               className={`w-full rounded-md py-2 pl-8 pr-10 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-all shadow-inner ${
                 theme === 'dark'
                   ? 'bg-[#090a0d] text-white placeholder-slate-400 border-[#242732]'
@@ -2197,6 +2197,33 @@ export default function POSInterface() {
 
         </section>
       </main>
+
+      {/* Barra de Atajos y Estado en Pie de Página */}
+      <footer className={`px-6 py-2 border-t text-[11px] flex items-center justify-between font-mono select-none ${
+        theme === 'dark' ? 'bg-[#0b0c10] border-[#1e2029] text-slate-400' : 'bg-slate-150 border-slate-200 text-slate-600'
+      }`}>
+        <div className="flex items-center gap-6">
+          <span className="flex items-center gap-1 flex-wrap">
+            <kbd className={`px-1.5 py-0.5 rounded text-[10px] font-bold border ${theme === 'dark' ? 'bg-[#1b1c24] border-[#2b2d3a] text-amber-500' : 'bg-white border-slate-300 text-amber-600'}`}>F3</kbd>
+            <span>Buscar</span>
+          </span>
+          <span className="flex items-center gap-1 flex-wrap">
+            <kbd className={`px-1.5 py-0.5 rounded text-[10px] font-bold border ${theme === 'dark' ? 'bg-[#1b1c24] border-[#2b2d3a] text-amber-500' : 'bg-white border-slate-300 text-amber-600'}`}>F12</kbd>
+            <span>Cobrar</span>
+          </span>
+          <span className="flex items-center gap-1 flex-wrap">
+            <kbd className={`px-1.5 py-0.5 rounded text-[10px] font-bold border ${theme === 'dark' ? 'bg-[#1b1c24] border-[#2b2d3a] text-amber-500' : 'bg-white border-slate-300 text-amber-600'}`}>ESC</kbd>
+            <span>Cerrar Modal</span>
+          </span>
+          <span className="flex items-center gap-1 flex-wrap">
+            <span className="text-amber-500 font-bold">Cant*Código</span>
+            <span>Multiplicador (ej: 5*SKU)</span>
+          </span>
+        </div>
+        <div>
+          <span>Apex POS v2.0 • {!isOnline ? '🔴 Fuera de línea' : '🟢 En línea'}</span>
+        </div>
+      </footer>
 
       {/* MODAL 1: IMPORTAR COTIZACIÓN (F5) */}
       {showImportQuote && (
