@@ -1735,69 +1735,30 @@ ${articulosTexto}
 
         <div className="flex items-center justify-end gap-4 w-fit">
           
-          {/* Botón de Cotizaciones */}
-          {currentUser && (
-            <button 
-              onClick={() => setCurrentView('quotes')}
-              className={`font-bold px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-all text-xs border cursor-pointer active:scale-95 ${
-                theme === 'dark' 
-                  ? 'bg-slate-800 hover:bg-slate-700 border-slate-700 text-amber-500 shadow-md' 
-                  : 'bg-white hover:bg-slate-50 border-slate-200 text-amber-600 shadow-sm'
-              }`}
-              title="Ir al Módulo de Cotizaciones"
-            >
-              <ClipboardList className="w-4 h-4" /> Cotizaciones
-            </button>
-          )}
-
-          {/* Botón de CRM */}
-          {currentUser && (
-            <button 
-              onClick={() => setCurrentView('crm')}
-              className={`font-bold px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-all text-xs border cursor-pointer active:scale-95 ${
-                theme === 'dark' 
-                  ? 'bg-slate-800 hover:bg-slate-700 border-slate-700 text-amber-500 shadow-md' 
-                  : 'bg-white hover:bg-slate-50 border-slate-200 text-amber-600 shadow-sm'
-              }`}
-              title="Ir al Módulo de CRM Clientes"
-            >
-              <User className="w-4 h-4" /> CRM Clientes
-            </button>
-          )}
-
-          {/* Botón de Reportes */}
-          {currentUser && (currentUser.rol === 'Administrador' || currentUser.rol === 'Gerente') && (
-            <button 
-              onClick={() => setCurrentView('reports')}
-              className={`font-bold px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-all text-xs border cursor-pointer active:scale-95 ${
-                theme === 'dark' 
-                  ? 'bg-slate-800 hover:bg-slate-700 border-slate-700 text-amber-500 shadow-md' 
-                  : 'bg-white hover:bg-slate-50 border-slate-200 text-amber-600 shadow-sm'
-              }`}
-              title="Ir al Centro de Reportes"
-            >
-              <TrendingUp className="w-4 h-4" /> Reportes
-            </button>
-          )}
-
-          {/* Botón de Administración */}
-          {currentUser && currentUser.rol === 'Administrador' && (
-            <button 
-              onClick={() => setCurrentView('admin')}
-              className="bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-all text-xs border-0 cursor-pointer shadow-md shadow-amber-500/10 active:scale-95"
-              title="Ir al Panel de Administración"
-            >
-              <LayoutDashboard className="w-4 h-4" /> Admin
-            </button>
-          )}
-
-
+          {/* Badge de Red (Movido del Footer) */}
+          <div 
+            onClick={() => {
+              const nextOnline = !isOnline;
+              setIsOnline(nextOnline);
+              if (nextOnline) {
+                procesarColaVentasOffline();
+                sincronizarCatalogoLocal();
+              }
+            }}
+            className={`flex items-center gap-1.5 cursor-pointer text-xs font-semibold px-2.5 py-1 rounded-lg border transition-colors ${
+              isOnline ? 'text-emerald-500 border-emerald-500/20 bg-emerald-500/5' : 'text-rose-500 border-rose-500/20 bg-rose-500/5'
+            }`}
+            title="Clic para alternar modo red"
+          >
+            <Wifi className={`w-3.5 h-3.5 ${isOnline ? 'animate-pulse' : ''}`} /> 
+            <span>{isOnline ? 'Sincronizado' : 'Offline'}</span>
+          </div>
 
           {pendingCount > 0 && (
             <button 
               onClick={forceSync}
               className="text-[10px] text-amber-500 bg-amber-500/10 border border-amber-500/30 px-2 py-1 rounded font-bold hover:bg-amber-500 hover:text-slate-950 transition-colors uppercase animate-pulse"
-              title="Sincronizar movimientos pendientes"
+              title="Sincronizar movimientos pendientes central"
             >
               🔄 {pendingCount} Sync
             </button>
@@ -1811,6 +1772,17 @@ ${articulosTexto}
               title="Ventas guardadas offline pendientes por subir"
             >
               📥 {offlineQueueSize} Ventas Offline {syncingVentas ? '(Subiendo...)' : ''}
+            </button>
+          )}
+
+          {/* Botón de Administración */}
+          {currentUser && currentUser.rol === 'Administrador' && (
+            <button 
+              onClick={() => setCurrentView('admin')}
+              className="bg-amber-500 hover:bg-amber-400 text-slate-955 font-bold px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-all text-xs border-0 cursor-pointer shadow-md shadow-amber-500/10 active:scale-95"
+              title="Ir al Panel de Administración"
+            >
+              <LayoutDashboard className="w-4 h-4" /> Admin
             </button>
           )}
 
@@ -2303,24 +2275,50 @@ ${articulosTexto}
             {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
           </button>
 
-          {/* Badge de Red */}
-          <div 
-            onClick={() => {
-              const nextOnline = !isOnline;
-              setIsOnline(nextOnline);
-              if (nextOnline) {
-                procesarColaVentasOffline();
-                sincronizarCatalogoLocal();
-              }
-            }}
-            className={`flex items-center gap-1.5 cursor-pointer text-xs font-medium px-2 py-0.5 rounded-md border transition-colors ${
-              isOnline ? 'text-amber-500 border-amber-500/20 bg-amber-500/5' : 'text-rose-500 border-rose-500/20 bg-rose-500/5'
-            }`}
-            title="Clic para alternar modo red"
-          >
-            <Wifi className={`w-3 h-3 ${isOnline ? 'animate-pulse' : ''}`} /> 
-            <span>{isOnline ? 'Sincronizado' : 'Offline'}</span>
-          </div>
+          {/* Botones de Navegación POS (Movidos al Footer) */}
+          {currentUser && (
+            <button 
+              onClick={() => setCurrentView('quotes')}
+              className={`font-bold px-3 py-1 rounded-lg flex items-center gap-1.5 transition-all text-[10px] border cursor-pointer active:scale-95 ${
+                theme === 'dark' 
+                  ? 'bg-slate-800 hover:bg-slate-700 border-slate-700 text-amber-500 shadow-md' 
+                  : 'bg-white hover:bg-slate-50 border-slate-200 text-amber-600 shadow-sm'
+              }`}
+              title="Ir al Módulo de Cotizaciones"
+            >
+              <ClipboardList className="w-3.5 h-3.5" /> Cotizaciones
+            </button>
+          )}
+
+          {/* Botón de CRM */}
+          {currentUser && (
+            <button 
+              onClick={() => setCurrentView('crm')}
+              className={`font-bold px-3 py-1 rounded-lg flex items-center gap-1.5 transition-all text-[10px] border cursor-pointer active:scale-95 ${
+                theme === 'dark' 
+                  ? 'bg-slate-800 hover:bg-slate-700 border-slate-700 text-amber-500 shadow-md' 
+                  : 'bg-white hover:bg-slate-50 border-slate-200 text-amber-600 shadow-sm'
+              }`}
+              title="Ir al Módulo de CRM Clientes"
+            >
+              <User className="w-3.5 h-3.5" /> CRM Clientes
+            </button>
+          )}
+
+          {/* Botón de Reportes */}
+          {currentUser && (currentUser.rol === 'Administrador' || currentUser.rol === 'Gerente') && (
+            <button 
+              onClick={() => setCurrentView('reports')}
+              className={`font-bold px-3 py-1 rounded-lg flex items-center gap-1.5 transition-all text-[10px] border cursor-pointer active:scale-95 ${
+                theme === 'dark' 
+                  ? 'bg-slate-800 hover:bg-slate-700 border-slate-700 text-amber-500 shadow-md' 
+                  : 'bg-white hover:bg-slate-50 border-slate-200 text-amber-600 shadow-sm'
+              }`}
+              title="Ir al Centro de Reportes"
+            >
+              <TrendingUp className="w-3.5 h-3.5" /> Reportes
+            </button>
+          )}
         </div>
         <div>
           <span>Apex POS v2.0 • {!isOnline ? '🔴 Fuera de línea' : '🟢 En línea'}</span>
