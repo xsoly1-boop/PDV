@@ -258,6 +258,7 @@ Por defecto, la base de datos local SQLite inicia en estado **no activado (demo)
 4.  **Módulos Bloqueados**: Cotizaciones, Proveedores, CRM Clientes, Antigüedad de Saldos y Facturación CFDI.
 5.  **Límite Temporal**: 1 año de prueba activa.
     *   **Alerta de Expiración**: Se mostrará una barra de advertencia amarilla en la cabecera únicamente cuando resten **30 días o menos** para concluir el periodo de prueba.
+    *   **Post-Expiración**: El usuario podrá seguir vendiendo, cobrando y operando normalmente, pero se bloqueará la capacidad de crear nuevos productos en el catálogo hasta activar la licencia.
 
 ### 6.2 Widget de Activación en Pantalla de PIN (Login)
 Para permitir el aprovisionamiento de la licencia:

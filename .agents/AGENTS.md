@@ -12,6 +12,7 @@ A menos que la app esté activada con una licencia válida (Hardware ID + Email)
 *   Operación restringida a **1 impresora**, **0 vendedores móviles** y **0 terminales adicionales** (monopuesto).
 *   Módulos bloqueados en UI: Cotizaciones, Proveedores, CRM Clientes, Antigüedad de Saldos y Facturación CFDI.
 *   Sin marcas de agua visuales en la caja, pero con alertas de cuenta regresiva en el panel cuando falten **30 días o menos** para expirar el año.
+*   **Comportamiento Post-Expiración**: Cumplido el año, el usuario podrá seguir vendiendo productos y cobrando normalmente, pero se bloqueará la creación de nuevos productos en el catálogo hasta ingresar la licencia.
 
 ## 3. Acceso del Super Admin
 El panel de Super Admin es invisible y solo se accede en el Servidor mediante:
