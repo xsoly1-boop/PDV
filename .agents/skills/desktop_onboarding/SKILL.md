@@ -272,4 +272,12 @@ Para configurar las llaves de Supabase + Render en el Server, el panel se mantie
 2.  **Vía B - Dongle USB Físico**: Al insertar una memoria USB con el archivo criptográfico `apex_superadmin.key`, Electron detecta el dispositivo y abre directamente la pantalla de configuración híbrida (sin escribir contraseñas).
 
 ![Mockup de la Pantalla de Configuración Super Admin](./super_admin_hybrid_setup_mockup.jpg)
+
+### 6.4 Configuración Multi-sucursal en Super Admin
+Cuando el modo Híbrido Nube está activo:
+1.  **Selección de Sucursal**: La interfaz de Super Admin mostrará un campo desplegable (Dropdown) llamado **"Sucursal de esta Caja"**.
+2.  **Carga desde la Nube**: Al validar con éxito las credenciales de Supabase mediante "Test Connection", el sistema cargará de forma dinámica la lista de sucursales registradas en la tabla `Sucursal` de la nube.
+3.  **Registro de Nueva Sucursal**: Si la sucursal es nueva, se habilita una opción para registrar el nombre y código de la nueva sucursal y subirla a la nube.
+4.  **Inyección de Datos**: El ID seleccionado (`sucursalId`) se guarda de forma persistente en la configuración del servidor local. La API local inyecta automáticamente este `sucursalId` en cada venta, kardex, stock o movimiento generado en esta tienda antes de guardarlo en SQLite y sincronizarlo.
+
 ```
