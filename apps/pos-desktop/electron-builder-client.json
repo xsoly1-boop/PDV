@@ -1,0 +1,22 @@
+{
+  "appId": "com.vante.pos.client",
+  "productName": "VantePOS-Client",
+  "electronVersion": "30.0.0",
+  "directories": {
+    "output": "dist-electron"
+  },
+  "files": [
+    "dist/**/*",
+    "main.js",
+    "preload.js",
+    "build/icon.png"
+  ],
+  "mac": {
+    "category": "public.app-category.business",
+    "icon": "build/icon.png"
+  },
+  "win": {
+    "target": "nsis",
+    "icon": "build/icon.png"
+  }
+}

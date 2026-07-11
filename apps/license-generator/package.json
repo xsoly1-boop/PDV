@@ -1,0 +1,36 @@
+{
+  "name": "vante-license-generator",
+  "version": "1.0.0",
+  "main": "main.js",
+  "description": "Vante POS License Generator",
+  "author": "Vante POS",
+  "scripts": {
+    "build": "electron-builder"
+  },
+  "devDependencies": {
+    "electron": "^30.0.0",
+    "electron-builder": "^24.13.3"
+  },
+  "build": {
+    "appId": "com.vante.licensegenerator",
+    "productName": "VanteLicenseGenerator",
+    "electronVersion": "30.0.0",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "index.html",
+      "main.js",
+      "vante_logo.png"
+    ],
+    "mac": {
+      "category": "public.app-category.developer-tools",
+      "target": "dmg",
+      "icon": "vante_logo.png"
+    },
+    "win": {
+      "target": "nsis",
+      "icon": "vante_logo.png"
+    }
+  }
+}

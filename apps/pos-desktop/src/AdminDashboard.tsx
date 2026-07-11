@@ -57,6 +57,8 @@ interface AdminDashboardProps {
   onConfigChange: (newConfig: CompanyConfig) => void;
   products: Product[];
   onProductsChange: (newProducts: Product[]) => void;
+  licenseStatus?: 'ACTIVE' | 'DEMO';
+  daysRemaining?: number;
 }
 
 interface Product {
@@ -79,7 +81,17 @@ interface Employee {
   activo: boolean;
 }
 
-export default function AdminDashboard({ currentUser, theme, onClose, config: initialConfig, onConfigChange, products, onProductsChange }: AdminDashboardProps) {
+export default function AdminDashboard({ 
+  currentUser, 
+  theme, 
+  onClose, 
+  config: initialConfig, 
+  onConfigChange, 
+  products, 
+  onProductsChange,
+  licenseStatus = 'DEMO',
+  daysRemaining = 365
+}: AdminDashboardProps) {
   const [activeTab, setActiveTab] = useState<'summary' | 'products' | 'employees' | 'sales' | 'config' | 'maintenance' | 'clientes' | 'proveedores' | 'gastos' | 'facturas' | 'lotes' | 'antiguedad_saldos' | 'auditoria'>('summary');
   const [searchQuery, setSearchQuery] = useState('');
   const [maintenanceLogs, setMaintenanceLogs] = useState<string>('Iniciado módulo de Mantenimiento. Listo para operar.\n');
@@ -955,6 +967,20 @@ export default function AdminDashboard({ currentUser, theme, onClose, config: in
       }
     } else {
       // Create new product
+      if (licenseStatus === 'DEMO') {
+        if (products.length >= 200) {
+          alert('Límite de Catálogo Excedido (Modo Demo): Has alcanzado el límite máximo de 200 productos. Para registrar más artículos por favor activa tu licencia de Vante POS.');
+          setShowProductModal(false);
+          setCurrentProduct({});
+          return;
+        }
+        if (daysRemaining <= 0) {
+          alert('Periodo de Prueba Expirado: El periodo máximo de 1 año de la versión de demostración ha caducado. Puedes seguir vendiendo y cobrando con normalidad, pero la creación de nuevos productos está deshabilitada hasta ingresar la licencia.');
+          setShowProductModal(false);
+          setCurrentProduct({});
+          return;
+        }
+      }
       try {
         const resp = await fetch(`${API_V1}/productos`, {
           method: 'POST',
@@ -1007,6 +1033,12 @@ export default function AdminDashboard({ currentUser, theme, onClose, config: in
       }
     } else {
       // Add new employee
+      if (licenseStatus === 'DEMO' && employees.length >= 3) {
+        alert('Límite de Personal Excedido (Modo Demo): Has alcanzado el límite máximo de 3 usuarios registrados. Por favor adquiere una licencia válida para registrar más personal.');
+        setShowEmployeeModal(false);
+        setCurrentEmployee({});
+        return;
+      }
       try {
         const resp = await fetch(`${API_V1}/usuarios`, {
           method: 'POST',
@@ -1439,27 +1471,29 @@ export default function AdminDashboard({ currentUser, theme, onClose, config: in
                 </div>
               </div>
               {/* Status and Database Connection Status Card */}
-              <div className={`p-6 rounded-2xl border ${
-                theme === 'dark' ? 'bg-[#13151b] border-[#20222b]' : 'bg-white border-slate-200 shadow-sm'
-              }`}>
-                <h3 className="text-sm font-bold uppercase tracking-wider mb-4 flex items-center gap-2">
-                  <CheckCircle className="w-5 h-5 text-amber-500" /> Sincronización y Enlace de Nube
-                </h3>
-                <div className="grid grid-cols-3 gap-6">
-                  <div className={`p-4 rounded-xl text-center border ${theme === 'dark' ? 'bg-[#0d0e12] border-[#20222b]' : 'bg-slate-50 border-slate-200'}`}>
-                    <p className="text-xs font-bold text-slate-500">Base de Datos Central</p>
-                    <p className="text-base font-black text-emerald-500 mt-1">Supabase (PostgreSQL)</p>
-                  </div>
-                  <div className={`p-4 rounded-xl text-center border ${theme === 'dark' ? 'bg-[#0d0e12] border-[#20222b]' : 'bg-slate-50 border-slate-200'}`}>
-                    <p className="text-xs font-bold text-slate-500">Estado de Servidor API</p>
-                    <p className="text-base font-black text-emerald-500 mt-1">Render (On-line)</p>
-                  </div>
-                  <div className={`p-4 rounded-xl text-center border ${theme === 'dark' ? 'bg-[#0d0e12] border-[#20222b]' : 'bg-slate-50 border-slate-200'}`}>
-                    <p className="text-xs font-bold text-slate-500">Tiempo de Respuesta API</p>
-                    <p className="text-base font-black text-amber-500 mt-1">115 ms</p>
+              {localStorage.getItem('vante_super_admin_active') === 'true' && (
+                <div className={`p-6 rounded-2xl border ${
+                  theme === 'dark' ? 'bg-[#13151b] border-[#20222b]' : 'bg-white border-slate-200 shadow-sm'
+                }`}>
+                  <h3 className="text-sm font-bold uppercase tracking-wider mb-4 flex items-center gap-2">
+                    <CheckCircle className="w-5 h-5 text-amber-500" /> Sincronización y Enlace de Nube
+                  </h3>
+                  <div className="grid grid-cols-3 gap-6">
+                    <div className={`p-4 rounded-xl text-center border ${theme === 'dark' ? 'bg-[#0d0e12] border-[#20222b]' : 'bg-slate-50 border-slate-200'}`}>
+                      <p className="text-xs font-bold text-slate-500">Base de Datos Central</p>
+                      <p className="text-base font-black text-emerald-500 mt-1">Supabase (PostgreSQL)</p>
+                    </div>
+                    <div className={`p-4 rounded-xl text-center border ${theme === 'dark' ? 'bg-[#0d0e12] border-[#20222b]' : 'bg-slate-50 border-slate-200'}`}>
+                      <p className="text-xs font-bold text-slate-500">Estado de Servidor API</p>
+                      <p className="text-base font-black text-emerald-500 mt-1">Render (On-line)</p>
+                    </div>
+                    <div className={`p-4 rounded-xl text-center border ${theme === 'dark' ? 'bg-[#0d0e12] border-[#20222b]' : 'bg-slate-50 border-slate-200'}`}>
+                      <p className="text-xs font-bold text-slate-500">Tiempo de Respuesta API</p>
+                      <p className="text-base font-black text-amber-500 mt-1">115 ms</p>
+                    </div>
                   </div>
                 </div>
-              </div>
+              )}
             </div>
           )}
 

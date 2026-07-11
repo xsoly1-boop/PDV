@@ -9,5 +9,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
   getPrinters: () => ipcRenderer.invoke('get-printers'),
   
   // Información de versión de la app
-  getAppVersion: () => '1.0.0'
+  getAppVersion: () => '2.0.0',
+
+  // Licenciamiento y Dongles
+  getHardwareId: () => ipcRenderer.invoke('get-hardware-id'),
+  checkSuperAdminDongle: () => ipcRenderer.invoke('check-superadmin-dongle'),
+  checkLicenseDongle: () => ipcRenderer.invoke('check-license-dongle')
 });

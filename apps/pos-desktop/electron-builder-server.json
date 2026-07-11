@@ -1,0 +1,35 @@
+{
+  "appId": "com.vante.pos.server",
+  "productName": "VantePOS-Server",
+  "electronVersion": "30.0.0",
+  "directories": {
+    "output": "dist-electron"
+  },
+  "files": [
+    "dist/**/*",
+    "main.js",
+    "preload.js",
+    "build/icon.png"
+  ],
+  "extraResources": [
+    {
+      "from": "../api",
+      "to": "api",
+      "filter": [
+        "dist/**/*",
+        "node_modules/**/*",
+        "!node_modules/@punto-de-venta/**/*",
+        "prisma/**/*",
+        "package.json"
+      ]
+    }
+  ],
+  "mac": {
+    "category": "public.app-category.business",
+    "icon": "build/icon.png"
+  },
+  "win": {
+    "target": "nsis",
+    "icon": "build/icon.png"
+  }
+}

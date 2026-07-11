@@ -16,6 +16,23 @@ import ReportesDashboard from './ReportesDashboard';
 import TurnoManager from './TurnoManager';
 import { API_V1, API_BASE_URL } from './config';
 import OnboardingWizard from './OnboardingWizard';
+import vanteLogo from './vante_logo.png';
+
+async function sha256(message: string): Promise<string> {
+  const msgBuffer = new TextEncoder().encode(message);
+  const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('').toUpperCase();
+}
+
+async function validateLicense(hardwareId: string, email: string, key: string): Promise<boolean> {
+  if (!email || !key) return false;
+  const combined = `${hardwareId.trim()}:${email.toLowerCase().trim()}:VANTE-SECRET-2026`;
+  const computedHash = await sha256(combined);
+  const expectedKey = computedHash.substring(0, 16);
+  return key.trim().toUpperCase() === expectedKey;
+}
+
 interface CompanyConfig {
   businessName: string;
   rfc: string;
@@ -367,6 +384,173 @@ export default function POSInterface() {
   const [loginError, setLoginError] = useState('');
   const [showNetworkModal, setShowNetworkModal] = useState(false);
   const [tempApiBaseUrl, setTempApiBaseUrl] = useState('');
+
+  // --- ESTADOS DE LICENCIA Y SEGURIDAD DONGLE ---
+  const [hardwareId, setHardwareId] = useState('CARGANDO...');
+  const [licenseStatus, setLicenseStatus] = useState<'ACTIVE' | 'DEMO'>('DEMO');
+  const [daysRemaining, setDaysRemaining] = useState(365);
+  const [licenseEmail, setLicenseEmail] = useState('');
+  const [licenseKey, setLicenseKey] = useState('');
+  const [licenseError, setLicenseError] = useState('');
+
+  // Super Admin Setup States
+  const [showSuperAdminAuthModal, setShowSuperAdminAuthModal] = useState(false);
+  const [superAdminAuthPin, setSuperAdminAuthPin] = useState('');
+  const [superAdminAuthError, setSuperAdminAuthError] = useState('');
+  const [showSuperAdminSetup, setShowSuperAdminSetup] = useState(false);
+
+  // Setup form fields
+  const [setupMode, setSetupMode] = useState<'LOCAL' | 'HYBRID'>('LOCAL');
+  const [setupSupabaseUrl, setSetupSupabaseUrl] = useState('');
+  const [setupSupabaseAnonKey, setSetupSupabaseAnonKey] = useState('');
+  const [setupApiBaseUrl, setSetupApiBaseUrl] = useState(API_BASE_URL);
+  const [setupSucursalId, setSetupSucursalId] = useState('suc-norte');
+  const [setupError, setSetupError] = useState('');
+  const [setupSucursales, setSetupSucursales] = useState<any[]>([]);
+  const [isValidatingSetup, setIsValidatingSetup] = useState(false);
+  const [savingSetup, setSavingSetup] = useState(false);
+  const [showNewSucursalInput, setShowNewSucursalInput] = useState(false);
+  const [newSucursalName, setNewSucursalName] = useState('');
+  const [newSucursalId, setNewSucursalId] = useState('');
+
+  const handleActivateLicense = async (email: string, key: string) => {
+    setLicenseError('');
+    if (!email.trim() || !key.trim()) {
+      setLicenseError('Todos los campos son requeridos.');
+      return;
+    }
+    const isValid = await validateLicense(hardwareId, email, key);
+    if (isValid) {
+      localStorage.setItem('vante_license_status', 'ACTIVE');
+      localStorage.setItem('vante_license_email', email.trim());
+      localStorage.setItem('vante_license_key', key.trim());
+      setLicenseStatus('ACTIVE');
+      alert('¡Vante POS Activado con Éxito!');
+    } else {
+      setLicenseError('Clave de activación incorrecta para este Hardware ID.');
+    }
+  };
+
+  const handleSuperAdminAuthSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    setSuperAdminAuthError('');
+    if (superAdminAuthPin === 'APEX2401') {
+      localStorage.setItem('vante_super_admin_active', 'true');
+      localStorage.setItem('vante_super_admin_method', 'password');
+      setShowSuperAdminSetup(true);
+      setShowSuperAdminAuthModal(false);
+      setSuperAdminAuthPin('');
+      
+      // Intentar re-cargar credenciales de Supabase actuales
+      const savedUrl = localStorage.getItem('supabase_url') || '';
+      const savedAnonKey = localStorage.getItem('supabase_anon_key') || '';
+      const savedApiUrl = localStorage.getItem('pos_api_base_url') || API_BASE_URL;
+      const savedMode = localStorage.getItem('vante_deployment_mode') as 'LOCAL' | 'HYBRID' || 'LOCAL';
+      const savedSucursal = localStorage.getItem('vante_sucursal_id') || 'suc-norte';
+      
+      setSetupSupabaseUrl(savedUrl);
+      setSetupSupabaseAnonKey(savedAnonKey);
+      setSetupApiBaseUrl(savedApiUrl);
+      setSetupMode(savedMode);
+      setSetupSucursalId(savedSucursal);
+    } else {
+      setSuperAdminAuthError('PIN Maestro Incorrecto.');
+    }
+  };
+
+  const handleTestSetupConnection = async () => {
+    setSetupError('');
+    setIsValidatingSetup(true);
+    try {
+      const url = `${setupSupabaseUrl.trim().replace(/\/$/, '')}/rest/v1/Sucursal?select=id,nombre`;
+      const resp = await fetch(url, {
+        headers: {
+          'apikey': setupSupabaseAnonKey.trim(),
+          'Authorization': `Bearer ${setupSupabaseAnonKey.trim()}`
+        }
+      });
+      if (!resp.ok) {
+        const errText = await resp.text();
+        throw new Error(`Respuesta de error: ${resp.status} - ${errText}`);
+      }
+      const data = await resp.json();
+      if (data && data.length > 0) {
+        setSetupSucursales(data);
+        setSetupSucursalId(data[0].id);
+      } else {
+        setSetupSucursales([]);
+      }
+      alert('¡Conexión exitosa con Supabase! Se cargaron las sucursales.');
+    } catch (err: any) {
+      console.error(err);
+      setSetupError(`Error de prueba de conexión: ${err.message}`);
+    } finally {
+      setIsValidatingSetup(false);
+    }
+  };
+
+  const handleSaveSetup = async () => {
+    setSetupError('');
+    setSavingSetup(true);
+    try {
+      if (setupMode === 'HYBRID') {
+        if (!setupSupabaseUrl.trim() || !setupSupabaseAnonKey.trim() || !setupApiBaseUrl.trim()) {
+          setSetupError('Todos los campos son requeridos en modo híbrido.');
+          setSavingSetup(false);
+          return;
+        }
+
+        if (showNewSucursalInput) {
+          if (!newSucursalId.trim() || !newSucursalName.trim()) {
+            setSetupError('El ID y nombre de la nueva sucursal son requeridos.');
+            setSavingSetup(false);
+            return;
+          }
+          const url = `${setupSupabaseUrl.trim().replace(/\/$/, '')}/rest/v1/Sucursal`;
+          const resp = await fetch(url, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'apikey': setupSupabaseAnonKey.trim(),
+              'Authorization': `Bearer ${setupSupabaseAnonKey.trim()}`,
+              'Prefer': 'return=representation'
+            },
+            body: JSON.stringify({
+              id: newSucursalId.trim(),
+              nombre: newSucursalName.trim(),
+              direccion: 'Aprovisionamiento Super Admin'
+            })
+          });
+          if (!resp.ok) {
+            const errText = await resp.text();
+            throw new Error(`No se pudo crear la sucursal: ${resp.status} - ${errText}`);
+          }
+          localStorage.setItem('vante_sucursal_id', newSucursalId.trim());
+        } else {
+          localStorage.setItem('vante_sucursal_id', setupSucursalId);
+        }
+
+        localStorage.setItem('supabase_url', setupSupabaseUrl.trim());
+        localStorage.setItem('supabase_anon_key', setupSupabaseAnonKey.trim());
+        localStorage.setItem('pos_api_base_url', setupApiBaseUrl.trim());
+        localStorage.setItem('vante_deployment_mode', 'HYBRID');
+      } else {
+        localStorage.removeItem('supabase_url');
+        localStorage.removeItem('supabase_anon_key');
+        localStorage.setItem('pos_api_base_url', 'http://localhost:3001');
+        localStorage.setItem('vante_deployment_mode', 'LOCAL');
+        localStorage.setItem('vante_sucursal_id', 'suc-norte');
+      }
+      
+      alert('Configuración guardada exitosamente. Reiniciando terminal...');
+      window.location.reload();
+    } catch (err: any) {
+      console.error(err);
+      setSetupError(`Error de guardado: ${err.message}`);
+    } finally {
+      setSavingSetup(false);
+    }
+  };
 
   // Verificar turno activo de caja (online/offline)
   useEffect(() => {
@@ -1523,6 +1707,95 @@ ${articulosTexto}
     return () => clearInterval(timer);
   }, []);
 
+  // --- INICIALIZACIÓN DE LICENCIA, ATAJOS Y DONGLES ---
+  useEffect(() => {
+    const electronAPI = (window as any).electronAPI;
+    if (electronAPI && electronAPI.getHardwareId) {
+      electronAPI.getHardwareId().then((id: string) => {
+        setHardwareId(id);
+        const savedStatus = localStorage.getItem('vante_license_status') || 'DEMO';
+        const savedEmail = localStorage.getItem('vante_license_email') || '';
+        const savedKey = localStorage.getItem('vante_license_key') || '';
+        if (savedStatus === 'ACTIVE' && savedEmail && savedKey) {
+          validateLicense(id, savedEmail, savedKey).then((isValid) => {
+            if (isValid) setLicenseStatus('ACTIVE');
+          });
+        }
+      });
+    } else {
+      setHardwareId('MOCK-HWID-VANTE-2026-OK');
+    }
+
+    let firstRun = localStorage.getItem('vante_first_run_date');
+    if (!firstRun) {
+      firstRun = new Date().toISOString();
+      localStorage.setItem('vante_first_run_date', firstRun);
+    }
+    const expirationDate = new Date(new Date(firstRun).getTime() + 365 * 24 * 60 * 60 * 1000);
+    const diffDays = Math.ceil((expirationDate.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
+    setDaysRemaining(diffDays);
+  }, []);
+
+  // Keyboard shortcut listener for Super Admin Configuration
+  useEffect(() => {
+    const handleSuperAdminKey = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key.toLowerCase() === 'a') {
+        e.preventDefault();
+        setShowSuperAdminAuthModal(true);
+      }
+    };
+    window.addEventListener('keydown', handleSuperAdminKey);
+    return () => window.removeEventListener('keydown', handleSuperAdminKey);
+  }, []);
+
+  // Interval checker for physical USB dongles
+  useEffect(() => {
+    const interval = setInterval(async () => {
+      const electronAPI = (window as any).electronAPI;
+      if (!electronAPI) return;
+
+      if (electronAPI.checkSuperAdminDongle) {
+        const res = await electronAPI.checkSuperAdminDongle();
+        if (res && res.found) {
+          console.log('[DONGLE] Llave Super Admin encontrada en:', res.path);
+          localStorage.setItem('vante_super_admin_active', 'true');
+          if (!currentUser && !showSuperAdminSetup) {
+            setShowSuperAdminSetup(true);
+            setShowSuperAdminAuthModal(false);
+          }
+        } else {
+          if (localStorage.getItem('vante_super_admin_method') !== 'password') {
+            localStorage.removeItem('vante_super_admin_active');
+          }
+        }
+      }
+
+      if (electronAPI.checkLicenseDongle && licenseStatus === 'DEMO') {
+        const res = await electronAPI.checkLicenseDongle();
+        if (res && res.found) {
+          try {
+            const parts = res.content.trim().split(':');
+            if (parts.length >= 2) {
+              const email = parts[0].trim();
+              const key = parts[1].trim();
+              const isValid = await validateLicense(hardwareId, email, key);
+              if (isValid) {
+                localStorage.setItem('vante_license_status', 'ACTIVE');
+                localStorage.setItem('vante_license_email', email);
+                localStorage.setItem('vante_license_key', key);
+                setLicenseStatus('ACTIVE');
+                alert('¡Vante POS Activado Automáticamente desde Dongle USB!');
+              }
+            }
+          } catch (e) {
+            console.error('Error al procesar dongle de licencia:', e);
+          }
+        }
+      }
+    }, 3000);
+    return () => clearInterval(interval);
+  }, [currentUser, hardwareId, licenseStatus, showSuperAdminSetup]);
+
   const totalBeforeDiscount = cart.reduce((acc: number, item: any) => acc + (item.precio * item.cantidad), 0);
   const total = Math.max(0, totalBeforeDiscount - discount);
   const subtotal = total * 0.84; 
@@ -1571,12 +1844,10 @@ ${articulosTexto}
             </button>
           </div>
           
-          {/* Logo Hexagonal */}
-          <div className="w-16 h-16 bg-amber-500 text-[#0d0e12] font-black rounded-2xl flex items-center justify-center shadow-[0_0_20px_rgba(245,158,11,0.3)] mb-4">
-            <Wrench className="w-8 h-8" />
+          {/* Logo Oficial Vante POS */}
+          <div className="flex justify-center items-center mb-6 w-full px-4 py-2 rounded-2xl bg-[#0d0e12] border border-[#20222b] shadow-inner">
+            <img src={vanteLogo} alt="Vante POS" className="h-14 object-contain" />
           </div>
-
-          <h2 className={`text-xl font-bold uppercase tracking-wider ${theme === 'dark' ? 'text-slate-100' : 'text-slate-900'}`}>VANTE POS</h2>
           <p className="text-xs text-slate-400 mt-1 mb-6">Ingresar PIN de Acceso Rápido</p>
 
           {/* Círculos del PIN */}
@@ -1653,6 +1924,67 @@ ${articulosTexto}
           </div>
 
         </div>
+
+        {/* Widget de Activación (Solo si está en Demo) */}
+        {licenseStatus === 'DEMO' && (
+          <div className={`mt-6 border p-6 rounded-3xl w-[400px] shadow-lg flex flex-col items-center transition-all ${
+            theme === 'dark' ? 'bg-[#13151b] border-[#20222b] text-slate-300' : 'bg-white border-slate-200 text-slate-700'
+          }`}>
+            <h4 className="text-xs font-bold uppercase tracking-wider text-amber-500 mb-2">Activación de Licencia</h4>
+            <div className="text-[10px] text-slate-500 font-mono mb-4 text-center">
+              HWID: <span className="font-bold text-slate-300">{hardwareId}</span>
+              <button
+                onClick={() => {
+                  navigator.clipboard.writeText(hardwareId);
+                  alert('¡Hardware ID copiado al portapapeles!');
+                }}
+                className="ml-2 bg-slate-800 hover:bg-slate-700 text-[9px] px-1.5 py-0.5 rounded cursor-pointer border-0 text-amber-500"
+              >
+                Copiar
+              </button>
+            </div>
+
+            {licenseError && (
+              <div className="text-rose-500 text-[10px] bg-rose-500/10 border border-rose-500/20 px-3 py-1.5 rounded-lg mb-4 text-center">
+                {licenseError}
+              </div>
+            )}
+
+            <div className="space-y-3 w-full">
+              <input
+                type="email"
+                placeholder="Email del Cliente"
+                value={licenseEmail}
+                onChange={(e) => setLicenseEmail(e.target.value)}
+                className={`w-full text-xs rounded-xl p-2.5 border focus:outline-none focus:ring-1 focus:ring-amber-500 ${
+                  theme === 'dark' ? 'bg-[#0d0e12] border-[#20222b] text-white' : 'bg-slate-50 border-slate-200 text-slate-800'
+                }`}
+              />
+              <input
+                type="text"
+                placeholder="Licencia (Key)"
+                value={licenseKey}
+                onChange={(e) => setLicenseKey(e.target.value)}
+                className={`w-full text-xs rounded-xl p-2.5 border focus:outline-none focus:ring-1 focus:ring-amber-500 font-mono ${
+                  theme === 'dark' ? 'bg-[#0d0e12] border-[#20222b] text-white' : 'bg-slate-50 border-slate-200 text-slate-800'
+                }`}
+              />
+              <button
+                onClick={() => handleActivateLicense(licenseEmail, licenseKey)}
+                className="w-full bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold py-2 rounded-xl text-xs transition-colors cursor-pointer border-0"
+              >
+                Activar Vante POS
+              </button>
+            </div>
+
+            {daysRemaining <= 30 && (
+              <div className="mt-4 text-[10px] text-amber-500 bg-amber-500/10 border border-amber-500/20 p-2.5 rounded-xl text-center">
+                ⚠️ Tu periodo de prueba expira en {daysRemaining <= 0 ? '0' : daysRemaining} días.
+              </div>
+            )}
+          </div>
+        )}
+
       </div>
     );
   }
@@ -2671,8 +3003,14 @@ ${articulosTexto}
       {currentView === 'admin' && currentUser && (
         <AdminDashboard 
           currentUser={currentUser} 
-          theme={theme} 
-          onClose={() => setCurrentView('pos')} 
+          licenseStatus={licenseStatus}
+          daysRemaining={daysRemaining}
+          theme={theme}
+          onClose={() => {
+            setCurrentView('pos');
+            localStorage.removeItem('vante_super_admin_active');
+            localStorage.removeItem('vante_super_admin_method');
+          }} 
           config={config}
           onConfigChange={async (newConfig) => {
             setConfig(newConfig);
@@ -3442,6 +3780,215 @@ ${articulosTexto}
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+      {/* MODAL: AUTENTICACIÓN SUPER ADMIN */}
+      {showSuperAdminAuthModal && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[150] flex items-center justify-center p-4">
+          <div className={`p-8 rounded-3xl border w-full max-w-sm shadow-2xl relative ${
+            theme === 'dark' ? 'bg-[#13151b] border-[#262836] text-white' : 'bg-white border-slate-200 text-slate-800'
+          }`}>
+            <button 
+              onClick={() => setShowSuperAdminAuthModal(false)}
+              className="absolute top-4 right-4 text-slate-400 hover:text-white bg-transparent border-0 cursor-pointer"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <div className="text-center mb-6">
+              <h3 className="text-md font-bold uppercase tracking-wider">Super Admin Master Setup</h3>
+              <p className="text-xs text-slate-400 mt-2">
+                Ingrese el PIN maestro de seguridad para desbloquear los parámetros de red e infraestructura.
+              </p>
+            </div>
+
+            {superAdminAuthError && (
+              <div className="text-rose-500 text-xs font-semibold mb-4 bg-rose-500/10 border border-rose-500/20 px-3 py-1.5 rounded-lg text-center">
+                {superAdminAuthError}
+              </div>
+            )}
+
+            <form onSubmit={handleSuperAdminAuthSubmit} className="space-y-4">
+              <input 
+                type="password" 
+                required
+                maxLength={8}
+                placeholder="PIN Maestro (8 dígitos)"
+                className="w-full text-center tracking-widest text-lg font-black rounded-xl p-3 border focus:outline-none focus:ring-2 focus:ring-amber-500 bg-[#0d0e12] border-[#20222b] text-white"
+                value={superAdminAuthPin}
+                onChange={e => setSuperAdminAuthPin(e.target.value)}
+              />
+              <button type="submit" className="w-full bg-amber-500 hover:bg-amber-400 text-slate-950 font-black py-3 rounded-xl border-0 cursor-pointer text-xs uppercase tracking-wider transition-all">
+                Ingresar al Setup
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* OVERLAY: CONFIGURACIÓN SUPER ADMIN */}
+      {showSuperAdminSetup && (
+        <div className="fixed inset-0 bg-slate-950 z-[200] flex items-center justify-center p-6 overflow-y-auto">
+          <div className="w-full max-w-lg bg-[#13151b] border border-[#20222b] rounded-3xl p-8 shadow-2xl text-slate-100 font-sans">
+            <div className="flex justify-between items-center mb-6">
+              <div>
+                <h2 className="text-2xl font-black text-white">Vante Super Admin Panel</h2>
+                <p className="text-xs text-slate-400">Configuración de Red y Despliegue Híbrido</p>
+              </div>
+              <button 
+                onClick={() => setShowSuperAdminSetup(false)}
+                className="text-slate-500 hover:text-white border-0 bg-transparent cursor-pointer"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+
+            {setupError && (
+              <div className="bg-rose-500/10 border border-rose-500/20 text-rose-400 p-4 rounded-xl text-xs font-semibold mb-6">
+                ⚠️ {setupError}
+              </div>
+            )}
+
+            <div className="space-y-6">
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">Modo de Despliegue</label>
+                <div className="grid grid-cols-2 gap-4">
+                  <button
+                    onClick={() => setSetupMode('LOCAL')}
+                    className={`py-3 rounded-xl font-bold text-xs border transition-all cursor-pointer ${
+                      setupMode === 'LOCAL'
+                        ? 'border-amber-500 bg-amber-500/10 text-amber-500'
+                        : 'border-[#262836] bg-[#1a1c24] text-slate-400 hover:border-slate-700'
+                    }`}
+                  >
+                    Caja Local (SQLite)
+                  </button>
+                  <button
+                    onClick={() => setSetupMode('HYBRID')}
+                    className={`py-3 rounded-xl font-bold text-xs border transition-all cursor-pointer ${
+                      setupMode === 'HYBRID'
+                        ? 'border-amber-500 bg-amber-500/10 text-amber-500'
+                        : 'border-[#262836] bg-[#1a1c24] text-slate-400 hover:border-slate-700'
+                    }`}
+                  >
+                    Modo Híbrido Nube (Supabase)
+                  </button>
+                </div>
+              </div>
+
+              {setupMode === 'HYBRID' && (
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5">Supabase project URL</label>
+                    <input
+                      type="url"
+                      placeholder="https://xxxx.supabase.co"
+                      value={setupSupabaseUrl}
+                      onChange={(e) => setSetupSupabaseUrl(e.target.value)}
+                      className="w-full bg-[#0d0e12] border border-[#20222b] rounded-xl py-2.5 px-4 text-xs text-white outline-none focus:border-amber-500"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5">Supabase Anon Key</label>
+                    <textarea
+                      rows={3}
+                      placeholder="eyJhbGciOi..."
+                      value={setupSupabaseAnonKey}
+                      onChange={(e) => setSetupSupabaseAnonKey(e.target.value)}
+                      className="w-full bg-[#0d0e12] border border-[#20222b] rounded-xl py-2.5 px-4 text-xs text-white outline-none focus:border-amber-500 font-mono resize-none"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5">Servidor API Nube (Render)</label>
+                    <input
+                      type="url"
+                      placeholder="https://vante-api.onrender.com"
+                      value={setupApiBaseUrl}
+                      onChange={(e) => setSetupApiBaseUrl(e.target.value)}
+                      className="w-full bg-[#0d0e12] border border-[#20222b] rounded-xl py-2.5 px-4 text-xs text-white outline-none focus:border-amber-500"
+                    />
+                  </div>
+
+                  <div className="pt-2">
+                    <button
+                      type="button"
+                      disabled={isValidatingSetup}
+                      onClick={handleTestSetupConnection}
+                      className="w-full bg-slate-800 hover:bg-slate-700 disabled:bg-slate-900 text-white font-bold py-2.5 rounded-xl text-xs cursor-pointer border-0 shadow-md"
+                    >
+                      {isValidatingSetup ? 'Validando conexión...' : '⚡ Probar Conexión Supabase'}
+                    </button>
+                  </div>
+
+                  {setupSucursales.length > 0 && (
+                    <div className="space-y-4 border-t border-[#20222b] pt-4">
+                      <div>
+                        <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5">Sucursal Asociada a esta Caja</label>
+                        <select
+                          value={setupSucursalId}
+                          onChange={(e) => {
+                            if (e.target.value === 'new') {
+                              setShowNewSucursalInput(true);
+                            } else {
+                              setShowNewSucursalInput(false);
+                              setSetupSucursalId(e.target.value);
+                            }
+                          }}
+                          className="w-full bg-[#0d0e12] border border-[#20222b] rounded-xl py-2.5 px-4 text-xs text-white outline-none focus:border-amber-500 cursor-pointer"
+                        >
+                          {setupSucursales.map((suc) => (
+                            <option key={suc.id} value={suc.id}>{suc.nombre} ({suc.id})</option>
+                          ))}
+                          <option value="new">+ Registrar Nueva Sucursal</option>
+                        </select>
+                      </div>
+
+                      {showNewSucursalInput && (
+                        <div className="grid grid-cols-2 gap-4 border border-dashed border-[#20222b] p-4 rounded-xl">
+                          <div>
+                            <label className="block text-[10px] font-bold uppercase text-slate-400 mb-1">ID Único (ej. suc-oriente)</label>
+                            <input
+                              type="text"
+                              value={newSucursalId}
+                              onChange={(e) => setNewSucursalId(e.target.value.toLowerCase().replace(/\s+/g, '-'))}
+                              className="w-full bg-[#0d0e12] border border-[#20222b] rounded-xl py-2 px-3 text-xs text-white outline-none focus:border-amber-500"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-[10px] font-bold uppercase text-slate-400 mb-1">Nombre Sucursal</label>
+                            <input
+                              type="text"
+                              value={newSucursalName}
+                              onChange={(e) => setNewSucursalName(e.target.value)}
+                              className="w-full bg-[#0d0e12] border border-[#20222b] rounded-xl py-2 px-3 text-xs text-white outline-none focus:border-amber-500"
+                            />
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
+            <div className="mt-8 flex justify-end gap-3 border-t border-[#20222b] pt-6">
+              <button
+                onClick={() => setShowSuperAdminSetup(false)}
+                className="py-3 px-6 rounded-xl border border-[#20222b] text-slate-400 hover:bg-[#1a1c24] font-bold text-xs cursor-pointer"
+              >
+                Cerrar Panel
+              </button>
+              <button
+                disabled={savingSetup}
+                onClick={handleSaveSetup}
+                className="bg-amber-500 hover:bg-amber-400 disabled:bg-slate-900 text-slate-950 font-black py-3 px-8 rounded-xl border-0 cursor-pointer text-xs uppercase tracking-wider"
+              >
+                {savingSetup ? 'Guardando...' : 'Guardar y Reiniciar'}
+              </button>
+            </div>
           </div>
         </div>
       )}

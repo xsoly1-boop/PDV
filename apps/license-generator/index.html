@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Vante POS - Generador de Licencias</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800;900&family=Roboto+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #000000; /* Fondo Negro */
+      --card-bg: #0c0d12;
+      --border: #27272a; /* Borde gris zinc */
+      --text: #ffffff; /* Letras Blancas */
+      --text-muted: #a1a1aa; /* Letras grises secundarias */
+      --input-bg: #1e1f29; /* Campos gris oscuro */
+      --primary: #f59e0b; /* Amber */
+      --primary-hover: #fbbf24;
+      --accent: #06b6d4; /* Cyan */
+      --shadow: rgba(0, 0, 0, 0.8);
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Outfit', sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 480px;
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 35px;
+      box-shadow: 0 25px 50px -12px var(--shadow);
+    }
+
+    .header {
+      text-align: center;
+      margin-bottom: 25px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .logo-img {
+      max-height: 70px;
+      object-contain: contain;
+      margin-bottom: 12px;
+    }
+
+    .title {
+      font-size: 22px;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+      margin-bottom: 4px;
+      color: var(--text);
+    }
+
+    .subtitle {
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    .form-group {
+      margin-bottom: 20px;
+    }
+
+    label {
+      display: block;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--text);
+      margin-bottom: 8px;
+    }
+
+    input {
+      width: 100%;
+      background: var(--input-bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 14px 16px;
+      font-size: 14px;
+      color: #ffffff;
+      outline: none;
+      transition: all 0.2s;
+      font-family: inherit;
+    }
+
+    input:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 10px rgba(245, 158, 11, 0.2);
+    }
+
+    button.btn-generate {
+      width: 100%;
+      background: var(--primary);
+      color: #000000;
+      border: none;
+      border-radius: 10px;
+      padding: 15px;
+      font-size: 14px;
+      font-weight: 800;
+      cursor: pointer;
+      transition: all 0.2s;
+      margin-top: 10px;
+      box-shadow: 0 10px 15px -3px rgba(245, 158, 11, 0.3);
+    }
+
+    button.btn-generate:hover {
+      background: var(--primary-hover);
+      transform: translateY(-1px);
+    }
+
+    button.btn-generate:active {
+      transform: translateY(0);
+    }
+
+    .results {
+      margin-top: 25px;
+      padding-top: 20px;
+      border-top: 1px solid var(--border);
+      display: none;
+    }
+
+    .result-group {
+      margin-bottom: 16px;
+    }
+
+    .result-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 6px;
+    }
+
+    .btn-copy {
+      background: transparent;
+      border: none;
+      color: var(--accent);
+      font-size: 11px;
+      font-weight: 755;
+      cursor: pointer;
+      padding: 2px 6px;
+      border-radius: 4px;
+      transition: background 0.2s;
+    }
+
+    .btn-copy:hover {
+      background: rgba(6, 182, 212, 0.1);
+    }
+
+    .code-box {
+      font-family: 'Roboto Mono', monospace;
+      font-size: 14px;
+      background: #000000;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px;
+      color: #10b981; /* Emerald */
+      word-break: break-all;
+    }
+
+    .dongle-info {
+      font-size: 11px;
+      color: var(--text-muted);
+      line-height: 1.5;
+      margin-top: 6px;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <div class="header">
+      <img src="vante_logo.png" alt="Vante POS Logo" class="logo-img">
+      <h1 class="title">Generador de Licencias</h1>
+      <p class="subtitle">Vante POS - Sistema de Aprovisionamiento</p>
+    </div>
+
+    <div class="form-group">
+      <label for="hwId">Hardware ID del Cliente</label>
+      <input type="text" id="hwId" placeholder="Ej: 8F5A7B39E0C1F..." autocomplete="off">
+    </div>
+
+    <div class="form-group">
+      <label for="email">Email de Registro</label>
+      <input type="email" id="email" placeholder="ejemplo@correo.com" autocomplete="off">
+    </div>
+
+    <button class="btn-generate" onclick="generateLicense()">GENERAR ACTIVACIÓN</button>
+
+    <div class="results" id="resultsBlock">
+      <div class="result-group">
+        <div class="result-header">
+          <label>Clave de Licencia</label>
+          <button class="btn-copy" onclick="copyText('licenseKey')">Copiar Clave</button>
+        </div>
+        <div class="code-box" id="licenseKey">--</div>
+      </div>
+
+      <div class="result-group">
+        <div class="result-header">
+          <label>Firma del Dongle (vante_license.key)</label>
+          <button class="btn-copy" onclick="copyText('dongleFormat')">Copiar Formato</button>
+        </div>
+        <div class="code-box" id="dongleFormat" style="color: var(--accent);">--</div>
+        <p class="dongle-info">
+          Guarda este texto dentro de un archivo de texto plano llamado <strong>vante_license.key</strong> en la raíz de una memoria USB para la activación automatizada de la terminal.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    async function sha256(message) {
+      const msgBuffer = new TextEncoder().encode(message);
+      const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
+      const hashArray = Array.from(new Uint8Array(hashBuffer));
+      return hashArray.map(b => b.toString(16).padStart(2, '0')).join('').toUpperCase();
+    }
+
+    async function generateLicense() {
+      const hwIdInput = document.getElementById('hwId').value.trim();
+      const emailInput = document.getElementById('email').value.toLowerCase().trim();
+
+      if (!hwIdInput || !emailInput) {
+        alert('Por favor ingrese el Hardware ID y el Email.');
+        return;
+      }
+
+      const combined = hwIdInput + ':' + emailInput + ':VANTE-SECRET-2026';
+      const computedHash = await sha256(combined);
+      const expectedKey = computedHash.substring(0, 16);
+
+      document.getElementById('licenseKey').textContent = expectedKey;
+      document.getElementById('dongleFormat').textContent = emailInput + ':' + expectedKey;
+
+      document.getElementById('resultsBlock').style.display = 'block';
+    }
+
+    function copyText(elementId) {
+      const text = document.getElementById(elementId).textContent;
+      navigator.clipboard.writeText(text).then(() => {
+        alert('Copiado al portapapeles con éxito');
+      }).catch(err => {
+        console.error('Error al copiar:', err);
+      });
+    }
+  </script>
+</body>
+</html>

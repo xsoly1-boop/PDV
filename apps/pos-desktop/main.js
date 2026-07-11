@@ -3,7 +3,39 @@ const path = require('path');
 const fs = require('fs');
 const os = require('os');
 
+const { spawn } = require('child_process');
 let mainWindow;
+let apiProcess = null;
+
+// Levantar el backend API automáticamente si es el compilado Server
+const isServer = app.name.toLowerCase().includes('server') || app.getName().toLowerCase().includes('server');
+
+if (isServer) {
+  const apiPath = app.isPackaged
+    ? path.join(process.resourcesPath, 'api/dist/index.js')
+    : path.join(__dirname, '../api/dist/index.js');
+
+  console.log('[ELECTRON-MAIN] Iniciando backend API local en modo Server desde:', apiPath);
+  try {
+    apiProcess = spawn(process.execPath, [apiPath], {
+      env: {
+        ...process.env,
+        ELECTRON_RUN_AS_NODE: '1',
+        PORT: '3001'
+      }
+    });
+
+    apiProcess.stdout.on('data', (data) => {
+      console.log(`[LOCAL-API] ${data}`);
+    });
+
+    apiProcess.stderr.on('data', (data) => {
+      console.error(`[LOCAL-API-ERROR] ${data}`);
+    });
+  } catch (e) {
+    console.error('[ELECTRON-MAIN] Error al levantar el proceso local-api:', e);
+  }
+}
 
 function createWindow() {
   mainWindow = new BrowserWindow({
@@ -254,5 +286,73 @@ ipcMain.handle('print-ticket', async (event, ticketData) => {
       success: false,
       message: `Error interno de impresión: ${err.message}`
     };
+  }
+});
+
+// --- REQUERIMIENTOS DE LICENCIAMIENTO Y SEGURIDAD DONGLE ---
+const crypto = require('crypto');
+
+function getHardwareId() {
+  let mac = 'unknown-mac';
+  try {
+    const interfaces = os.networkInterfaces();
+    for (const name of Object.keys(interfaces)) {
+      for (const iface of interfaces[name]) {
+        if (!iface.internal && iface.mac && iface.mac !== '00:00:00:00:00:00') {
+          mac = iface.mac;
+          break;
+        }
+      }
+      if (mac !== 'unknown-mac') break;
+    }
+  } catch (e) {}
+  const info = `${os.hostname()}-${os.platform()}-${os.arch()}-${mac}`;
+  return crypto.createHash('sha256').update(info).digest('hex').substring(0, 24).toUpperCase();
+}
+
+function checkUsbDongle(filename) {
+  try {
+    if (process.platform === 'darwin') {
+      const volumesDir = '/Volumes';
+      if (fs.existsSync(volumesDir)) {
+        const volumes = fs.readdirSync(volumesDir);
+        for (const vol of volumes) {
+          const keyPath = path.join(volumesDir, vol, filename);
+          if (fs.existsSync(keyPath)) {
+            return { found: true, path: keyPath, content: fs.readFileSync(keyPath, 'utf8') };
+          }
+        }
+      }
+    } else if (process.platform === 'win32') {
+      for (let charCode = 68; charCode <= 90; charCode++) {
+        const drive = String.fromCharCode(charCode) + ':\\';
+        const keyPath = path.join(drive, filename);
+        if (fs.existsSync(keyPath)) {
+          return { found: true, path: keyPath, content: fs.readFileSync(keyPath, 'utf8') };
+        }
+      }
+    }
+  } catch (err) {
+    console.error('[ELECTRON-MAIN] Error al buscar dongle USB:', err);
+  }
+  return { found: false };
+}
+
+ipcMain.handle('get-hardware-id', () => {
+  return getHardwareId();
+});
+
+ipcMain.handle('check-superadmin-dongle', () => {
+  return checkUsbDongle('vante_superadmin.key');
+});
+
+ipcMain.handle('check-license-dongle', () => {
+  return checkUsbDongle('vante_license.key');
+});
+
+app.on('will-quit', () => {
+  if (apiProcess) {
+    console.log('[ELECTRON-MAIN] Finalizando proceso del backend API local...');
+    apiProcess.kill();
   }
 });
