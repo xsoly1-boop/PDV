@@ -78,10 +78,10 @@ def migrate_excel_to_json(products_path, clients_path, output_json_path):
                 data["clientes"].append({
                     "nombre": nombre,
                     "telefono": telefono if pd.notna(row.get('Teléfono')) and telefono != 'nan' else "",
-                    "limiteCredito": limite,
-                    "saldoDeudor": saldo,
+                    "limite_credito": limite,
+                    "saldo_deudor": saldo,
                     "rfc": rfc if pd.notna(row.get('RFC')) and rfc != 'nan' else "",
-                    "razonSocial": razon_social if pd.notna(row.get('Razón Social')) and razon_social != 'nan' else ""
+                    "razon_social": razon_social if pd.notna(row.get('Razón Social')) and razon_social != 'nan' else ""
                 })
             print(f"✔ Procesados {len(data['clientes'])} clientes.")
         except Exception as e:

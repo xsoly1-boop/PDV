@@ -90,6 +90,23 @@ def export_fdb_to_json(fdb_path, out_path):
             "limite_credito": ["LIMITE_CREDITO"]
         }
         
+        # Pre-cargar mapeos de departamentos y proveedores para vincular por nombre
+        cat_map = {}
+        try:
+            cur.execute('SELECT ID, TRIM(NOMBRE) FROM DEPARTAMENTOS')
+            for row in cur.fetchall():
+                cat_map[str(row[0]).strip()] = str(row[1]).strip()
+        except Exception:
+            pass
+
+        prov_map = {}
+        try:
+            cur.execute('SELECT ID, TRIM(NOMBRE) FROM PROVEEDORES')
+            for row in cur.fetchall():
+                prov_map[str(row[0]).strip()] = str(row[1]).strip()
+        except Exception:
+            pass
+
         # ══════════════════════════════════════════
         # 1. PRODUCTOS
         # ══════════════════════════════════════════
@@ -107,8 +124,11 @@ def export_fdb_to_json(fdb_path, out_path):
                 costo = float(mapped["costo"]) if mapped["costo"] is not None else 0.0
                 precio = float(mapped["precio"]) if mapped["precio"] is not None else 0.0
                 stock = float(mapped["stock"]) if mapped["stock"] is not None else 0.0
-                categoria = str(mapped["categoria"]).strip() if mapped["categoria"] is not None else "General"
+                categoria_id = str(mapped["categoria"]).strip() if mapped["categoria"] is not None else ""
                 prov_id = str(mapped["proveedor_id"]).strip() if mapped["proveedor_id"] is not None else ""
+                
+                categoria_nombre = cat_map.get(categoria_id, "General")
+                proveedor_nombre = prov_map.get(prov_id, None)
                 
                 productos_list.append({
                     "id": sku,
@@ -117,8 +137,9 @@ def export_fdb_to_json(fdb_path, out_path):
                     "costo": costo,
                     "precio": precio,
                     "stock": stock,
-                    "categoria": categoria,
+                    "categoria": categoria_nombre,
                     "proveedor_id": prov_id,
+                    "proveedor_nombre": proveedor_nombre,
                     "permiteFracciones": "." in str(stock) or stock % 1 != 0
                 })
             print(f"   ✔ {len(productos_list)} productos extraídos")
