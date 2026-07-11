@@ -28,11 +28,11 @@ try {
 let BluetoothEscposPrinter: any = null;
 let BluetoothManager: any = null;
 try {
-  const BT = require('react-native-bluetooth-escpos-printer');
+  const BT = require('@vardrz/react-native-bluetooth-escpos-printer');
   BluetoothEscposPrinter = BT.BluetoothEscposPrinter;
   BluetoothManager = BT.BluetoothManager;
 } catch (e) {
-  console.log('react-native-bluetooth-escpos-printer not available in this environment');
+  console.log('@vardrz/react-native-bluetooth-escpos-printer not available in this environment');
 }
 
 // ─── Constants ────────────────────────────────────────────────────────────
