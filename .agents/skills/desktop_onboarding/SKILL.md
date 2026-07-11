@@ -245,4 +245,29 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
     <AppRoot />
   </React.StrictMode>
 );
+
+---
+
+## 6. Especificaciones de Licenciamiento y Modo Demo Local Restringido
+
+### 6.1 Restricciones del Modo Demo
+Por defecto, la base de datos local SQLite inicia en estado **no activado (demo)**, aplicando las siguientes reglas de negocio:
+1.  **Límite de Catálogo**: Máximo **200 artículos** en total.
+2.  **Límite de Usuarios**: Máximo **3 usuarios** registrados (Ej: `Admin + Admin + Admin` o `Admin + Gerente + Vendedor`).
+3.  **Límite de Dispositivos**: 1 sola impresora física conectada, 0 vendedores móviles, y 0 terminales clientes adicionales (operación monopuesto).
+4.  **Módulos Bloqueados**: Cotizaciones, Proveedores, CRM Clientes, Antigüedad de Saldos y Facturación CFDI.
+5.  **Límite Temporal**: 1 año de prueba activa.
+    *   **Alerta de Expiración**: Se mostrará una barra de advertencia amarilla en la cabecera únicamente cuando resten **30 días o menos** para concluir el periodo de prueba.
+
+### 6.2 Widget de Activación en Pantalla de PIN (Login)
+Para permitir el aprovisionamiento de la licencia:
+1.  En la pantalla de ingreso de PIN de la Caja Principal (Server), se muestra el **Hardware ID (UUID + MAC)**.
+2.  Se proporciona un botón rápido para copiar el ID o enviarlo directamente a soporte (WhatsApp/Email).
+3.  Se añaden campos de entrada para **Email del Cliente** y **License Key (Licencia)**.
+4.  Si los campos están vacíos, el usuario ingresa simplemente con su PIN y opera en modo Demo.
+
+### 6.3 Setup Super Admin Híbrido (Supabase + Render)
+Si el cliente contrata el modo nube híbrido, se utiliza la pantalla oculta del Super Admin (Master Key `APEX2401`) para configurar el Servidor API remoto y las llaves de Supabase.
+
+![Mockup de la Pantalla de Configuración Super Admin](./super_admin_hybrid_setup_mockup.jpg)
 ```
