@@ -330,16 +330,31 @@ model CreditoTransaccion {
 }
 
 model Proveedor {
-  id            String     @id @default(uuid())
+  id            String         @id @default(uuid())
   nombre        String
   representante String?
   telefonos     String?
   correos       String?
   paginaWeb     String?
   notas         String?
-  creadoAt      DateTime   @default(now())
+  creadoAt      DateTime       @default(now())
   
   productos     Producto[]
+  gastos        GastoGeneral[]
+}
+
+model GastoGeneral {
+  id           String      @id @default(uuid())
+  descripcion  String
+  monto        Decimal     @db.Decimal(10, 2)
+  categoria    String
+  fecha        DateTime    @default(now())
+  proveedorId  String?
+  proveedor    Proveedor?  @relation(fields: [proveedorId], references: [id], onDelete: SetNull)
+  creadoAt     DateTime    @default(now())
+
+  @@index([fecha])
+  @@index([proveedorId])
 }
 
 model Categoria {

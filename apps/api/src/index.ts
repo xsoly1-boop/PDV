@@ -1254,6 +1254,82 @@ app.delete('/api/v1/proveedores/:id', async (req, res) => {
   }
 });
 
+// --- CRUD GASTOS GENERALES ---
+app.get('/api/v1/gastos', async (req, res) => {
+  const { startDate, endDate, category } = req.query;
+  try {
+    const filter: any = {};
+    if (category) {
+      filter.categoria = String(category);
+    }
+    if (startDate || endDate) {
+      filter.fecha = {};
+      if (startDate) {
+        filter.fecha.gte = new Date(String(startDate));
+      }
+      if (endDate) {
+        filter.fecha.lte = new Date(String(endDate));
+      }
+    }
+    const list = await prisma.gastoGeneral.findMany({
+      where: filter,
+      include: { proveedor: true },
+      orderBy: { fecha: 'desc' }
+    });
+    res.json(list);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.post('/api/v1/gastos', async (req, res) => {
+  const { descripcion, monto, categoria, fecha, proveedorId } = req.body;
+  try {
+    const nuevo = await prisma.gastoGeneral.create({
+      data: {
+        descripcion,
+        monto: Number(monto),
+        categoria,
+        fecha: fecha ? new Date(String(fecha)) : new Date(),
+        proveedorId: proveedorId || null
+      },
+      include: { proveedor: true }
+    });
+    res.status(201).json(nuevo);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.put('/api/v1/gastos/:id', async (req, res) => {
+  const { descripcion, monto, categoria, fecha, proveedorId } = req.body;
+  try {
+    const up = await prisma.gastoGeneral.update({
+      where: { id: req.params.id },
+      data: {
+        descripcion,
+        monto: Number(monto),
+        categoria,
+        fecha: fecha ? new Date(String(fecha)) : undefined,
+        proveedorId: proveedorId || null
+      },
+      include: { proveedor: true }
+    });
+    res.json(up);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.delete('/api/v1/gastos/:id', async (req, res) => {
+  try {
+    await prisma.gastoGeneral.delete({ where: { id: req.params.id } });
+    res.json({ success: true });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // --- ENDPOINTS MIGRACION ---
 
 // Migrar categorías

@@ -4,7 +4,8 @@ import {
   X, Edit2, Trash2, Search, Building, Save, 
   DollarSign, CheckCircle, Store,
   PlusCircle, FileSpreadsheet,
-  Wrench, Database, Download, Upload, Play, RefreshCw, Printer
+  Wrench, Database, Download, Upload, Play, RefreshCw, Printer,
+  Truck, Receipt
 } from 'lucide-react';
 import { API_V1 } from './config';
 import { exportKardexCSV } from './services/exportUtils';
@@ -79,7 +80,7 @@ interface Employee {
 }
 
 export default function AdminDashboard({ currentUser, theme, onClose, config: initialConfig, onConfigChange, products, onProductsChange }: AdminDashboardProps) {
-  const [activeTab, setActiveTab] = useState<'summary' | 'products' | 'employees' | 'sales' | 'config' | 'maintenance' | 'clientes'>('summary');
+  const [activeTab, setActiveTab] = useState<'summary' | 'products' | 'employees' | 'sales' | 'config' | 'maintenance' | 'clientes' | 'proveedores' | 'gastos'>('summary');
   const [searchQuery, setSearchQuery] = useState('');
   const [maintenanceLogs, setMaintenanceLogs] = useState<string>('Iniciado módulo de Mantenimiento. Listo para operar.\n');
   const [isOptimizing, setIsOptimizing] = useState<boolean>(false);
@@ -107,6 +108,40 @@ export default function AdminDashboard({ currentUser, theme, onClose, config: in
 
   const [categoriesList, setCategoriesList] = useState<any[]>([]);
   const [suppliersList, setSuppliersList] = useState<any[]>([]);
+
+  // Proveedores & Gastos States
+  const [showProveedorModal, setShowProveedorModal] = useState(false);
+  const [currentProveedor, setCurrentProveedor] = useState<any>({});
+  const [proveedorSearchQuery, setProveedorSearchQuery] = useState('');
+
+  const [gastosList, setGastosList] = useState<any[]>([]);
+  const [showGastoModal, setShowGastoModal] = useState(false);
+  const [currentGasto, setCurrentGasto] = useState<any>({});
+  const [gastoCategoryFilter, setGastoCategoryFilter] = useState('');
+  const [gastoStartDateFilter, setGastoStartDateFilter] = useState('');
+  const [gastoEndDateFilter, setGastoEndDateFilter] = useState('');
+
+  const fetchGastos = async () => {
+    try {
+      const queryParams = [];
+      if (gastoCategoryFilter) {
+        queryParams.push(`category=${encodeURIComponent(gastoCategoryFilter)}`);
+      }
+      if (gastoStartDateFilter) {
+        queryParams.push(`startDate=${encodeURIComponent(gastoStartDateFilter)}`);
+      }
+      if (gastoEndDateFilter) {
+        queryParams.push(`endDate=${encodeURIComponent(gastoEndDateFilter)}`);
+      }
+      const queryString = queryParams.length > 0 ? '?' + queryParams.join('&') : '';
+      const res = await fetch(`${API_V1}/gastos${queryString}`);
+      if (res.ok) {
+        setGastosList(await res.json());
+      }
+    } catch (e) {
+      console.error('Error fetching gastos:', e);
+    }
+  };
 
   const fetchCategoriesAndSuppliers = async () => {
     if (categoriesList.length > 0 || suppliersList.length > 0) { /* dummy read */ }
@@ -141,7 +176,10 @@ export default function AdminDashboard({ currentUser, theme, onClose, config: in
   React.useEffect(() => {
     fetchFinanzasReport();
     fetchCategoriesAndSuppliers();
-  }, [activeTab]);
+    if (activeTab === 'gastos') {
+      fetchGastos();
+    }
+  }, [activeTab, gastoCategoryFilter, gastoStartDateFilter, gastoEndDateFilter]);
 
   const [printersList, setPrintersList] = useState<{ name: string; displayName: string }[]>([]);
 
@@ -896,6 +934,74 @@ export default function AdminDashboard({ currentUser, theme, onClose, config: in
     }
   };
 
+  // CRUD Proveedores Actions
+  const handleSaveProveedor = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      const isEdit = !!currentProveedor.id;
+      const url = isEdit ? `${API_V1}/proveedores/${currentProveedor.id}` : `${API_V1}/proveedores`;
+      const method = isEdit ? 'PUT' : 'POST';
+      const res = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(currentProveedor)
+      });
+      if (res.ok) {
+        fetchCategoriesAndSuppliers();
+        setShowProveedorModal(false);
+        setCurrentProveedor({});
+      }
+    } catch (e) {
+      console.error('Error saving proveedor:', e);
+    }
+  };
+
+  const handleDeleteProveedor = async (id: string) => {
+    if (!window.confirm('¿Está seguro de eliminar este proveedor?')) return;
+    try {
+      const res = await fetch(`${API_V1}/proveedores/${id}`, { method: 'DELETE' });
+      if (res.ok) {
+        fetchCategoriesAndSuppliers();
+      }
+    } catch (e) {
+      console.error('Error deleting proveedor:', e);
+    }
+  };
+
+  // CRUD Gastos Actions
+  const handleSaveGasto = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      const isEdit = !!currentGasto.id;
+      const url = isEdit ? `${API_V1}/gastos/${currentGasto.id}` : `${API_V1}/gastos`;
+      const method = isEdit ? 'PUT' : 'POST';
+      const res = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(currentGasto)
+      });
+      if (res.ok) {
+        fetchGastos();
+        setShowGastoModal(false);
+        setCurrentGasto({});
+      }
+    } catch (e) {
+      console.error('Error saving gasto:', e);
+    }
+  };
+
+  const handleDeleteGasto = async (id: string) => {
+    if (!window.confirm('¿Está seguro de eliminar este registro de gasto?')) return;
+    try {
+      const res = await fetch(`${API_V1}/gastos/${id}`, { method: 'DELETE' });
+      if (res.ok) {
+        fetchGastos();
+      }
+    } catch (e) {
+      console.error('Error deleting gasto:', e);
+    }
+  };
+
   const filteredProducts = products.filter(p => 
     p.nombre.toLowerCase().includes(searchQuery.toLowerCase()) || 
     p.sku.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -1002,6 +1108,28 @@ export default function AdminDashboard({ currentUser, theme, onClose, config: in
               }`}
             >
               <DollarSign className="w-5 h-5" /> Clientes / Finanzas
+            </button>
+
+            <button 
+              onClick={() => setActiveTab('proveedores')}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-bold text-sm transition-all border-0 cursor-pointer ${
+                activeTab === 'proveedores' 
+                  ? 'bg-amber-500 text-[#0d0e12] shadow-lg shadow-amber-500/10' 
+                  : theme === 'dark' ? 'text-slate-400 hover:bg-[#1a1c24] hover:text-slate-200' : 'text-slate-600 hover:bg-slate-100'
+              }`}
+            >
+              <Truck className="w-5 h-5" /> Proveedores
+            </button>
+
+            <button 
+              onClick={() => setActiveTab('gastos')}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-bold text-sm transition-all border-0 cursor-pointer ${
+                activeTab === 'gastos' 
+                  ? 'bg-amber-500 text-[#0d0e12] shadow-lg shadow-amber-500/10' 
+                  : theme === 'dark' ? 'text-slate-400 hover:bg-[#1a1c24] hover:text-slate-200' : 'text-slate-600 hover:bg-slate-100'
+              }`}
+            >
+              <Receipt className="w-5 h-5" /> Gastos Generales
             </button>
             
             <button 
@@ -2208,6 +2336,251 @@ export default function AdminDashboard({ currentUser, theme, onClose, config: in
             <ClientesSection theme={theme} addLog={addLog} />
           )}
 
+          {/* TAB 8: PROVEEDORES */}
+          {activeTab === 'proveedores' && (
+            <div className="space-y-6 animate-fadeIn font-sans">
+              <div className="flex justify-between items-center">
+                <div>
+                  <h2 className="text-lg font-bold uppercase tracking-wider text-slate-100">Catálogo de Proveedores</h2>
+                  <p className="text-xs text-slate-500 mt-1">Gestión de proveedores para compras y asignación de gastos fijos.</p>
+                </div>
+                <button 
+                  onClick={() => { setCurrentProveedor({}); setShowProveedorModal(true); }}
+                  className="bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold px-4 py-2.5 rounded-xl shadow-md flex items-center gap-2 border-0 cursor-pointer transition-all active:scale-95 text-xs uppercase tracking-wider"
+                >
+                  <PlusCircle className="w-4 h-4" /> Agregar Proveedor
+                </button>
+              </div>
+
+              {/* Buscador */}
+              <div className="relative">
+                <Search className="absolute left-3.5 top-1/2 transform -translate-y-1/2 text-slate-500 w-4 h-4" />
+                <input
+                  type="text"
+                  placeholder="Buscar por nombre, representante, correos o notas..."
+                  className={`w-full rounded-xl py-3 pl-10 pr-4 focus:outline-none focus:ring-2 focus:ring-amber-500 border text-xs ${
+                    theme === 'dark' 
+                      ? 'bg-[#13151b] border-[#20222b] text-white placeholder-slate-500' 
+                      : 'bg-white border-slate-250 text-slate-900 placeholder-slate-400 shadow-sm'
+                  }`}
+                  value={proveedorSearchQuery}
+                  onChange={(e) => setProveedorSearchQuery(e.target.value)}
+                />
+              </div>
+
+              {/* Tabla de proveedores */}
+              <div className={`border rounded-2xl overflow-hidden ${
+                theme === 'dark' ? 'bg-[#13151b] border-[#20222b]' : 'bg-white border-slate-200 shadow-sm'
+              }`}>
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className={`border-b text-xs font-bold uppercase tracking-wider text-slate-500 ${
+                      theme === 'dark' ? 'bg-[#1c1e27] border-[#20222b]' : 'bg-slate-50 border-slate-200'
+                    }`}>
+                      <th className="py-4 px-6">Nombre / Empresa</th>
+                      <th className="py-4 px-6">Representante</th>
+                      <th className="py-4 px-6">Contacto</th>
+                      <th className="py-4 px-6">Notas</th>
+                      <th className="py-4 px-6 text-center">Acciones</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-850/20">
+                    {suppliersList
+                      .filter(p => 
+                        p.nombre.toLowerCase().includes(proveedorSearchQuery.toLowerCase()) ||
+                        (p.representante && p.representante.toLowerCase().includes(proveedorSearchQuery.toLowerCase())) ||
+                        (p.telefonos && p.telefonos.includes(proveedorSearchQuery)) ||
+                        (p.correos && p.correos.toLowerCase().includes(proveedorSearchQuery.toLowerCase())) ||
+                        (p.notas && p.notas.toLowerCase().includes(proveedorSearchQuery.toLowerCase()))
+                      )
+                      .map((p) => (
+                        <tr key={p.id} className={theme === 'dark' ? 'hover:bg-[#1a1c24]/50' : 'hover:bg-slate-50'}>
+                          <td className="py-4 px-6 font-bold text-xs">
+                            <span className="block text-slate-250">{p.nombre}</span>
+                            {p.paginaWeb && (
+                              <a href={p.paginaWeb.startsWith('http') ? p.paginaWeb : `http://${p.paginaWeb}`} target="_blank" rel="noreferrer" className="text-[10px] text-amber-500 hover:underline">
+                                {p.paginaWeb}
+                              </a>
+                            )}
+                          </td>
+                          <td className="py-4 px-6 text-xs text-slate-400">{p.representante || '-'}</td>
+                          <td className="py-4 px-6 text-xs">
+                            {p.telefonos && <span className="block text-slate-350 font-mono">📞 {p.telefonos}</span>}
+                            {p.correos && <span className="block text-slate-400 font-mono">✉️ {p.correos}</span>}
+                          </td>
+                          <td className="py-4 px-6 text-xs text-slate-450 max-w-xs truncate">{p.notas || '-'}</td>
+                          <td className="py-4 px-6 text-center">
+                            <div className="flex gap-2 justify-center">
+                              <button 
+                                onClick={() => { setCurrentProveedor(p); setShowProveedorModal(true); }}
+                                className="p-2 bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 rounded-lg border-0 cursor-pointer transition-colors"
+                              >
+                                <Edit2 className="w-4 h-4" />
+                              </button>
+                              <button 
+                                onClick={() => handleDeleteProveedor(p.id)}
+                                className="p-2 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 rounded-lg border-0 cursor-pointer transition-colors"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    {suppliersList.length === 0 && (
+                      <tr>
+                        <td colSpan={5} className="p-6 text-center text-xs text-slate-550">No hay proveedores registrados.</td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {/* TAB 9: GASTOS GENERALES */}
+          {activeTab === 'gastos' && (
+            <div className="space-y-6 animate-fadeIn font-sans">
+              <div className="flex justify-between items-center">
+                <div>
+                  <h2 className="text-lg font-bold uppercase tracking-wider text-slate-100">Gastos Generales</h2>
+                  <p className="text-xs text-slate-500 mt-1">Registro de egresos operativos, servicios, renta, nóminas y pagos a proveedores.</p>
+                </div>
+                <button 
+                  onClick={() => { setCurrentGasto({ categoria: 'Servicios', fecha: new Date().toISOString().substring(0, 10) }); setShowGastoModal(true); }}
+                  className="bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold px-4 py-2.5 rounded-xl shadow-md flex items-center gap-2 border-0 cursor-pointer transition-all active:scale-95 text-xs uppercase tracking-wider"
+                >
+                  <PlusCircle className="w-4 h-4" /> Registrar Gasto
+                </button>
+              </div>
+
+              {/* Filtros de Gastos */}
+              <div className={`p-4 rounded-2xl border flex items-center justify-between gap-4 flex-wrap ${
+                theme === 'dark' ? 'bg-[#13151b] border-[#20222b]' : 'bg-white border-slate-200 shadow-sm'
+              }`}>
+                <div className="flex items-center gap-4 flex-wrap">
+                  <div>
+                    <label className="block text-[10px] uppercase font-bold text-slate-500 mb-1">Categoría</label>
+                    <select
+                      className={`rounded-xl py-2 px-3 text-xs focus:outline-none focus:ring-1 focus:ring-amber-500 border ${
+                        theme === 'dark' ? 'bg-[#1a1c24] border-[#262836] text-white' : 'bg-white border-slate-250 text-slate-800'
+                      }`}
+                      value={gastoCategoryFilter}
+                      onChange={(e) => setGastoCategoryFilter(e.target.value)}
+                    >
+                      <option value="">Todas las categorías</option>
+                      <option value="Servicios">Servicios (Agua, Luz, Internet)</option>
+                      <option value="Nómina">Nómina / Sueldos</option>
+                      <option value="Renta">Renta de Local</option>
+                      <option value="Proveedores">Proveedores / Mercancía</option>
+                      <option value="Otros">Otros Egresos</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-[10px] uppercase font-bold text-slate-500 mb-1">Desde</label>
+                    <input 
+                      type="date" 
+                      className={`rounded-xl py-2 px-3 text-xs focus:outline-none focus:ring-1 focus:ring-amber-500 border ${
+                        theme === 'dark' ? 'bg-[#1a1c24] border-[#262836] text-white' : 'bg-white border-slate-250 text-slate-800'
+                      }`}
+                      value={gastoStartDateFilter}
+                      onChange={(e) => setGastoStartDateFilter(e.target.value)}
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[10px] uppercase font-bold text-slate-500 mb-1">Hasta</label>
+                    <input 
+                      type="date" 
+                      className={`rounded-xl py-2 px-3 text-xs focus:outline-none focus:ring-1 focus:ring-amber-500 border ${
+                        theme === 'dark' ? 'bg-[#1a1c24] border-[#262836] text-white' : 'bg-white border-slate-250 text-slate-800'
+                      }`}
+                      value={gastoEndDateFilter}
+                      onChange={(e) => setGastoEndDateFilter(e.target.value)}
+                    />
+                  </div>
+                </div>
+
+                <div className="text-right">
+                  <span className="block text-[10px] uppercase font-bold text-slate-500">Monto Total Filtrado</span>
+                  <span className="text-xl font-black text-rose-500">
+                    ${gastosList.reduce((acc, g) => acc + Number(g.monto), 0).toFixed(2)}
+                  </span>
+                </div>
+              </div>
+
+              {/* Tabla de gastos */}
+              <div className={`border rounded-2xl overflow-hidden ${
+                theme === 'dark' ? 'bg-[#13151b] border-[#20222b]' : 'bg-white border-slate-200 shadow-sm'
+              }`}>
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className={`border-b text-xs font-bold uppercase tracking-wider text-slate-500 ${
+                      theme === 'dark' ? 'bg-[#1c1e27] border-[#20222b]' : 'bg-slate-50 border-slate-200'
+                    }`}>
+                      <th className="py-4 px-6">Fecha</th>
+                      <th className="py-4 px-6">Descripción</th>
+                      <th className="py-4 px-6">Categoría</th>
+                      <th className="py-4 px-6">Proveedor Asociado</th>
+                      <th className="py-4 px-6 text-right">Monto</th>
+                      <th className="py-4 px-6 text-center">Acciones</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-850/20">
+                    {gastosList.map((g) => (
+                      <tr key={g.id} className={theme === 'dark' ? 'hover:bg-[#1a1c24]/50' : 'hover:bg-slate-50'}>
+                        <td className="py-4 px-6 text-xs text-slate-400 font-mono">
+                          {new Date(g.fecha).toLocaleDateString('es-MX', { timeZone: 'UTC' })}
+                        </td>
+                        <td className="py-4 px-6 text-xs font-bold text-slate-200">{g.descripcion}</td>
+                        <td className="py-4 px-6 text-xs">
+                          <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold ${
+                            g.categoria === 'Servicios' ? 'bg-blue-500/10 text-blue-400' :
+                            g.categoria === 'Nómina' ? 'bg-purple-500/10 text-purple-400' :
+                            g.categoria === 'Renta' ? 'bg-amber-500/10 text-amber-400' :
+                            g.categoria === 'Proveedores' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-slate-500/10 text-slate-400'
+                          }`}>
+                            {g.categoria}
+                          </span>
+                        </td>
+                        <td className="py-4 px-6 text-xs text-slate-450">{g.proveedor?.nombre || '-'}</td>
+                        <td className="py-4 px-6 text-xs text-right font-black text-rose-500 font-mono">${Number(g.monto).toFixed(2)}</td>
+                        <td className="py-4 px-6 text-center">
+                          <div className="flex gap-2 justify-center">
+                            <button 
+                              onClick={() => {
+                                setCurrentGasto({
+                                  ...g,
+                                  fecha: new Date(g.fecha).toISOString().substring(0, 10)
+                                });
+                                setShowGastoModal(true);
+                              }}
+                              className="p-2 bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 rounded-lg border-0 cursor-pointer transition-colors"
+                            >
+                              <Edit2 className="w-4 h-4" />
+                            </button>
+                            <button 
+                              onClick={() => handleDeleteGasto(g.id)}
+                              className="p-2 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 rounded-lg border-0 cursor-pointer transition-colors"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                    {gastosList.length === 0 && (
+                      <tr>
+                        <td colSpan={6} className="p-6 text-center text-xs text-slate-550">No hay registros de gastos.</td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
         </main>
       </div>
 
@@ -2485,10 +2858,220 @@ export default function AdminDashboard({ currentUser, theme, onClose, config: in
                 <button
                   type="button"
                   onClick={() => setShowEmployeeModal(false)}
-                  className={`flex-1 font-bold py-3.5 rounded-xl border bg-transparent cursor-pointer transition-all hover:bg-slate-500/10 ${
-                    theme === 'dark' ? 'border-[#20222b] text-slate-400' : 'border-slate-350 text-slate-600'
+                  className={`flex-1 font-bold py-3.5 rounded-xl border bg-transparent cursor-pointer text-xs transition-all hover:bg-slate-500/10 ${theme === 'dark' ? 'border-[#20222b] text-slate-400' : 'border-slate-350 text-slate-655'}`}>
+                  Cancelar
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Proveedor Add/Edit Modal */}
+      {showProveedorModal && (
+        <div className="fixed inset-0 bg-[#000000]/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className={`p-8 rounded-3xl border w-full max-w-md shadow-2xl relative ${
+            theme === 'dark' ? 'bg-[#13151b] border-[#20222b] text-white' : 'bg-white border-slate-200 text-slate-800'
+          }`}>
+            <button 
+              onClick={() => setShowProveedorModal(false)}
+              className="absolute top-4 right-4 text-slate-500 hover:text-white bg-transparent border-0 cursor-pointer"
+            >
+              <X className="w-5 h-5" />
+            </button>
+            <h3 className="text-md font-bold uppercase tracking-wider mb-6 flex items-center gap-2">
+              <Truck className="w-5 h-5 text-amber-500" /> {currentProveedor.id ? 'Editar Proveedor' : 'Registrar Proveedor'}
+            </h3>
+
+            <form onSubmit={handleSaveProveedor} className="space-y-4">
+              <div>
+                <label className="block text-[10px] font-bold uppercase text-slate-500 mb-1.5">Nombre / Empresa *</label>
+                <input 
+                  type="text" 
+                  required
+                  className={`w-full rounded-xl p-3 border text-xs focus:outline-none focus:ring-1 focus:ring-amber-500 ${
+                    theme === 'dark' ? 'bg-[#0d0e12] border-[#20222b]' : 'bg-slate-50 border-slate-250'
                   }`}
-                >
+                  value={currentProveedor.nombre || ''}
+                  onChange={e => setCurrentProveedor({ ...currentProveedor, nombre: e.target.value })}
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-[10px] font-bold uppercase text-slate-500 mb-1.5">Representante</label>
+                  <input 
+                    type="text" 
+                    className={`w-full rounded-xl p-3 border text-xs focus:outline-none focus:ring-1 focus:ring-amber-500 ${
+                      theme === 'dark' ? 'bg-[#0d0e12] border-[#20222b]' : 'bg-slate-50 border-slate-250'
+                    }`}
+                    value={currentProveedor.representante || ''}
+                    onChange={e => setCurrentProveedor({ ...currentProveedor, representante: e.target.value })}
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold uppercase text-slate-500 mb-1.5">Teléfonos</label>
+                  <input 
+                    type="text" 
+                    className={`w-full rounded-xl p-3 border text-xs focus:outline-none focus:ring-1 focus:ring-amber-500 ${
+                      theme === 'dark' ? 'bg-[#0d0e12] border-[#20222b]' : 'bg-slate-50 border-slate-250'
+                    }`}
+                    value={currentProveedor.telefonos || ''}
+                    onChange={e => setCurrentProveedor({ ...currentProveedor, telefonos: e.target.value })}
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-[10px] font-bold uppercase text-slate-500 mb-1.5">Correo Electrónico</label>
+                  <input 
+                    type="email" 
+                    className={`w-full rounded-xl p-3 border text-xs focus:outline-none focus:ring-1 focus:ring-amber-500 ${
+                      theme === 'dark' ? 'bg-[#0d0e12] border-[#20222b]' : 'bg-slate-50 border-slate-250'
+                    }`}
+                    value={currentProveedor.correos || ''}
+                    onChange={e => setCurrentProveedor({ ...currentProveedor, correos: e.target.value })}
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold uppercase text-slate-500 mb-1.5">Página Web</label>
+                  <input 
+                    type="text" 
+                    className={`w-full rounded-xl p-3 border text-xs focus:outline-none focus:ring-1 focus:ring-amber-500 ${
+                      theme === 'dark' ? 'bg-[#0d0e12] border-[#20222b]' : 'bg-slate-50 border-slate-250'
+                    }`}
+                    value={currentProveedor.paginaWeb || ''}
+                    onChange={e => setCurrentProveedor({ ...currentProveedor, paginaWeb: e.target.value })}
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-[10px] font-bold uppercase text-slate-500 mb-1.5">Notas / Comentarios</label>
+                <textarea 
+                  rows={3}
+                  className={`w-full rounded-xl p-3 border text-xs focus:outline-none focus:ring-1 focus:ring-amber-500 ${
+                    theme === 'dark' ? 'bg-[#0d0e12] border-[#20222b]' : 'bg-slate-50 border-slate-250'
+                  }`}
+                  value={currentProveedor.notas || ''}
+                  onChange={e => setCurrentProveedor({ ...currentProveedor, notas: e.target.value })}
+                />
+              </div>
+
+              <div className="flex gap-4 pt-4 border-t border-slate-700/30">
+                <button type="submit" className="flex-grow bg-amber-500 hover:bg-amber-400 text-slate-955 font-bold py-3 rounded-xl border-0 cursor-pointer text-xs transition-all active:scale-95">
+                  ✓ Guardar Proveedor
+                </button>
+                <button type="button" onClick={() => setShowProveedorModal(false)} className={`py-3 px-6 rounded-xl border bg-transparent cursor-pointer text-xs transition-all hover:bg-slate-500/10 ${theme === 'dark' ? 'border-[#20222b] text-slate-400' : 'border-slate-350 text-slate-655'}`}>
+                  Cancelar
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Gasto Add/Edit Modal */}
+      {showGastoModal && (
+        <div className="fixed inset-0 bg-[#000000]/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className={`p-8 rounded-3xl border w-full max-w-md shadow-2xl relative ${
+            theme === 'dark' ? 'bg-[#13151b] border-[#20222b] text-white' : 'bg-white border-slate-200 text-slate-800'
+          }`}>
+            <button 
+              onClick={() => setShowGastoModal(false)}
+              className="absolute top-4 right-4 text-slate-500 hover:text-white bg-transparent border-0 cursor-pointer"
+            >
+              <X className="w-5 h-5" />
+            </button>
+            <h3 className="text-md font-bold uppercase tracking-wider mb-6 flex items-center gap-2">
+              <Receipt className="w-5 h-5 text-rose-500" /> {currentGasto.id ? 'Editar Gasto' : 'Registrar Gasto'}
+            </h3>
+
+            <form onSubmit={handleSaveGasto} className="space-y-4">
+              <div>
+                <label className="block text-[10px] font-bold uppercase text-slate-500 mb-1.5">Descripción del Gasto *</label>
+                <input 
+                  type="text" 
+                  required
+                  placeholder="Ej. Pago de Luz Junio, Compra de Papelería"
+                  className={`w-full rounded-xl p-3 border text-xs focus:outline-none focus:ring-1 focus:ring-amber-500 ${
+                    theme === 'dark' ? 'bg-[#0d0e12] border-[#20222b]' : 'bg-slate-50 border-slate-250'
+                  }`}
+                  value={currentGasto.descripcion || ''}
+                  onChange={e => setCurrentGasto({ ...currentGasto, descripcion: e.target.value })}
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-[10px] font-bold uppercase text-slate-500 mb-1.5">Monto ($) *</label>
+                  <input 
+                    type="number" 
+                    step="0.01"
+                    required
+                    placeholder="0.00"
+                    className={`w-full rounded-xl p-3 border text-xs focus:outline-none focus:ring-1 focus:ring-amber-500 font-mono font-bold ${
+                      theme === 'dark' ? 'bg-[#0d0e12] border-[#20222b]' : 'bg-slate-50 border-slate-250'
+                    }`}
+                    value={currentGasto.monto || ''}
+                    onChange={e => setCurrentGasto({ ...currentGasto, monto: e.target.value })}
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold uppercase text-slate-500 mb-1.5">Fecha *</label>
+                  <input 
+                    type="date" 
+                    required
+                    className={`w-full rounded-xl p-3 border text-xs focus:outline-none focus:ring-1 focus:ring-amber-500 ${
+                      theme === 'dark' ? 'bg-[#0d0e12] border-[#20222b]' : 'bg-slate-50 border-slate-250'
+                    }`}
+                    value={currentGasto.fecha || ''}
+                    onChange={e => setCurrentGasto({ ...currentGasto, fecha: e.target.value })}
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-[10px] font-bold uppercase text-slate-500 mb-1.5">Categoría *</label>
+                  <select
+                    required
+                    className={`w-full rounded-xl p-3 border text-xs focus:outline-none focus:ring-1 focus:ring-amber-500 ${
+                      theme === 'dark' ? 'bg-[#0d0e12] border-[#20222b] text-white' : 'bg-slate-50 border-slate-250 text-slate-800'
+                    }`}
+                    value={currentGasto.categoria || 'Servicios'}
+                    onChange={e => setCurrentGasto({ ...currentGasto, categoria: e.target.value })}
+                  >
+                    <option value="Servicios">Servicios</option>
+                    <option value="Nómina">Nómina / Sueldos</option>
+                    <option value="Renta">Renta de Local</option>
+                    <option value="Proveedores">Proveedores</option>
+                    <option value="Otros">Otros Egresos</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold uppercase text-slate-500 mb-1.5">Proveedor Asociado</label>
+                  <select
+                    className={`w-full rounded-xl p-3 border text-xs focus:outline-none focus:ring-1 focus:ring-amber-500 ${
+                      theme === 'dark' ? 'bg-[#0d0e12] border-[#20222b] text-white' : 'bg-slate-50 border-slate-250 text-slate-800'
+                    }`}
+                    value={currentGasto.proveedorId || ''}
+                    onChange={e => setCurrentGasto({ ...currentGasto, proveedorId: e.target.value || null })}
+                  >
+                    <option value="">Ninguno</option>
+                    {suppliersList.map(prov => (
+                      <option key={prov.id} value={prov.id}>{prov.nombre}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div className="flex gap-4 pt-4 border-t border-slate-700/30">
+                <button type="submit" className="flex-grow bg-amber-500 hover:bg-amber-400 text-slate-955 font-bold py-3 rounded-xl border-0 cursor-pointer text-xs transition-all active:scale-95">
+                  ✓ Guardar Registro
+                </button>
+                <button type="button" onClick={() => setShowGastoModal(false)} className={`py-3 px-6 rounded-xl border bg-transparent cursor-pointer text-xs transition-all hover:bg-slate-500/10 ${theme === 'dark' ? 'border-[#20222b] text-slate-400' : 'border-slate-350 text-slate-655'}`}>
                   Cancelar
                 </button>
               </div>
@@ -2936,7 +3519,7 @@ function ClientesSection({ theme, addLog }: { theme: 'dark' | 'light'; addLog: (
                   placeholder="0.00"
                   max={selectedCliente.saldoDeudor}
                   className={`w-full rounded-xl p-3 border text-xs focus:outline-none focus:ring-1 focus:ring-amber-500 text-center text-lg font-bold font-mono ${
-                    theme === 'dark' ? 'bg-[#0d0e12] border-[#20222b]' : 'bg-slate-50 border-slate-250'
+                    theme === 'dark' ? 'bg-[#0d0e12] border-[#20222b]' : 'bg-slate-50 border-slate-255'
                   }`}
                   value={abonoMonto}
                   onChange={e => setAbonoMonto(e.target.value)}
@@ -2950,7 +3533,6 @@ function ClientesSection({ theme, addLog }: { theme: 'dark' | 'light'; addLog: (
           </div>
         </div>
       )}
-
     </div>
   );
 }
