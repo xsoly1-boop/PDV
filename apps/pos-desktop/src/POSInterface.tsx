@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import { LocalDb } from './db/localDb';
 import { SyncService } from './services/SyncService';
+import { offlineStore } from './services/offlineStore';
 import AdminDashboard from './AdminDashboard';
 import QuotesDashboard from './QuotesDashboard';
 import { API_V1, API_BASE_URL } from './config';
@@ -169,8 +170,112 @@ export default function POSInterface() {
     }
   };
 
-  const [isOnline, setIsOnline] = useState(true);
+  const [isOnline, setIsOnline] = useState(navigator.onLine);
+  const [syncingVentas, setSyncingVentas] = useState(false);
+  const [offlineQueueSize, setOfflineQueueSize] = useState(0);
   const [pendingCount, setPendingCount] = useState(LocalDb.getUnsynced().length);
+
+  // Sincronizar catálogo local
+  const sincronizarCatalogoLocal = async () => {
+    if (!navigator.onLine) return;
+    try {
+      console.log('[Offline] Iniciando sincronización del catálogo local...');
+      const response = await fetch(`${API_V1}/productos`);
+      if (response.ok) {
+        const data = await response.json();
+        const mapped = data.map((p: any) => ({
+          id: String(p.id),
+          sku: String(p.sku),
+          codigoBarras: p.codigos?.[0]?.codigo || '',
+          nombre: String(p.nombre),
+          categoria: p.categoria?.nombre || 'General',
+          precio: Number(p.precio) || 0,
+          costo: Number(p.costo) || 0,
+          stock: p.balances ? p.balances.reduce((sum: number, b: any) => sum + Number(b.stockReal), 0) : 0,
+          unidad: p.metadatos?.unidad || 'pieza',
+          descripcion: p.descripcion || ''
+        }));
+        await offlineStore.guardarCatalogo(mapped);
+        console.log('[Offline] Catálogo local sincronizado correctamente. Total:', mapped.length);
+      }
+    } catch (err) {
+      console.warn('[Offline] Error al sincronizar el catálogo local:', err);
+    }
+  };
+
+  // Actualizar indicador de cola
+  const actualizarTamanoColaOffline = async () => {
+    const size = await offlineStore.obtenerTamanoCola();
+    setOfflineQueueSize(size);
+  };
+
+  // Procesar ventas encoladas
+  const procesarColaVentasOffline = async () => {
+    if (!navigator.onLine || syncingVentas) return;
+    const queue = await offlineStore.obtenerVentasEncoladas();
+    if (queue.length === 0) return;
+
+    setSyncingVentas(true);
+    console.log(`[Offline] Sincronizando ${queue.length} ventas locales encoladas...`);
+    
+    for (const venta of queue) {
+      try {
+        const response = await fetch(`${API_V1}/ventas`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            folio: venta.folio,
+            sucursalId: 'suc-norte',
+            usuarioId: venta.usuarioId,
+            total: venta.total,
+            subtotal: venta.subtotal,
+            descuento: venta.descuento,
+            metodo: venta.metodo,
+            detalles: venta.detalles
+          })
+        });
+
+        if (response.ok) {
+          await offlineStore.desencolarVenta(venta.id);
+          console.log(`[Offline] Venta offline ${venta.folio} sincronizada correctamente.`);
+        } else {
+          console.warn(`[Offline] Servidor rechazó la venta ${venta.folio}.`);
+        }
+      } catch (err) {
+        console.error(`[Offline] Error al subir venta ${venta.folio}:`, err);
+        break;
+      }
+    }
+    
+    await actualizarTamanoColaOffline();
+    setSyncingVentas(false);
+  };
+
+  // Escuchar cambios de red nativos
+  useEffect(() => {
+    const handleOnline = () => {
+      setIsOnline(true);
+      procesarColaVentasOffline();
+      sincronizarCatalogoLocal();
+    };
+    const handleOffline = () => setIsOnline(false);
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
+    actualizarTamanoColaOffline();
+    if (navigator.onLine) {
+      sincronizarCatalogoLocal();
+      procesarColaVentasOffline();
+    }
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
 
   // Estados de Cotizaciones Centralizadas
   const [activeQuotes, setActiveQuotes] = useState<any[]>([]);
@@ -384,32 +489,51 @@ export default function POSInterface() {
         (p.sku.toLowerCase() === query)
       ) || products.find((p: any) => p.nombre.toLowerCase().includes(query));
 
-      // 2. Si no se encuentra en el estado local, buscar directamente en el servidor
+      // 2. Si no se encuentra en el estado local, buscar directamente en el servidor (u offline)
       if (!exactMatch) {
-        try {
-          const url = `${API_V1}/productos/buscar?q=${encodeURIComponent(query)}`;
-          console.log(`[API Instant Search] Buscando en: ${url}`);
-          const response = await fetch(url);
-          if (response.ok) {
-            const data = await response.json();
-            if (Array.isArray(data) && data.length > 0) {
-              const p = data[0];
-              exactMatch = {
-                id: String(p.id),
-                sku: String(p.sku),
-                codigoBarras: p.codigos?.[0]?.codigo || '',
-                nombre: String(p.nombre),
-                categoria: p.metadatos?.categoria || 'General',
-                precio: Number(p.precio) || 0,
-                costo: Number(p.costo) || 0,
-                stock: p.balances ? p.balances.reduce((sum: number, b: any) => sum + Number(b.stockReal), 0) : 0,
-                unidad: p.metadatos?.unidad || 'pieza',
-                metadata: p.metadatos || {}
-              };
-            }
+        if (!isOnline) {
+          const localResults = await offlineStore.buscarProductos(query);
+          if (localResults.length > 0) {
+            const p = localResults[0];
+            exactMatch = {
+              id: p.id,
+              sku: p.sku,
+              codigoBarras: p.codigoBarras,
+              nombre: p.nombre,
+              categoria: p.categoria,
+              precio: p.precio,
+              costo: p.costo,
+              stock: p.stock,
+              unidad: p.unidad,
+              metadata: {}
+            };
           }
-        } catch (err) {
-          console.warn('Error en búsqueda instantánea por Enter:', err);
+        } else {
+          try {
+            const url = `${API_V1}/productos/buscar?q=${encodeURIComponent(query)}`;
+            console.log(`[API Instant Search] Buscando en: ${url}`);
+            const response = await fetch(url);
+            if (response.ok) {
+              const data = await response.json();
+              if (Array.isArray(data) && data.length > 0) {
+                const p = data[0];
+                exactMatch = {
+                  id: String(p.id),
+                  sku: String(p.sku),
+                  codigoBarras: p.codigos?.[0]?.codigo || '',
+                  nombre: String(p.nombre),
+                  categoria: p.metadatos?.categoria || 'General',
+                  precio: Number(p.precio) || 0,
+                  costo: Number(p.costo) || 0,
+                  stock: p.balances ? p.balances.reduce((sum: number, b: any) => sum + Number(b.stockReal), 0) : 0,
+                  unidad: p.metadatos?.unidad || 'pieza',
+                  metadata: p.metadatos || {}
+                };
+              }
+            }
+          } catch (err) {
+            console.warn('Error en búsqueda instantánea por Enter:', err);
+          }
         }
       }
 
@@ -423,6 +547,24 @@ export default function POSInterface() {
   };
 
   const fetchProducts = async (query = '') => {
+    if (!isOnline) {
+      const localResults = await offlineStore.buscarProductos(query);
+      const mapped = localResults.map((p) => ({
+        id: p.id,
+        sku: p.sku,
+        codigoBarras: p.codigoBarras,
+        nombre: p.nombre,
+        categoria: p.categoria,
+        precio: p.precio,
+        costo: p.costo,
+        stock: p.stock,
+        unidad: p.unidad,
+        metadata: {}
+      }));
+      setProducts(mapped);
+      return;
+    }
+
     try {
       const url = `${API_V1}/productos/buscar?q=${encodeURIComponent(query)}`;
       console.log(`[API Debounced Search] Buscando en: ${url}`);
@@ -450,6 +592,20 @@ export default function POSInterface() {
       }
     } catch (e) {
       console.warn('Error fetching products from API:', e);
+      const localResults = await offlineStore.buscarProductos(query);
+      const mapped = localResults.map((p) => ({
+        id: p.id,
+        sku: p.sku,
+        codigoBarras: p.codigoBarras,
+        nombre: p.nombre,
+        categoria: p.categoria,
+        precio: p.precio,
+        costo: p.costo,
+        stock: p.stock,
+        unidad: p.unidad,
+        metadata: {}
+      }));
+      setProducts(mapped);
     }
   };
 
@@ -829,9 +985,13 @@ export default function POSInterface() {
       });
     }
 
-    // Registrar la venta en la base de datos central
+    // Registrar la venta en la base de datos central o local offline
+    let ventaGuardadaOffline = false;
     try {
-      await fetch(`${API_V1}/ventas`, {
+      if (!isOnline) {
+        throw new Error('Offline mode active');
+      }
+      const response = await fetch(`${API_V1}/ventas`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -851,25 +1011,50 @@ export default function POSInterface() {
           }))
         })
       });
+      if (!response.ok) {
+        throw new Error('Server returned error status');
+      }
     } catch (err) {
-      console.error('Error al registrar venta central:', err);
+      console.warn('[Offline] Sincronización fallida, guardando venta en la cola local:', err);
+      ventaGuardadaOffline = true;
+      
+      await offlineStore.encolarVenta({
+        folio: ticketRef,
+        usuarioId: currentUser ? ((currentUser as any).id || currentUser.nombre) : 'ADMIN',
+        total: total,
+        subtotal: subtotal,
+        descuento: discount,
+        metodo: metodoPago === 'MIXTO' ? 'EFECTIVO' : (metodoPago as any),
+        detalles: cart.map((item: any) => ({
+          productoId: item.productoId || item.sku,
+          cantidad: item.cantidad,
+          precioUnitario: item.precio,
+          subtotal: item.precio * item.cantidad
+        }))
+      });
+      
+      await actualizarTamanoColaOffline();
     }
 
     setPendingCount(LocalDb.getUnsynced().length);
 
-    if (isOnline) {
-      const res = await SyncService.syncPendingMovimientos();
-      if (res.success) {
-        const hasCashPayment = metodoPago === 'EFECTIVO' || (metodoPago === 'MIXTO' && Number(mixedCash) > 0);
-        const drawerMsg = (config.allowDrawer && hasCashPayment)
-          ? '\n\n[Hardware] Cajón de dinero abierto (Comando: ' + (config.drawerCommand || '27,112,0,25,250') + ')'
-          : '';
-        alert('Venta registrada y sincronizada en PostgreSQL central con exito!' + drawerMsg);
-      } else {
-        alert('Venta registrada en base de datos local.\nAlerta de Red: ' + res.error + '. Se sincronizara automaticamente al detectar conexion.');
-      }
+    if (ventaGuardadaOffline) {
+      alert('Modo Offline: Venta guardada localmente en IndexedDB. Se sincronizará automáticamente al recuperar conexión.');
     } else {
-      alert('Modo Offline Activo: Venta guardada localmente. Pendiente por sincronizar.');
+      if (isOnline) {
+        const res = await SyncService.syncPendingMovimientos();
+        if (res.success) {
+          const hasCashPayment = metodoPago === 'EFECTIVO' || (metodoPago === 'MIXTO' && Number(mixedCash) > 0);
+          const drawerMsg = (config.allowDrawer && hasCashPayment)
+            ? '\n\n[Hardware] Cajón de dinero abierto (Comando: ' + (config.drawerCommand || '27,112,0,25,250') + ')'
+            : '';
+          alert('Venta registrada y sincronizada en PostgreSQL central con exito!' + drawerMsg);
+        } else {
+          alert('Venta registrada en base de datos local.\nAlerta de Red: ' + res.error + '. Se sincronizara automaticamente al detectar conexion.');
+        }
+      } else {
+        alert('Modo Offline Activo: Venta guardada localmente. Pendiente por sincronizar.');
+      }
     }
 
     // Imprimir ticket de venta para el cliente
@@ -1418,6 +1603,17 @@ export default function POSInterface() {
               title="Sincronizar movimientos pendientes"
             >
               🔄 {pendingCount} Sync
+            </button>
+          )}
+
+          {offlineQueueSize > 0 && (
+            <button 
+              onClick={procesarColaVentasOffline}
+              disabled={syncingVentas}
+              className="text-[10px] text-rose-500 bg-rose-500/10 border border-rose-500/30 px-2 py-1 rounded font-bold hover:bg-rose-500 hover:text-slate-950 transition-colors uppercase animate-pulse"
+              title="Ventas guardadas offline pendientes por subir"
+            >
+              📥 {offlineQueueSize} Ventas Offline {syncingVentas ? '(Subiendo...)' : ''}
             </button>
           )}
 
