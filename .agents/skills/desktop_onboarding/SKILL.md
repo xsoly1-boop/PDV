@@ -30,15 +30,20 @@ En un modelo Single-Tenant o multi-sucursal, tenemos dos componentes principales
 
 De esta manera, el flujo de activación puede configurar tanto la **URL del Servidor API (Vercel/Render)** como las **Credenciales de Supabase** según el modo de instalación.
 
-### 1.1 Protección de Acceso por Llave Maestra (Master Key)
+### 1.1 Protección de Acceso por Llave Maestra (Master Key) y Dongle Alternativo
 > [!IMPORTANT]
 > **Seguridad de Inicialización**:
 > Dado que en el primer arranque de la aplicación la base de datos **no está conectada**, no es posible autenticar al Super Admin contra los usuarios de la base de datos de PostgreSQL (como `Admin` o `Dorian`).
 > 
-> Para solucionar esto:
-> 1. **Acceso al Setup**: Se implementará un paso de autenticación previo para el desbloqueo del formulario de configuración. Este paso requerirá una **Llave Maestra / Master Key** local estática (la clave maestra establecida es **`APEX2401`**).
-> 2. **Diferente de la Plataforma**: Estas credenciales maestras de instalación serán exclusivas de la aplicación cliente nativa y totalmente ajenas a la base de datos del POS, evitando que administradores comunes del negocio puedan alterar las conexiones de red de las terminales.
-> 3. **Modificaciones Posteriores**: Si se desea volver a ingresar a la pantalla de red/activación desde la terminal activa, el sistema solicitará la misma Master Key local antes de exponer los campos sensibles de Supabase o Render.
+> Para solucionar esto, el desbloqueo del formulario de configuración aceptará **dos métodos alternativos**:
+> 
+> 1. **Método A: Contraseña Master Key**: Introducir manualmente la clave maestra local estática establecida: **`APEX2401`**.
+> 2. **Método B: Dongle USB de Licencia Digital**: Insertar una memoria USB autorizada que contenga el archivo criptográfico `apex_license.key`.
+>    * **Funcionamiento**: Electron leerá el número de serie de hardware único de fábrica de la memoria USB conectada.
+>    * **Validación**: Desencriptará el archivo de licencia utilizando la clave pública incrustada y verificará que el número de serie codificado coincida exactamente con el de la memoria física. Si coincide, la pantalla de configuración se desbloqueará de forma automática sin necesidad de escribir la clave.
+>    * **Anti-clonado**: Si el archivo de licencia es copiado a otra memoria USB física, la validación fallará porque el número de serie de hardware de la nueva memoria diferirá del grabado en la firma digital.
+> 
+> Ambos métodos son válidos para ingresar inicialmente al Setup o para realizar modificaciones de red y base de datos posteriores en la terminal activa.
 
 ---
 
