@@ -21,7 +21,8 @@ export interface OfflineVenta {
   total: number;
   subtotal: number;
   descuento: number;
-  metodo: 'EFECTIVO' | 'TARJETA' | 'TRANSFERENCIA';
+  metodo: 'EFECTIVO' | 'TARJETA' | 'TRANSFERENCIA' | 'CREDITO';
+  clienteId?: string | null;
   detalles: Array<{
     productoId: string;
     cantidad: number;

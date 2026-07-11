@@ -4,13 +4,15 @@ import {
   Trash2, Plus, Minus, AlertCircle, 
   Wrench, CarFront, PackageOpen, Printer, Zap,
   Sun, Moon, LayoutDashboard, Bookmark, RotateCw, MessageCircle, CheckCircle2, X, DollarSign,
-  ClipboardList
+  ClipboardList, Check, TrendingUp
 } from 'lucide-react';
 import { LocalDb } from './db/localDb';
 import { SyncService } from './services/SyncService';
 import { offlineStore } from './services/offlineStore';
 import AdminDashboard from './AdminDashboard';
 import QuotesDashboard from './QuotesDashboard';
+import CRMDashboard from './CRMDashboard';
+import ReportesDashboard from './ReportesDashboard';
 import TurnoManager from './TurnoManager';
 import { API_V1, API_BASE_URL } from './config';
 import OnboardingWizard from './OnboardingWizard';
@@ -233,6 +235,7 @@ export default function POSInterface() {
             folio: venta.folio,
             sucursalId: 'suc-norte',
             usuarioId: venta.usuarioId,
+            clienteId: venta.clienteId || null,
             total: venta.total,
             subtotal: venta.subtotal,
             descuento: venta.descuento,
@@ -416,14 +419,39 @@ export default function POSInterface() {
   }, [currentUser, isOnline]);
 
   const [theme, setTheme] = useState<'dark' | 'light'>('dark');
-  const [currentView, setCurrentView] = useState<'pos' | 'admin' | 'quotes'>('pos');
+  const [currentView, setCurrentView] = useState<'pos' | 'admin' | 'quotes' | 'crm' | 'reports'>('pos');
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [showCheckoutModal, setShowCheckoutModal] = useState(false);
-  const [paymentMethod, setPaymentMethod] = useState<'EFECTIVO' | 'TARJETA' | 'TRANSFERENCIA' | 'MIXTO'>('EFECTIVO');
+  const [paymentMethod, setPaymentMethod] = useState<'EFECTIVO' | 'TARJETA' | 'TRANSFERENCIA' | 'MIXTO' | 'CREDITO'>('EFECTIVO');
   const [amountPaid, setAmountPaid] = useState('');
   const [mixedCash, setMixedCash] = useState('');
   const [mixedCard, setMixedCard] = useState('');
   const [mixedTransfer, setMixedTransfer] = useState('');
+
+  // Estados de CRM Clientes y WhatsApp Post-venta
+  const [showAssignClientModal, setShowAssignClientModal] = useState(false);
+  const [clientSearchQuery, setClientSearchQuery] = useState('');
+  const [clientesList, setClientesList] = useState<any[]>([]);
+  const [showWhatsAppModal, setShowWhatsAppModal] = useState(false);
+  const [checkoutWhatsAppPhone, setCheckoutWhatsAppPhone] = useState('');
+  const [checkoutWhatsAppMessage, setCheckoutWhatsAppMessage] = useState('');
+
+  const fetchClientesList = async () => {
+    try {
+      const res = await fetch(`${API_V1}/clientes`);
+      if (res.ok) {
+        setClientesList(await res.json());
+      }
+    } catch (err) {
+      console.error('Error fetching clientes:', err);
+    }
+  };
+
+  useEffect(() => {
+    if (showAssignClientModal) {
+      fetchClientesList();
+    }
+  }, [showAssignClientModal]);
   const [config, setConfig] = useState<CompanyConfig>(() => {
     const saved = localStorage.getItem('pos_config');
     const base = saved ? JSON.parse(saved) : {
@@ -1128,6 +1156,7 @@ export default function POSInterface() {
           folio: ticketRef,
           sucursalId: 'suc-norte',
           usuarioId: currentUser ? ((currentUser as any).id || currentUser.nombre) : 'ADMIN',
+          clienteId: activeTab.clienteId || null,
           total: total,
           subtotal: subtotal,
           descuento: discount,
@@ -1142,9 +1171,10 @@ export default function POSInterface() {
         })
       });
       if (!response.ok) {
-        throw new Error('Server returned error status');
+        const errorText = await response.text();
+        throw new Error(errorText || 'Server returned error status');
       }
-    } catch (err) {
+    } catch (err: any) {
       console.warn('[Offline] Sincronización fallida, guardando venta en la cola local:', err);
       ventaGuardadaOffline = true;
       
@@ -1155,6 +1185,7 @@ export default function POSInterface() {
         subtotal: subtotal,
         descuento: discount,
         metodo: metodoPago === 'MIXTO' ? 'EFECTIVO' : (metodoPago as any),
+        clienteId: activeTab.clienteId || null,
         detalles: cart.map((item: any) => ({
           productoId: item.productoId || item.sku,
           cantidad: item.cantidad,
@@ -1178,9 +1209,9 @@ export default function POSInterface() {
           const drawerMsg = (config.allowDrawer && hasCashPayment)
             ? '\n\n[Hardware] Cajón de dinero abierto (Comando: ' + (config.drawerCommand || '27,112,0,25,250') + ')'
             : '';
-          alert('Venta registrada y sincronizada en PostgreSQL central con exito!' + drawerMsg);
+          alert('Venta registrada y sincronizada en PostgreSQL central con éxito!' + drawerMsg);
         } else {
-          alert('Venta registrada en base de datos local.\nAlerta de Red: ' + res.error + '. Se sincronizara automaticamente al detectar conexion.');
+          alert('Venta registrada en base de datos local.\nAlerta de Red: ' + res.error + '. Se sincronizará automáticamente al detectar conexión.');
         }
       } else {
         alert('Modo Offline Activo: Venta guardada localmente. Pendiente por sincronizar.');
@@ -1215,6 +1246,23 @@ export default function POSInterface() {
       }
     }
 
+    // Preparar mensaje de WhatsApp
+    const clientPhone = activeTab.clienteObj?.telefono || '';
+    setCheckoutWhatsAppPhone(clientPhone);
+
+    const articulosTexto = cart.map((item: any) => `${item.cantidad}x ${item.nombre} ($${item.precio.toFixed(2)})`).join('\n');
+    const text = `🧾 *Ticket de Compra*
+Folio: ${ticketRef}
+Fecha: ${new Date().toLocaleString('es-MX')}
+----------------------------------
+${articulosTexto}
+----------------------------------
+*Total: $${total.toFixed(2)}*
+¡Gracias por su compra!`;
+
+    setCheckoutWhatsAppMessage(encodeURIComponent(text));
+    setShowWhatsAppModal(true);
+
     // Avanzar al siguiente ticket y persistirlo
     const nextTicket = ticketNumber + 1;
     localStorage.setItem('pos_last_ticket', String(ticketNumber));
@@ -1228,6 +1276,8 @@ export default function POSInterface() {
           selectedItemId: null,
           discount: 0,
           clienteNombre: '',
+          clienteId: null,
+          clienteObj: null,
           cotizacionId: null
         };
       }
@@ -1236,7 +1286,6 @@ export default function POSInterface() {
     
     setShowCheckoutModal(false);
     setPendingCount(LocalDb.getUnsynced().length);
-    fetchActiveQuotes();
   };
 
   // Manejador del Teclado Numérico para el PIN
@@ -1701,6 +1750,36 @@ export default function POSInterface() {
             </button>
           )}
 
+          {/* Botón de CRM */}
+          {currentUser && (
+            <button 
+              onClick={() => setCurrentView('crm')}
+              className={`font-bold px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-all text-xs border cursor-pointer active:scale-95 ${
+                theme === 'dark' 
+                  ? 'bg-slate-800 hover:bg-slate-700 border-slate-700 text-amber-500 shadow-md' 
+                  : 'bg-white hover:bg-slate-50 border-slate-200 text-amber-600 shadow-sm'
+              }`}
+              title="Ir al Módulo de CRM Clientes"
+            >
+              <User className="w-4 h-4" /> CRM Clientes
+            </button>
+          )}
+
+          {/* Botón de Reportes */}
+          {currentUser && (currentUser.rol === 'Administrador' || currentUser.rol === 'Gerente') && (
+            <button 
+              onClick={() => setCurrentView('reports')}
+              className={`font-bold px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-all text-xs border cursor-pointer active:scale-95 ${
+                theme === 'dark' 
+                  ? 'bg-slate-800 hover:bg-slate-700 border-slate-700 text-amber-500 shadow-md' 
+                  : 'bg-white hover:bg-slate-50 border-slate-200 text-amber-600 shadow-sm'
+              }`}
+              title="Ir al Centro de Reportes"
+            >
+              <TrendingUp className="w-4 h-4" /> Reportes
+            </button>
+          )}
+
           {/* Botón de Administración */}
           {currentUser && currentUser.rol === 'Administrador' && (
             <button 
@@ -1843,7 +1922,10 @@ export default function POSInterface() {
               </div>
 
               {/* Botón Asignar Cliente */}
-              <button className="text-amber-500 hover:text-amber-400 font-semibold flex items-center gap-1.5 hover:bg-amber-500/10 px-3 py-1 rounded-lg transition-colors border border-transparent hover:border-amber-500/20 text-xs bg-transparent cursor-pointer">
+              <button 
+                onClick={() => setShowAssignClientModal(true)}
+                className="text-amber-500 hover:text-amber-400 font-semibold flex items-center gap-1.5 hover:bg-amber-500/10 px-3 py-1 rounded-lg transition-colors border border-transparent hover:border-amber-500/20 text-xs bg-transparent cursor-pointer"
+              >
                 <User className="w-4 h-4" /> Asignar Cliente / RFC
               </button>
             </div>
@@ -2517,6 +2599,22 @@ export default function POSInterface() {
         />
       )}
 
+      {/* Módulo de CRM y Cuentas por Cobrar (Overlay de Pantalla Completa) */}
+      {currentView === 'crm' && currentUser && (
+        <CRMDashboard 
+          theme={theme} 
+          onClose={() => setCurrentView('pos')} 
+        />
+      )}
+
+      {/* Panel de Reportes (Overlay de Pantalla Completa) */}
+      {currentView === 'reports' && currentUser && (
+        <ReportesDashboard 
+          theme={theme} 
+          onClose={() => setCurrentView('pos')} 
+        />
+      )}
+
       {/* Panel de Administración (Overlay de Pantalla Completa) */}
       {currentView === 'admin' && currentUser && (
         <AdminDashboard 
@@ -2803,6 +2901,20 @@ export default function POSInterface() {
                       <span className="text-lg">🏦</span> Transferencia
                     </button>
                   )}
+
+                  {/* Botón A Crédito */}
+                  <button
+                    type="button"
+                    onClick={() => { setPaymentMethod('CREDITO'); setAmountPaid(String(total)); }}
+                    className={`py-3 rounded-xl font-bold text-xs border transition-all cursor-pointer flex flex-col items-center gap-1.5 ${
+                      paymentMethod === 'CREDITO'
+                        ? 'border-emerald-500 bg-emerald-500/10 text-emerald-400'
+                        : theme === 'dark' ? 'bg-[#1a1c24] border-[#262836] hover:border-slate-700 text-slate-400' : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'
+                    }`}
+                  >
+                    <span className="text-lg">👥</span> A Crédito
+                  </button>
+
                   {((config.allowCash !== false ? 1 : 0) + (config.allowCard !== false ? 1 : 0) + (config.allowTransfer !== false ? 1 : 0)) > 1 && (
                     <button
                       type="button"
@@ -2812,13 +2924,13 @@ export default function POSInterface() {
                         setMixedCard('');
                         setMixedTransfer('');
                       }}
-                      className={`py-3 rounded-xl font-bold text-xs border transition-all cursor-pointer flex flex-col items-center gap-1.5 col-span-3 ${
+                      className={`py-3 rounded-xl font-bold text-xs border transition-all cursor-pointer flex flex-col items-center gap-1.5 col-span-2 ${
                         paymentMethod === 'MIXTO'
                           ? 'border-amber-500 bg-amber-500/10 text-amber-400'
                           : theme === 'dark' ? 'bg-[#1a1c24] border-[#262836] hover:border-slate-700 text-slate-400' : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'
                       }`}
                     >
-                      <span className="text-lg">🔀</span> Pago Híbrido / Combinado
+                      <span className="text-lg">🔀</span> Pago Combinado
                     </button>
                   )}
                 </div>
@@ -2962,6 +3074,46 @@ export default function POSInterface() {
                 </div>
               )}
 
+              {/* Lógica Específica de Crédito */}
+              {paymentMethod === 'CREDITO' && (
+                <div className={`p-4 rounded-xl border space-y-3 animate-fadeIn ${
+                  theme === 'dark' ? 'bg-[#1a1c24] border-[#262836]' : 'bg-slate-50 border-slate-200'
+                }`}>
+                  {activeTab.clienteId ? (
+                    <div>
+                      <p className="text-xs font-bold text-slate-300 font-sans">
+                        Cliente: <span className="text-amber-500">{activeTab.clienteNombre}</span>
+                      </p>
+                      <div className="grid grid-cols-2 gap-4 mt-2 text-[11px] text-slate-400">
+                        <div>
+                          <span>Límite de Crédito:</span>
+                          <span className="font-bold block text-slate-250">${Number(activeTab.clienteObj?.limiteCredito || 0).toFixed(2)}</span>
+                        </div>
+                        <div>
+                          <span>Saldo Deudor Actual:</span>
+                          <span className="font-bold block text-rose-500">${Number(activeTab.clienteObj?.saldoDeudor || 0).toFixed(2)}</span>
+                        </div>
+                        <div className="col-span-2 pt-2 border-t border-slate-700/30 flex justify-between text-xs font-bold">
+                          <span>Crédito Disponible:</span>
+                          <span className={`font-black ${(Number(activeTab.clienteObj?.limiteCredito || 0) - Number(activeTab.clienteObj?.saldoDeudor || 0)) >= total ? 'text-emerald-400' : 'text-rose-500'}`}>
+                            ${(Number(activeTab.clienteObj?.limiteCredito || 0) - Number(activeTab.clienteObj?.saldoDeudor || 0)).toFixed(2)}
+                          </span>
+                        </div>
+                      </div>
+                      {(Number(activeTab.clienteObj?.limiteCredito || 0) - Number(activeTab.clienteObj?.saldoDeudor || 0)) < total && (
+                        <p className="text-[10px] text-rose-500 font-bold mt-2">
+                          ⚠️ El cliente no cuenta con suficiente crédito disponible.
+                        </p>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="text-center p-3 text-rose-500 text-xs font-bold">
+                      ⚠️ Debe asignar un cliente al ticket para cobrar a crédito.
+                    </div>
+                  )}
+                </div>
+              )}
+
               {/* Simulación de Báscula */}
               {config.allowScale && (
                 <div className={`p-4 rounded-xl border flex items-center justify-between ${
@@ -2997,11 +3149,189 @@ export default function POSInterface() {
                 onClick={() => handleCheckout(paymentMethod)}
                 disabled={
                   (paymentMethod === 'EFECTIVO' && Number(amountPaid) < total) ||
-                  (paymentMethod === 'MIXTO' && (Number(mixedCash || 0) + Number(mixedCard || 0) + Number(mixedTransfer || 0)) < total)
+                  (paymentMethod === 'MIXTO' && (Number(mixedCash || 0) + Number(mixedCard || 0) + Number(mixedTransfer || 0)) < total) ||
+                  (paymentMethod === 'CREDITO' && (!activeTab.clienteId || (Number(activeTab.clienteObj?.limiteCredito || 0) - Number(activeTab.clienteObj?.saldoDeudor || 0)) < total))
                 }
                 className="flex-grow bg-emerald-600 hover:bg-emerald-500 text-white font-black py-3 rounded-xl shadow-lg border-0 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer text-sm flex items-center justify-center gap-1.5"
               >
                 ✓ Registrar Cobro
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal: Asignar Cliente / RFC */}
+      {showAssignClientModal && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className={`w-full max-w-lg p-8 rounded-3xl border shadow-2xl relative flex flex-col max-h-[80vh] ${
+            theme === 'dark' ? 'bg-[#12141c] border-[#20222b] text-slate-100' : 'bg-white border-slate-200 text-slate-800'
+          }`}>
+            <button 
+              type="button"
+              onClick={() => setShowAssignClientModal(false)}
+              className="absolute top-5 right-5 text-slate-400 hover:text-white bg-transparent border-0 cursor-pointer"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <h3 className="text-md font-bold uppercase tracking-wider mb-4 flex items-center gap-2">
+              <User className="w-5 h-5 text-amber-500" /> Asignar Cliente al Ticket
+            </h3>
+
+            <div className="mb-4">
+              <div className="relative">
+                <Search className="w-4 h-4 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2" />
+                <input 
+                  type="text" 
+                  placeholder="Buscar por nombre, teléfono o RFC..."
+                  className={`w-full rounded-xl py-2.5 pl-10 pr-4 border text-xs focus:outline-none focus:ring-1 focus:ring-amber-500 ${
+                    theme === 'dark' ? 'bg-[#0d0e12] border-[#20222b] text-slate-200' : 'bg-slate-50 border-slate-200'
+                  }`}
+                  value={clientSearchQuery}
+                  onChange={e => setClientSearchQuery(e.target.value)}
+                />
+              </div>
+            </div>
+
+            <div className="flex-1 overflow-y-auto divide-y divide-slate-850/20 mb-6">
+              {/* Opción Público General */}
+              <div 
+                onClick={() => {
+                  setTabs(prev => prev.map(t => {
+                    if (t.id === activeTabId) {
+                      return { ...t, clienteNombre: '', clienteId: null, clienteObj: null };
+                    }
+                    return t;
+                  }));
+                  setShowAssignClientModal(false);
+                }}
+                className={`p-3 flex items-center justify-between cursor-pointer rounded-xl transition-colors ${
+                  !activeTab.clienteId 
+                    ? (theme === 'dark' ? 'bg-amber-500/15 text-amber-400 font-bold' : 'bg-amber-50 text-amber-600 font-bold') 
+                    : (theme === 'dark' ? 'hover:bg-[#1a1c24] text-slate-400' : 'hover:bg-slate-50 text-slate-600')
+                }`}
+              >
+                <span>👥 Público General (Sin Crédito)</span>
+                {!activeTab.clienteId && <Check className="w-4 h-4 text-amber-500" />}
+              </div>
+
+              {/* Lista filtrada */}
+              {clientesList
+                .filter((c: any) => 
+                  c.nombre.toLowerCase().includes(clientSearchQuery.toLowerCase()) ||
+                  (c.telefono && c.telefono.includes(clientSearchQuery)) ||
+                  (c.rfc && c.rfc.toLowerCase().includes(clientSearchQuery.toLowerCase()))
+                )
+                .map((c: any) => {
+                  const isSelected = activeTab.clienteId === c.id;
+                  return (
+                    <div 
+                      key={c.id}
+                      onClick={() => {
+                        setTabs(prev => prev.map(t => {
+                          if (t.id === activeTabId) {
+                            return { ...t, clienteNombre: c.nombre, clienteId: c.id, clienteObj: c };
+                          }
+                          return t;
+                        }));
+                        setShowAssignClientModal(false);
+                      }}
+                      className={`p-3 flex items-center justify-between cursor-pointer rounded-xl transition-colors ${
+                        isSelected 
+                          ? (theme === 'dark' ? 'bg-amber-500/15 text-amber-400 font-bold' : 'bg-amber-50 text-amber-600 font-bold') 
+                          : (theme === 'dark' ? 'hover:bg-[#1a1c24] text-slate-305' : 'hover:bg-slate-50 text-slate-700')
+                      }`}
+                    >
+                      <div className="flex-1 min-w-0 pr-3">
+                        <span className="block text-xs font-bold truncate">{c.nombre}</span>
+                        <span className="block text-[10px] text-slate-500 mt-0.5 font-mono">
+                          {c.rfc ? `RFC: ${c.rfc}` : ''} {c.telefono ? `| Tel: ${c.telefono}` : ''}
+                        </span>
+                      </div>
+                      <div className="text-right pl-3">
+                        <span className="block text-xs font-black text-rose-500">${Number(c.saldoDeudor).toFixed(2)}</span>
+                        <span className="block text-[9px] text-slate-500">Límite: ${Number(c.limiteCredito).toFixed(0)}</span>
+                      </div>
+                      {isSelected && <Check className="w-4 h-4 text-amber-500 ml-3" />}
+                    </div>
+                  );
+                })}
+            </div>
+
+            <div className="flex justify-end pt-4 border-t border-[#20222b]/50">
+              <button 
+                type="button" 
+                onClick={() => setShowAssignClientModal(false)}
+                className={`py-2.5 px-6 rounded-xl border font-bold text-xs cursor-pointer active:scale-95 transition-all ${
+                  theme === 'dark' ? 'bg-transparent border-[#20222b] text-slate-400 hover:bg-[#1a1c24]' : 'bg-slate-100 border-slate-200 text-slate-650 hover:bg-slate-200'
+                }`}
+              >
+                Cerrar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal: Enviar Recibo por WhatsApp (Post-Venta) */}
+      {showWhatsAppModal && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className={`w-full max-w-md p-8 rounded-3xl border shadow-2xl relative ${
+            theme === 'dark' ? 'bg-[#12141c] border-[#20222b] text-slate-100' : 'bg-white border-slate-200 text-slate-800'
+          }`}>
+            <button 
+              type="button"
+              onClick={() => setShowWhatsAppModal(false)}
+              className="absolute top-5 right-5 text-slate-400 hover:text-white bg-transparent border-0 cursor-pointer"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <h3 className="text-md font-bold uppercase tracking-wider mb-4 flex items-center gap-2">
+              <span className="text-emerald-500 text-lg">💬</span> Enviar Recibo por WhatsApp
+            </h3>
+
+            <p className="text-xs text-slate-400 mb-6 leading-relaxed">
+              ¿Desea enviar el recibo de compra al cliente por WhatsApp? Ingrese el número telefónico de 10 dígitos.
+            </p>
+
+            <div className="space-y-4">
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-bold uppercase text-slate-400">Número de WhatsApp (10 dígitos)</label>
+                <input 
+                  type="text" 
+                  placeholder="Ej. 5512345678"
+                  className={`w-full rounded-xl p-3 border text-xs focus:outline-none focus:ring-1 focus:ring-emerald-500 ${
+                    theme === 'dark' ? 'bg-[#0d0e12] border-[#20222b] text-slate-200' : 'bg-slate-50 border-slate-200'
+                  }`}
+                  value={checkoutWhatsAppPhone}
+                  onChange={e => setCheckoutWhatsAppPhone(e.target.value.replace(/\D/g, ''))}
+                />
+              </div>
+            </div>
+
+            <div className="mt-8 flex justify-end gap-3">
+              <button 
+                type="button" 
+                onClick={() => setShowWhatsAppModal(false)}
+                className={`py-3 px-6 rounded-xl border font-bold text-xs cursor-pointer active:scale-95 transition-all ${
+                  theme === 'dark' ? 'bg-transparent border-[#20222b] text-slate-400 hover:bg-[#1a1c24]' : 'bg-slate-100 border-slate-200 text-slate-655 hover:bg-slate-200'
+                }`}
+              >
+                Omitir
+              </button>
+              <button 
+                type="button"
+                onClick={() => {
+                  const cleanedPhone = checkoutWhatsAppPhone.replace(/\D/g, '');
+                  const phoneWithCountry = cleanedPhone.length === 10 ? `52${cleanedPhone}` : cleanedPhone;
+                  window.open(`https://wa.me/${phoneWithCountry}?text=${checkoutWhatsAppMessage}`, '_blank');
+                  setShowWhatsAppModal(false);
+                }}
+                className="bg-emerald-500 hover:bg-emerald-400 text-slate-950 py-3 px-6 rounded-xl border-0 font-bold text-xs cursor-pointer shadow-lg active:scale-95 transition-all"
+              >
+                Enviar por WhatsApp
               </button>
             </div>
           </div>

@@ -803,6 +803,33 @@ app.post('/api/v1/auth/autorizar-accion', async (req, res) => {
   }
 });
 
+// GET /api/v1/inventario/kardex — Listar movimientos de Kardex
+app.get('/api/v1/inventario/kardex', async (req, res) => {
+  try {
+    const { desde, hasta, productoId } = req.query;
+    const inicio = desde ? new Date(String(desde)) : undefined;
+    const fin = hasta ? new Date(String(hasta)) : undefined;
+    if (fin) fin.setHours(23, 59, 59, 999);
+
+    const movimientos = await prisma.kardexMovimiento.findMany({
+      where: {
+        ...(productoId ? { productoId: String(productoId) } : {}),
+        creadoAt: {
+          ...(inicio ? { gte: inicio } : {}),
+          ...(fin ? { lte: fin } : {})
+        }
+      },
+      include: {
+        producto: { select: { nombre: true, sku: true } },
+        sucursal: { select: { nombre: true } },
+        usuario: { select: { nombre: true } }
+      },
+      orderBy: { creadoAt: 'desc' }
+    });
+    res.json(movimientos);
+  } catch (e: any) { res.status(500).json({ error: e.message }); }
+});
+
 // POST /api/v1/inventario/traspaso
 app.post('/api/v1/inventario/traspaso', async (req, res) => {
   const { origenSucursalId, destinoSucursalId, usuarioEnviaId, items } = req.body;
@@ -2097,6 +2124,33 @@ app.post('/api/v1/ventas', async (req, res) => {
         }
       }
 
+      if (metodo === 'CREDITO') {
+        if (!clienteId) {
+          throw new Error('Debe seleccionar un cliente para cobro a crédito');
+        }
+        const cliente = await tx.cliente.findUnique({ where: { id: clienteId } });
+        if (!cliente) {
+          throw new Error('Cliente no encontrado para cobro a crédito');
+        }
+        const nuevoSaldo = Number(cliente.saldoDeudor) + Number(total);
+        if (nuevoSaldo > Number(cliente.limiteCredito)) {
+          throw new Error(`Límite de crédito excedido. Disponible: ${Number(cliente.limiteCredito) - Number(cliente.saldoDeudor)}`);
+        }
+        await tx.cliente.update({
+          where: { id: clienteId },
+          data: { saldoDeudor: nuevoSaldo }
+        });
+        await tx.creditoTransaccion.create({
+          data: {
+            clienteId,
+            tipo: 'CARGO',
+            monto: Number(total),
+            concepto: `Cargo por venta folio ${folio}`,
+            ventaId: newVenta.id
+          }
+        });
+      }
+
       return newVenta;
     });
 
@@ -2173,6 +2227,21 @@ app.post('/api/v1/ventas/cancelar', async (req, res) => {
             referencia: venta.folio.split('|')[0],
             observacion: 'Devolución por cancelación de venta'
           }
+        });
+      }
+
+      // Si la venta fue a crédito, revertir saldo del cliente y eliminar transacciones asociadas
+      if (venta.clienteId && (venta.folio.endsWith('|CREDITO') || venta.folio.includes('|CREDITO'))) {
+        const cl = await tx.cliente.findUnique({ where: { id: venta.clienteId } });
+        if (cl) {
+          const nuevoSaldo = Math.max(0, Number(cl.saldoDeudor) - Number(venta.total));
+          await tx.cliente.update({
+            where: { id: venta.clienteId },
+            data: { saldoDeudor: nuevoSaldo }
+          });
+        }
+        await tx.creditoTransaccion.deleteMany({
+          where: { ventaId: venta.id }
         });
       }
 
@@ -2338,7 +2407,251 @@ app.post('/api/v1/turnos/cerrar', async (req, res) => {
   }
 });
 
+
+// ==========================================
+// MÓDULO CRM — Clientes y Crédito
+// ==========================================
+
+// GET /api/v1/clientes — Listar todos los clientes
+app.get('/api/v1/clientes', async (req, res) => {
+  try {
+    const { q } = req.query;
+    const clientes = await prisma.cliente.findMany({
+      where: {
+        activo: true,
+        ...(q ? {
+          OR: [
+            { nombre: { contains: String(q), mode: 'insensitive' } },
+            { telefono: { contains: String(q), mode: 'insensitive' } },
+            { rfc: { contains: String(q), mode: 'insensitive' } },
+          ]
+        } : {})
+      },
+      orderBy: { nombre: 'asc' }
+    });
+    res.json(clientes);
+  } catch (e: any) { res.status(500).json({ error: e.message }); }
+});
+
+// POST /api/v1/clientes — Crear cliente
+app.post('/api/v1/clientes', async (req, res) => {
+  try {
+    const { nombre, telefono, email, direccion, rfc, razonSocial, regimenFiscal, codigoPostal, direccionFiscal, limiteCredito } = req.body;
+    if (!nombre) return res.status(400).json({ error: 'El nombre es requerido' });
+    const cliente = await prisma.cliente.create({
+      data: { nombre, telefono, email, direccion, rfc, razonSocial, regimenFiscal, codigoPostal, direccionFiscal, limiteCredito: Number(limiteCredito || 0) }
+    });
+    res.json(cliente);
+  } catch (e: any) { res.status(500).json({ error: e.message }); }
+});
+
+// PUT /api/v1/clientes/:id — Actualizar cliente
+app.put('/api/v1/clientes/:id', async (req, res) => {
+  try {
+    const { nombre, telefono, email, direccion, rfc, razonSocial, regimenFiscal, codigoPostal, direccionFiscal, limiteCredito, activo } = req.body;
+    const cliente = await prisma.cliente.update({
+      where: { id: req.params.id },
+      data: { nombre, telefono, email, direccion, rfc, razonSocial, regimenFiscal, codigoPostal, direccionFiscal, limiteCredito: limiteCredito !== undefined ? Number(limiteCredito) : undefined, activo }
+    });
+    res.json(cliente);
+  } catch (e: any) { res.status(500).json({ error: e.message }); }
+});
+
+// DELETE /api/v1/clientes/:id — Desactivar cliente (soft delete)
+app.delete('/api/v1/clientes/:id', async (req, res) => {
+  try {
+    await prisma.cliente.update({ where: { id: req.params.id }, data: { activo: false } });
+    res.json({ success: true });
+  } catch (e: any) { res.status(500).json({ error: e.message }); }
+});
+
+// GET /api/v1/clientes/:id — Detalle de cliente
+app.get('/api/v1/clientes/:id', async (req, res) => {
+  try {
+    const cliente = await prisma.cliente.findUnique({ where: { id: req.params.id } });
+    if (!cliente) return res.status(404).json({ error: 'Cliente no encontrado' });
+    res.json(cliente);
+  } catch (e: any) { res.status(500).json({ error: e.message }); }
+});
+
+// GET /api/v1/clientes/:id/historial — Historial de ventas y transacciones de crédito
+app.get('/api/v1/clientes/:id/historial', async (req, res) => {
+  try {
+    const { limit = '20' } = req.query;
+    const [ventas, transacciones, cliente] = await Promise.all([
+      prisma.venta.findMany({
+        where: { clienteId: req.params.id },
+        include: { detalles: { include: { producto: { select: { nombre: true, sku: true } } } } },
+        orderBy: { creadoAt: 'desc' },
+        take: Number(limit)
+      }),
+      prisma.creditoTransaccion.findMany({
+        where: { clienteId: req.params.id },
+        orderBy: { creadoAt: 'desc' },
+        take: Number(limit)
+      }),
+      prisma.cliente.findUnique({ where: { id: req.params.id } })
+    ]);
+    res.json({ cliente, ventas, transacciones });
+  } catch (e: any) { res.status(500).json({ error: e.message }); }
+});
+
+// POST /api/v1/clientes/:id/abono — Registrar abono al saldo del cliente
+app.post('/api/v1/clientes/:id/abono', async (req, res) => {
+  try {
+    const { monto, concepto } = req.body;
+    if (!monto || Number(monto) <= 0) return res.status(400).json({ error: 'Monto inválido' });
+    const result = await prisma.$transaction(async (tx) => {
+      const cliente = await tx.cliente.findUnique({ where: { id: req.params.id } });
+      if (!cliente) throw new Error('Cliente no encontrado');
+      const nuevoSaldo = Math.max(0, Number(cliente.saldoDeudor) - Number(monto));
+      const [clienteActualizado, transaccion] = await Promise.all([
+        tx.cliente.update({ where: { id: req.params.id }, data: { saldoDeudor: nuevoSaldo } }),
+        tx.creditoTransaccion.create({
+          data: { clienteId: req.params.id, tipo: 'ABONO', monto: Number(monto), concepto: concepto || 'Abono en efectivo' }
+        })
+      ]);
+      return { cliente: clienteActualizado, transaccion };
+    });
+    res.json(result);
+  } catch (e: any) { res.status(500).json({ error: e.message }); }
+});
+
+// ==========================================
+// MÓDULO REPORTES
+// ==========================================
+
+// GET /api/v1/reportes/ventas-dia — Ventas del día agrupadas por hora
+app.get('/api/v1/reportes/ventas-dia', async (req, res) => {
+  try {
+    const { fecha } = req.query;
+    const dia = fecha ? new Date(String(fecha)) : new Date();
+    const inicio = new Date(dia); inicio.setHours(0, 0, 0, 0);
+    const fin = new Date(dia); fin.setHours(23, 59, 59, 999);
+    const ventas = await prisma.venta.findMany({
+      where: { creadoAt: { gte: inicio, lte: fin } },
+      select: { total: true, creadoAt: true, id: true }
+    });
+    // Agrupar por hora
+    const porHora: Record<number, { total: number; tickets: number }> = {};
+    for (let h = 6; h <= 22; h++) porHora[h] = { total: 0, tickets: 0 };
+    ventas.forEach(v => {
+      const hora = new Date(v.creadoAt).getHours();
+      if (porHora[hora]) { porHora[hora].total += Number(v.total); porHora[hora].tickets += 1; }
+    });
+    const totalDia = ventas.reduce((s, v) => s + Number(v.total), 0);
+    res.json({ porHora, totalDia, tickets: ventas.length, ticketPromedio: ventas.length > 0 ? totalDia / ventas.length : 0 });
+  } catch (e: any) { res.status(500).json({ error: e.message }); }
+});
+
+// GET /api/v1/reportes/ventas-periodo — Ventas por rango de fechas
+app.get('/api/v1/reportes/ventas-periodo', async (req, res) => {
+  try {
+    const { desde, hasta } = req.query;
+    const inicio = desde ? new Date(String(desde)) : new Date(new Date().setDate(new Date().getDate() - 30));
+    const fin = hasta ? new Date(String(hasta)) : new Date();
+    fin.setHours(23, 59, 59, 999);
+    const ventas = await prisma.venta.findMany({
+      where: { creadoAt: { gte: inicio, lte: fin } },
+      select: { total: true, subtotal: true, descuento: true, creadoAt: true, folio: true, id: true, usuario: { select: { nombre: true } } },
+      orderBy: { creadoAt: 'desc' }
+    });
+    // Agrupar por día
+    const porDia: Record<string, { total: number; tickets: number }> = {};
+    ventas.forEach(v => {
+      const dia = new Date(v.creadoAt).toISOString().split('T')[0];
+      if (!porDia[dia]) porDia[dia] = { total: 0, tickets: 0 };
+      porDia[dia].total += Number(v.total);
+      porDia[dia].tickets += 1;
+    });
+    const totalPeriodo = ventas.reduce((s, v) => s + Number(v.total), 0);
+    res.json({ ventas, porDia, totalPeriodo, tickets: ventas.length, ticketPromedio: ventas.length > 0 ? totalPeriodo / ventas.length : 0 });
+  } catch (e: any) { res.status(500).json({ error: e.message }); }
+});
+
+// GET /api/v1/reportes/top-productos — Top productos más vendidos
+app.get('/api/v1/reportes/top-productos', async (req, res) => {
+  try {
+    const { desde, hasta, limit = '10' } = req.query;
+    const inicio = desde ? new Date(String(desde)) : new Date(new Date().setDate(new Date().getDate() - 30));
+    const fin = hasta ? new Date(String(hasta)) : new Date();
+    fin.setHours(23, 59, 59, 999);
+    const detalles = await prisma.detalleVenta.findMany({
+      where: { venta: { creadoAt: { gte: inicio, lte: fin } } },
+      include: { producto: { select: { nombre: true, sku: true, precio: true } } }
+    });
+    // Agrupar por producto
+    const agrupado: Record<string, { nombre: string; sku: string; unidades: number; ingresos: number }> = {};
+    detalles.forEach(d => {
+      const id = d.productoId;
+      if (!agrupado[id]) agrupado[id] = { nombre: d.producto.nombre, sku: d.producto.sku, unidades: 0, ingresos: 0 };
+      agrupado[id].unidades += Number(d.cantidad);
+      agrupado[id].ingresos += Number(d.subtotal);
+    });
+    const top = Object.entries(agrupado)
+      .map(([id, v]) => ({ id, ...v }))
+      .sort((a, b) => b.ingresos - a.ingresos)
+      .slice(0, Number(limit));
+    res.json(top);
+  } catch (e: any) { res.status(500).json({ error: e.message }); }
+});
+
+// GET /api/v1/reportes/por-cajero — Ventas agrupadas por cajero
+app.get('/api/v1/reportes/por-cajero', async (req, res) => {
+  try {
+    const { desde, hasta } = req.query;
+    const inicio = desde ? new Date(String(desde)) : new Date(new Date().setDate(new Date().getDate() - 30));
+    const fin = hasta ? new Date(String(hasta)) : new Date();
+    fin.setHours(23, 59, 59, 999);
+    const ventas = await prisma.venta.findMany({
+      where: { creadoAt: { gte: inicio, lte: fin } },
+      select: { total: true, usuarioId: true, usuario: { select: { nombre: true, rol: true } } }
+    });
+    const porCajero: Record<string, { nombre: string; rol: string; tickets: number; total: number }> = {};
+    ventas.forEach(v => {
+      const id = v.usuarioId;
+      if (!porCajero[id]) porCajero[id] = { nombre: v.usuario.nombre, rol: v.usuario.rol, tickets: 0, total: 0 };
+      porCajero[id].tickets += 1;
+      porCajero[id].total += Number(v.total);
+    });
+    res.json(Object.entries(porCajero).map(([id, v]) => ({ id, ...v })).sort((a, b) => b.total - a.total));
+  } catch (e: any) { res.status(500).json({ error: e.message }); }
+});
+
+// GET /api/v1/reportes/corte-caja/:turnoId — Resumen detallado de turno
+app.get('/api/v1/reportes/corte-caja/:turnoId', async (req, res) => {
+  try {
+    const turno = await prisma.turnoCaja.findUnique({
+      where: { id: req.params.turnoId },
+      include: { flujos: true, usuario: { select: { nombre: true } } }
+    });
+    if (!turno) return res.status(404).json({ error: 'Turno no encontrado' });
+    const ventas = await prisma.venta.findMany({
+      where: { usuarioId: turno.usuarioId, creadoAt: { gte: turno.abiertoAt, ...(turno.cerradoAt ? { lte: turno.cerradoAt } : {}) } },
+      select: { total: true, folio: true, creadoAt: true }
+    });
+    const totalVentas = ventas.reduce((s, v) => s + Number(v.total), 0);
+    const ingresosFlujo = turno.flujos.filter(f => f.tipo === 'INGRESO').reduce((s, f) => s + Number(f.monto), 0);
+    const egresosFlujo = turno.flujos.filter(f => f.tipo === 'EGRESO').reduce((s, f) => s + Number(f.monto), 0);
+    const efectivoTeorico = Number(turno.fondoInicial) + totalVentas + ingresosFlujo - egresosFlujo;
+    res.json({ turno, ventas, totalVentas, tickets: ventas.length, ticketPromedio: ventas.length > 0 ? totalVentas / ventas.length : 0, flujos: turno.flujos, ingresosFlujo, egresosFlujo, fondoInicial: Number(turno.fondoInicial), efectivoTeorico, efectivoDeclarado: turno.efectivoCierre ? Number(turno.efectivoCierre) : null, diferencia: turno.efectivoCierre ? Number(turno.efectivoCierre) - efectivoTeorico : null });
+  } catch (e: any) { res.status(500).json({ error: e.message }); }
+});
+
+// GET /api/v1/reportes/cuentas-por-cobrar — Total de crédito pendiente
+app.get('/api/v1/reportes/cuentas-por-cobrar', async (req, res) => {
+  try {
+    const clientes = await prisma.cliente.findMany({
+      where: { activo: true, saldoDeudor: { gt: 0 } },
+      orderBy: { saldoDeudor: 'desc' }
+    });
+    const total = clientes.reduce((s, c) => s + Number(c.saldoDeudor), 0);
+    res.json({ clientes, total, count: clientes.length });
+  } catch (e: any) { res.status(500).json({ error: e.message }); }
+});
+
 seedDatabase().then(() => {
+
   app.listen(PORT, () => {
     console.log(`🚀 Servidor POS backend corriendo en el puerto ${PORT}`);
   });

@@ -290,21 +290,43 @@ model FacturaCFDI {
 }
 
 model Cliente {
-  id              String       @id @default(uuid())
+  id              String               @id @default(uuid())
   nombre          String
   telefono        String?
+  email           String?
   direccion       String?
-  limiteCredito   Decimal      @db.Decimal(10, 2) @default(0)
-  saldoDeudor     Decimal      @db.Decimal(10, 2) @default(0)
+  limiteCredito   Decimal              @db.Decimal(10, 2) @default(0)
+  saldoDeudor     Decimal              @db.Decimal(10, 2) @default(0)
   rfc             String?
   razonSocial     String?
   regimenFiscal   String?
   codigoPostal    String?
   direccionFiscal String?
-  creadoAt        DateTime     @default(now())
+  activo          Boolean              @default(true)
+  creadoAt        DateTime             @default(now())
   
   ventas          Venta[]
   cotizaciones    Cotizacion[]
+  transacciones   CreditoTransaccion[]
+}
+
+enum TipoCredito {
+  CARGO
+  ABONO
+}
+
+model CreditoTransaccion {
+  id          String       @id @default(uuid())
+  clienteId   String
+  cliente     Cliente      @relation(fields: [clienteId], references: [id])
+  tipo        TipoCredito
+  monto       Decimal      @db.Decimal(10, 2)
+  concepto    String
+  ventaId     String?
+  creadoAt    DateTime     @default(now())
+
+  @@index([clienteId])
+  @@index([creadoAt])
 }
 
 model Proveedor {

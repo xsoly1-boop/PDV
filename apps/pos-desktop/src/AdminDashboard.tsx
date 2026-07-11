@@ -7,6 +7,7 @@ import {
   Wrench, Database, Download, Upload, Play, RefreshCw, Printer
 } from 'lucide-react';
 import { API_V1 } from './config';
+import { exportKardexCSV } from './services/exportUtils';
 
 interface CompanyConfig {
   businessName: string;
@@ -1190,12 +1191,24 @@ export default function AdminDashboard({ currentUser, theme, onClose, config: in
             <div className="space-y-6 animate-fadeIn">
               <div className="flex justify-between items-center">
                 <h2 className="text-lg font-bold uppercase tracking-wider">Catálogo de Artículos</h2>
-                <button 
-                  onClick={() => { setCurrentProduct({}); setShowProductModal(true); }}
-                  className="bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold px-4 py-2.5 rounded-xl shadow-md flex items-center gap-2 border-0 cursor-pointer transition-all active:scale-95"
-                >
-                  <PlusCircle className="w-5 h-5" /> Agregar Artículo
-                </button>
+                <div className="flex gap-3">
+                  <button 
+                    onClick={() => exportKardexCSV()}
+                    className={`font-bold px-4 py-2.5 rounded-xl border flex items-center gap-2 cursor-pointer transition-all active:scale-95 ${
+                      theme === 'dark' 
+                        ? 'bg-[#1d1f2b] border-[#2d2f3d] text-slate-305 hover:bg-[#252836]' 
+                        : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50 shadow-sm'
+                    }`}
+                  >
+                    <Download className="w-5 h-5 text-emerald-500" /> Exportar Kardex
+                  </button>
+                  <button 
+                    onClick={() => { setCurrentProduct({}); setShowProductModal(true); }}
+                    className="bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold px-4 py-2.5 rounded-xl shadow-md flex items-center gap-2 border-0 cursor-pointer transition-all active:scale-95"
+                  >
+                    <PlusCircle className="w-5 h-5" /> Agregar Artículo
+                  </button>
+                </div>
               </div>
 
               {/* Filter / Search Bar */}
