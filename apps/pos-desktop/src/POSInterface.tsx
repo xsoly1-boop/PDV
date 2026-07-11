@@ -325,6 +325,7 @@ export default function POSInterface() {
   const [showImportQuote, setShowImportQuote] = useState(false);
   const [importQuoteCode, setImportQuoteCode] = useState('');
   const [showSaveQuoteModal, setShowSaveQuoteModal] = useState(false);
+  const [savingQuote, setSavingQuote] = useState(false);
   const [quoteClientName, setQuoteClientName] = useState('Público General');
   const [savedQuoteResult, setSavedQuoteResult] = useState<any | null>(null);
   const [showSuccessQuoteModal, setShowSuccessQuoteModal] = useState(false);
@@ -911,7 +912,8 @@ export default function POSInterface() {
   };
 
   const handleSaveQuote = async () => {
-    if (cart.length === 0) return;
+    if (cart.length === 0 || savingQuote) return;
+    setSavingQuote(true);
     try {
       const response = await fetch(`${API_V1}/cotizaciones`, {
         method: 'POST',
@@ -941,6 +943,8 @@ export default function POSInterface() {
       fetchActiveQuotes();
     } catch (e: any) {
       alert(`Error al guardar cotización: ${e.message}\n\n[Configuración API_V1: ${API_V1}]`);
+    } finally {
+      setSavingQuote(false);
     }
   };
 
@@ -2430,9 +2434,10 @@ export default function POSInterface() {
                 </button>
                 <button
                   onClick={handleSaveQuote}
-                  className="flex-1 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black py-3 rounded-xl transition-colors cursor-pointer border-0 text-sm"
+                  disabled={savingQuote}
+                  className="flex-1 bg-amber-500 hover:bg-amber-400 disabled:bg-slate-800 disabled:text-slate-500 text-slate-950 font-black py-3 rounded-xl transition-colors cursor-pointer border-0 text-sm"
                 >
-                  Guardar Cotización
+                  {savingQuote ? 'Guardando...' : 'Guardar Cotización'}
                 </button>
               </div>
             </div>

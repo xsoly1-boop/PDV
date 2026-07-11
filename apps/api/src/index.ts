@@ -310,9 +310,9 @@ app.post('/api/v1/cotizaciones', async (req, res) => {
     const codigoCorto = Math.floor(1000 + Math.random() * 9000).toString();
     const folio = `COT-${Date.now()}-${codigoCorto}`;
     
-    // La cotización expira en 30 minutos
+    // La cotización expira en 24 horas (1440 minutos)
     const expiraAt = new Date();
-    expiraAt.setMinutes(expiraAt.getMinutes() + 30);
+    expiraAt.setMinutes(expiraAt.getMinutes() + 1440);
 
     // Obtener los productos involucrados para calcular costos/totales (buscando por ID o por SKU)
     const productoIds = items.map(item => item.productoId);
