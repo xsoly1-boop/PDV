@@ -1576,7 +1576,7 @@ ${articulosTexto}
             <Wrench className="w-8 h-8" />
           </div>
 
-          <h2 className={`text-xl font-bold uppercase tracking-wider ${theme === 'dark' ? 'text-slate-100' : 'text-slate-900'}`}>APEX POS</h2>
+          <h2 className={`text-xl font-bold uppercase tracking-wider ${theme === 'dark' ? 'text-slate-100' : 'text-slate-900'}`}>VANTE POS</h2>
           <p className="text-xs text-slate-400 mt-1 mb-6">Ingresar PIN de Acceso Rápido</p>
 
           {/* Círculos del PIN */}
@@ -2375,7 +2375,7 @@ ${articulosTexto}
           )}
         </div>
         <div>
-          <span>Apex POS v2.0 • {!isOnline ? '🔴 Fuera de línea' : '🟢 En línea'}</span>
+          <span>Vante POS v2.0 • {!isOnline ? '🔴 Fuera de línea' : '🟢 En línea'}</span>
         </div>
       </footer>
 
@@ -2452,7 +2452,7 @@ ${articulosTexto}
               </button>
             </div>
             <p className="text-xs text-slate-400 mb-6">
-              Elige cómo se conectará esta terminal a la base de datos de Apex POS:
+              Elige cómo se conectará esta terminal a la base de datos de Vante POS:
             </p>
             <div className="space-y-4">
               <div className="space-y-2">

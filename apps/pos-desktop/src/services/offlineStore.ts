@@ -63,13 +63,13 @@ export interface OfflineTurno {
   };
 }
 
-class ApexOfflineDatabase extends Dexie {
+class VanteOfflineDatabase extends Dexie {
   productos!: Table<LocalProducto>;
   ventasQueue!: Table<OfflineVenta>;
   turnosQueue!: Table<OfflineTurno>;
 
   constructor() {
-    super('ApexOfflineDatabase');
+    super('VanteOfflineDatabase');
     // Actualizado a versión 2 para incorporar soporte offline de turnos y caja
     this.version(2).stores({
       productos: 'id, nombre, sku, precio, stock',
@@ -79,7 +79,7 @@ class ApexOfflineDatabase extends Dexie {
   }
 }
 
-export const db = new ApexOfflineDatabase();
+export const db = new VanteOfflineDatabase();
 
 export const offlineStore = {
   // --- MÉTODOS DE PRODUCTOS ---

@@ -1,7 +1,7 @@
 {
   "name": "eleventa-converter-gui",
   "version": "1.0.0",
-  "description": "GUI tool to convert Firebird .fdb to Apex JSON",
+  "description": "GUI tool to convert Firebird .fdb to Vante JSON",
   "main": "main.js",
   "scripts": {
     "dev": "vite",

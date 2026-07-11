@@ -13,12 +13,12 @@ export interface LocalKardexMovimiento {
 
 export const LocalDb = {
   getQueue(): LocalKardexMovimiento[] {
-    const data = localStorage.getItem('apex_pos_sync_queue');
+    const data = localStorage.getItem('vante_pos_sync_queue');
     return data ? JSON.parse(data) : [];
   },
 
   saveQueue(queue: LocalKardexMovimiento[]) {
-    localStorage.setItem('apex_pos_sync_queue', JSON.stringify(queue));
+    localStorage.setItem('vante_pos_sync_queue', JSON.stringify(queue));
   },
 
   addToQueue(movimiento: Omit<LocalKardexMovimiento, 'sincronizado'>) {

@@ -549,7 +549,7 @@ export default function AdminDashboard({ currentUser, theme, onClose, config: in
       
       const downloadAnchor = document.createElement('a');
       downloadAnchor.setAttribute('href', jsonString);
-      downloadAnchor.setAttribute('download', `respaldo_apex_pos_${new Date().toISOString().split('T')[0]}.json`);
+      downloadAnchor.setAttribute('download', `respaldo_vante_pos_${new Date().toISOString().split('T')[0]}.json`);
       document.body.appendChild(downloadAnchor);
       downloadAnchor.click();
       downloadAnchor.remove();
@@ -570,7 +570,7 @@ export default function AdminDashboard({ currentUser, theme, onClose, config: in
       try {
         const rawData = JSON.parse(event.target?.result as string);
         if (!rawData.products || !rawData.config) {
-          throw new Error('El archivo no contiene un formato de respaldo válido de Apex POS.');
+          throw new Error('El archivo no contiene un formato de respaldo válido de Vante POS.');
         }
         
         onConfigChange(rawData.config);
@@ -2446,7 +2446,7 @@ export default function AdminDashboard({ currentUser, theme, onClose, config: in
                   </div>
 
                   <p className="text-xs text-slate-500 mb-6">
-                    Carga el archivo <strong>`apex_import_eleventa.json`</strong> generado con nuestra herramienta de macOS para migrar catálogo, stock y saldos deudores de clientes.
+                    Carga el archivo <strong>`vante_import_eleventa.json`</strong> generado con nuestra herramienta de macOS para migrar catálogo, stock y saldos deudores de clientes.
                   </p>
 
                   <label className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3 px-4 rounded-xl border-0 cursor-pointer text-xs flex items-center justify-center gap-2 transition-all active:scale-95 text-center">

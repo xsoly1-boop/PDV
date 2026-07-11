@@ -148,17 +148,17 @@ function App() {
   };
 
   const outputFolder = migrationType === 'eleventa' 
-    ? (outPath ? outPath.replace('/apex_import_eleventa.json', '') : null)
-    : (sicarOutPath ? sicarOutPath.replace('/apex_import_sicar.json', '') : null);
+    ? (outPath ? outPath.replace('/vante_import_eleventa.json', '') : null)
+    : (sicarOutPath ? sicarOutPath.replace('/vante_import_sicar.json', '') : null);
 
-  const importFileName = migrationType === 'eleventa' ? 'apex_import_eleventa.json' : 'apex_import_sicar.json';
+  const importFileName = migrationType === 'eleventa' ? 'vante_import_eleventa.json' : 'vante_import_sicar.json';
 
   return (
     <div className="app">
       <div className="header">
         <div className="logo">🔄</div>
         <div>
-          <h1>Conversor de Base de Datos → Apex POS</h1>
+          <h1>Conversor de Base de Datos → Vante POS</h1>
           <p className="subtitle">Migra de forma gráfica catálogos, stock y clientes a tu nuevo sistema</p>
         </div>
       </div>
@@ -281,9 +281,9 @@ function App() {
       )}
 
       <div className="instructions">
-        <strong>¿Cómo importar en Apex POS?</strong>
+        <strong>¿Cómo importar en Vante POS?</strong>
         <ol>
-          <li>Abre Apex POS → Panel de Administración → Mantenimiento</li>
+          <li>Abre Vante POS → Panel de Administración → Mantenimiento</li>
           <li>Haz clic en <strong>{migrationType === 'eleventa' ? '"Cargar Archivo de Migración Eleventa"' : '"Cargar Archivo de Migración Eleventa"'}</strong></li>
           <li>Selecciona el archivo <strong>{importFileName}</strong></li>
           <li>El sistema importará automáticamente todo: catálogo, ventas e inventario</li>

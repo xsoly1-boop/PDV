@@ -40,7 +40,7 @@ const toBase64 = (str: string) => {
 
 // ─── Constants ────────────────────────────────────────────────────────────
 const API_URL = 'https://pdventa.onrender.com/api/v1';
-const STORAGE_USER_KEY = '@apexpos_user';
+const STORAGE_USER_KEY = '@vantepos_user';
 
 // ─── Interfaces ───────────────────────────────────────────────────────────
 interface AuthUser {
@@ -199,7 +199,7 @@ function LoginScreen({ onLogin }: { onLogin: (user: AuthUser) => void }) {
       <StatusBar style="light" />
       <View style={loginStyles.logoBox}>
         <Text style={loginStyles.logo}>⬡</Text>
-        <Text style={loginStyles.brand}>APEX POS MÓVIL</Text>
+        <Text style={loginStyles.brand}>VANTE POS MÓVIL</Text>
         <Text style={loginStyles.tagline}>Acceso de Vendedor Autorizado</Text>
       </View>
 
@@ -280,7 +280,7 @@ function MainApp({ user, onLogout }: { user: AuthUser; onLogout: () => void }) {
           PermissionsAndroid.PERMISSIONS.CAMERA,
           {
             title: 'Permiso de Cámara',
-            message: 'Apex requiere acceso a la cámara para escanear códigos de barras.',
+            message: 'Vante requiere acceso a la cámara para escanear códigos de barras.',
             buttonNeutral: 'Preguntar Después',
             buttonNegative: 'Cancelar',
             buttonPositive: 'OK',
@@ -420,7 +420,7 @@ function MainApp({ user, onLogout }: { user: AuthUser; onLogout: () => void }) {
       let ticket = "";
       // Formatear cabecera ESC/POS
       ticket += "\x1b\x61\x01"; // Centrar
-      ticket += "APEX POS - MOVIL\n";
+      ticket += "VANTE POS - MOVIL\n";
       ticket += "================================\n";
       ticket += "\x1b\x61\x00"; // Izquierda
       ticket += `Folio: ${payload.folio}\n`;
@@ -695,7 +695,7 @@ function MainApp({ user, onLogout }: { user: AuthUser; onLogout: () => void }) {
     }
     const clean = whatsAppPhone.replace(/\D/g, '');
     const phone = clean.startsWith('52') ? clean : `521${clean}`;
-    const text = `¡Hola! Te compartimos tu cotización de *Apex POS Móvil*:\n\n*Folio:* ${quote.folio}\n*Código de cobro:* *${quote.codigoCorto}*\n\nPresenta el código *${quote.codigoCorto}* en caja para pagar. ¡Gracias!`;
+    const text = `¡Hola! Te compartimos tu cotización de *Vante POS Móvil*:\n\n*Folio:* ${quote.folio}\n*Código de cobro:* *${quote.codigoCorto}*\n\nPresenta el código *${quote.codigoCorto}* en caja para pagar. ¡Gracias!`;
     Linking.openURL(`https://wa.me/${phone}?text=${encodeURIComponent(text)}`).catch(() =>
       Alert.alert('Error', 'No se pudo abrir WhatsApp.')
     );
@@ -717,7 +717,7 @@ function MainApp({ user, onLogout }: { user: AuthUser; onLogout: () => void }) {
       {/* Header */}
       <View style={styles.header}>
         <View style={{ flex: 1 }}>
-          <Text style={styles.headerTitle}>APEX MÓVIL</Text>
+          <Text style={styles.headerTitle}>VANTE MÓVIL</Text>
           <Text style={styles.headerSubtitle}>👤 {user.nombre} · {user.role.toUpperCase()}</Text>
         </View>
         <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}>
@@ -1700,7 +1700,7 @@ function PrinterConfigView({ theme, onBack }: PrinterConfigViewProps) {
     let testTicket = "";
     testTicket += "\x1b\x61\x01"; // Centrar
     testTicket += "PRUEBA DE CONEXION\n";
-    testTicket += "APEX POS MOVIL - TEST OK\n";
+    testTicket += "VANTE POS MOVIL - TEST OK\n";
     testTicket += "================================\n";
     testTicket += `Fecha: ${new Date().toLocaleDateString()}\n`;
     testTicket += "--------------------------------\n";

@@ -32,8 +32,8 @@
     "vite": "^5.1.4"
   },
   "build": {
-    "appId": "com.apex.pos",
-    "productName": "ApexPOS",
+    "appId": "com.vante.pos",
+    "productName": "VantePOS",
     "electronVersion": "30.0.0",
     "directories": {
       "output": "dist-electron"

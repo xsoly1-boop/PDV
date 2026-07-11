@@ -6,7 +6,7 @@ function createWindow() {
   const win = new BrowserWindow({
     width: 680,
     height: 480,
-    title: 'Conversor Eleventa → Apex POS',
+    title: 'Conversor Eleventa/SICAR → Vante POS',
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
@@ -55,7 +55,7 @@ ipcMain.handle('select-output', async () => {
     buttonLabel: 'Guardar aquí',
   });
   if (canceled || !filePaths || filePaths.length === 0) return null;
-  return path.join(filePaths[0], 'apex_import_eleventa.json');
+  return path.join(filePaths[0], 'vante_import_eleventa.json');
 });
 
 ipcMain.handle('select-sicar-output', async () => {
@@ -65,7 +65,7 @@ ipcMain.handle('select-sicar-output', async () => {
     buttonLabel: 'Guardar aquí',
   });
   if (canceled || !filePaths || filePaths.length === 0) return null;
-  return path.join(filePaths[0], 'apex_import_sicar.json');
+  return path.join(filePaths[0], 'vante_import_sicar.json');
 });
 
 ipcMain.handle('run-conversion', async (event, fdbPath, outPath) => {
@@ -84,7 +84,7 @@ ipcMain.handle('run-conversion', async (event, fdbPath, outPath) => {
 
 ipcMain.handle('run-sicar-conversion', async (event, productsPath, clientsPath, outPath) => {
   const { execFile } = require('child_process');
-  const scriptPath = path.join(__dirname, 'scripts', 'sicar_to_apex.py').replace('app.asar', 'app.asar.unpacked');
+  const scriptPath = path.join(__dirname, 'scripts', 'sicar_to_vante.py').replace('app.asar', 'app.asar.unpacked');
   const pPath = productsPath || "";
   const cPath = clientsPath || "";
   return new Promise((resolve, reject) => {

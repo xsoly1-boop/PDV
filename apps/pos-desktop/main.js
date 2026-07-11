@@ -11,7 +11,7 @@ function createWindow() {
     height: 800,
     minWidth: 1024,
     minHeight: 768,
-    title: 'Apex POS',
+    title: 'Vante POS',
     backgroundColor: '#0d0e12',
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
@@ -107,7 +107,7 @@ ipcMain.handle('print-ticket', async (event, ticketData) => {
         </head>
         <body>
           <div class="text-center">
-            <div class="title">${ticketData.businessName || 'APEX POS'}</div>
+            <div class="title">${ticketData.businessName || 'VANTE POS'}</div>
             ${ticketData.address ? `<div class="subtitle">${ticketData.address}</div>` : ''}
             ${ticketData.phone ? `<div class="subtitle">Tel: ${ticketData.phone}</div>` : ''}
           </div>
