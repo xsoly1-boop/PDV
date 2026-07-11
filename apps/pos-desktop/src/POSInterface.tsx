@@ -348,27 +348,22 @@ export default function POSInterface() {
   const [transferQty, setTransferQty] = useState('1');
 
   // Estados de Autenticación y Tema
-  const [currentUser, setCurrentUser] = useState<{ id?: string; nombre: string; rol: string } | null>(() => {
-    const saved = localStorage.getItem('pos_current_user');
-    return saved ? JSON.parse(saved) : null;
+  const [currentUser, setCurrentUser] = useState<{id: string, nombre: string, rol: string} | null>(() => {
+    // Restaurar sesión directamente desde localStorage al cargar la app
+    // El PIN solo se pide si no hay sesión guardada o la inactividad la limpió
+    try {
+      const saved = localStorage.getItem('pos_current_user');
+      return saved ? JSON.parse(saved) : null;
+    } catch {
+      return null;
+    }
   });
   const [activeTurno, setActiveTurno] = useState<any | null>(null);
   const [showTurnoModal, setShowTurnoModal] = useState(false);
   const [pin, setPin] = useState('');
   const [loginError, setLoginError] = useState('');
-  const [authToken, setAuthToken] = useState<string | null>(() => localStorage.getItem('pos_auth_token'));
   const [showNetworkModal, setShowNetworkModal] = useState(false);
   const [tempApiBaseUrl, setTempApiBaseUrl] = useState('');
-
-  // Restore user from token on component mount
-  useEffect(() => {
-    if (authToken && !currentUser) {
-      const saved = localStorage.getItem('pos_current_user');
-      if (saved) {
-        setCurrentUser(JSON.parse(saved));
-      }
-    }
-  }, [authToken, currentUser]);
 
   // Verificar turno activo de caja (online/offline)
   useEffect(() => {
@@ -486,12 +481,10 @@ export default function POSInterface() {
     const resetTimer = () => {
       if (idleTimer) clearTimeout(idleTimer);
       idleTimer = setTimeout(() => {
-        // Ejecutar cierre de sesión
-        setCurrentUser(null);
+        // Limpiar sesión guardada — el PIN se pedirá al retornar
         localStorage.removeItem('pos_current_user');
-        localStorage.removeItem('pos_auth_token');
-        alert('Sesión cerrada automáticamente por inactividad.');
-        window.location.reload();
+        setCurrentUser(null);
+        alert('Sesión bloqueada por inactividad. Ingresa tu PIN para continuar.');
       }, timeoutMs);
     };
 
@@ -1281,9 +1274,7 @@ export default function POSInterface() {
       if (response.ok && data.usuario) {
         const user = { id: data.usuario.id, nombre: data.usuario.nombre, rol: data.usuario.rol === 'ADMINISTRADOR' ? 'Administrador' : data.usuario.rol === 'CAJERO' ? 'Cajero' : 'Agente Ventas' };
         setCurrentUser(user);
-        const token = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-        setAuthToken(token);
-        localStorage.setItem('pos_auth_token', token);
+        // Guardar sesión directamente en localStorage — se restaura al recargar
         localStorage.setItem('pos_current_user', JSON.stringify(user));
         setPin('');
       } else {
@@ -1804,12 +1795,10 @@ export default function POSInterface() {
             </div>
             <button 
               onClick={() => { 
-                setCurrentUser(null); 
-                setAuthToken(null);
-                localStorage.removeItem('pos_auth_token');
+                setCurrentUser(null);
                 localStorage.removeItem('pos_current_user');
-                setPin(''); 
-                setLoginError(''); 
+                setPin('');
+                setLoginError('');
               }}
               className="text-xs text-rose-500 hover:text-rose-455 hover:bg-rose-500/10 px-2.5 py-1.5 rounded-lg transition-colors bg-transparent border border-transparent hover:border-rose-500/20 cursor-pointer"
               title="Cerrar sesión / Bloquear terminal"
