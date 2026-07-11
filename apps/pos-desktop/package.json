@@ -13,10 +13,10 @@
   },
   "dependencies": {
     "@punto-de-venta/shared-types": "*",
+    "dexie": "^4.0.8",
     "lucide-react": "^1.23.0",
     "react": "^18.2.0",
-    "react-dom": "^18.2.0",
-    "dexie": "^4.0.8"
+    "react-dom": "^18.2.0"
   },
   "devDependencies": {
     "@types/react": "^18.2.56",
@@ -24,7 +24,7 @@
     "@vitejs/plugin-react": "^4.2.1",
     "autoprefixer": "^10.4.17",
     "concurrently": "^10.0.3",
-    "electron": "30.0.0",
+    "electron": "^30.0.0",
     "electron-builder": "^24.13.3",
     "postcss": "^8.4.35",
     "tailwindcss": "^3.4.1",

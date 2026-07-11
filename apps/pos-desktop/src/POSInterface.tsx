@@ -11,6 +11,7 @@ import { SyncService } from './services/SyncService';
 import { offlineStore } from './services/offlineStore';
 import AdminDashboard from './AdminDashboard';
 import QuotesDashboard from './QuotesDashboard';
+import TurnoManager from './TurnoManager';
 import { API_V1, API_BASE_URL } from './config';
 import OnboardingWizard from './OnboardingWizard';
 interface CompanyConfig {
@@ -54,6 +55,8 @@ interface CompanyConfig {
 export default function POSInterface() {
   const [time, setTime] = useState(new Date().toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' }));
   const [searchQuery, setSearchQuery] = useState('');
+  const [isSearchFocused, setIsSearchFocused] = useState(false);
+  const [selectedSearchIndex, setSelectedSearchIndex] = useState(0);
   const [tabs, setTabs] = useState<any[]>(() => {
     const saved = localStorage.getItem('pos_tabs');
     if (saved) return JSON.parse(saved);
@@ -277,6 +280,39 @@ export default function POSInterface() {
     };
   }, []);
 
+  // Atajos de teclado estilo eleventa (F3, F12, ESC)
+  useEffect(() => {
+    const handleGlobalKeyDown = (e: KeyboardEvent) => {
+      // F3: Enfocar buscador de productos
+      if (e.key === 'F3') {
+        e.preventDefault();
+        const searchInput = document.getElementById('pos-search-input');
+        if (searchInput) {
+          searchInput.focus();
+          (searchInput as any).select();
+        }
+      }
+      
+      // F12: Disparar Cobro
+      if (e.key === 'F12') {
+        e.preventDefault();
+        if (cart.length > 0) {
+          setShowCheckoutModal(true);
+        }
+      }
+      
+      // ESC: Cerrar modales activos
+      if (e.key === 'Escape') {
+        setShowCheckoutModal(false);
+        setShowSaveQuoteModal(false);
+        setShowImportQuote(false);
+      }
+    };
+
+    window.addEventListener('keydown', handleGlobalKeyDown);
+    return () => window.removeEventListener('keydown', handleGlobalKeyDown);
+  }, [cart]);
+
   // Estados de Cotizaciones Centralizadas
   const [activeQuotes, setActiveQuotes] = useState<any[]>([]);
   const [loadingQuotes, setLoadingQuotes] = useState(false);
@@ -304,10 +340,12 @@ export default function POSInterface() {
   const [transferQty, setTransferQty] = useState('1');
 
   // Estados de Autenticación y Tema
-  const [currentUser, setCurrentUser] = useState<{ nombre: string; rol: string } | null>(() => {
+  const [currentUser, setCurrentUser] = useState<{ id?: string; nombre: string; rol: string } | null>(() => {
     const saved = localStorage.getItem('pos_current_user');
     return saved ? JSON.parse(saved) : null;
   });
+  const [activeTurno, setActiveTurno] = useState<any | null>(null);
+  const [showTurnoModal, setShowTurnoModal] = useState(false);
   const [pin, setPin] = useState('');
   const [loginError, setLoginError] = useState('');
   const [authToken, setAuthToken] = useState<string | null>(() => localStorage.getItem('pos_auth_token'));
@@ -324,14 +362,30 @@ export default function POSInterface() {
     }
   }, [authToken, currentUser]);
 
-  // Existing effect for persisting currentUser
+  // Verificar turno activo de caja
   useEffect(() => {
-    if (currentUser) {
-      localStorage.setItem('pos_current_user', JSON.stringify(currentUser));
-    } else {
-      localStorage.removeItem('pos_current_user');
-    }
+    const fetchActiveTurno = async () => {
+      if (!currentUser || !currentUser.id) {
+        setActiveTurno(null);
+        return;
+      }
+      try {
+        const response = await fetch(`${API_V1}/turnos/activo/${currentUser.id}`);
+        if (response.ok) {
+          const data = await response.json();
+          setActiveTurno(data);
+          // Si no hay turno abierto, forzar apertura
+          if (!data && (currentUser.rol === 'Administrador' || currentUser.rol === 'Gerente' || currentUser.rol === 'Cajero')) {
+            setShowTurnoModal(true);
+          }
+        }
+      } catch (err) {
+        console.warn('Error al verificar turno de caja:', err);
+      }
+    };
+    fetchActiveTurno();
   }, [currentUser]);
+
   const [theme, setTheme] = useState<'dark' | 'light'>('dark');
   const [currentView, setCurrentView] = useState<'pos' | 'admin' | 'quotes'>('pos');
   const [showOnboarding, setShowOnboarding] = useState(false);
@@ -458,12 +512,12 @@ export default function POSInterface() {
     setCart((prev: any[]) => prev.filter((item: any) => item.id !== id));
   };
 
-  const handleAddToCart = (product: any) => {
+  const handleAddToCart = (product: any, customQty?: number) => {
+    const qtyToAdd = customQty !== undefined ? customQty : 1;
     setCart((prev: any[]) => {
       const existing = prev.find((item: any) => item.sku === product.sku);
       if (existing) {
-        const step = product.unidad === 'metros' ? 0.5 : 1;
-        return prev.map((item: any) => item.sku === product.sku ? { ...item, cantidad: parseFloat((item.cantidad + step).toFixed(3)) } : item);
+        return prev.map((item: any) => item.sku === product.sku ? { ...item, cantidad: parseFloat((item.cantidad + qtyToAdd).toFixed(3)) } : item);
       }
       return [...prev, {
         id: prev.length + 1,
@@ -473,15 +527,52 @@ export default function POSInterface() {
         tipo: product.categoria.toLowerCase(),
         metadata: product.metadata || { marca: 'Genérica', ubicacion: 'Mostrador' },
         precio: product.precio,
-        cantidad: 1,
+        cantidad: qtyToAdd,
         unidad: product.unidad
       }];
     });
   };
 
   const handleSearchKeyDown = async (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter' && searchQuery.trim()) {
-      const query = searchQuery.trim().toLowerCase();
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      setSelectedSearchIndex((prev) => Math.min(prev + 1, products.length - 1));
+      return;
+    }
+    if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setSelectedSearchIndex((prev) => Math.max(prev - 1, 0));
+      return;
+    }
+
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      
+      let rawQuery = searchQuery.trim();
+      let customQty = 1;
+
+      // Parsear multiplicador si existe (ej: "5*7501...")
+      const starIndex = rawQuery.indexOf('*');
+      if (starIndex > 0 && starIndex < rawQuery.length - 1) {
+        const parsedQty = parseFloat(rawQuery.substring(0, starIndex));
+        if (!isNaN(parsedQty) && parsedQty > 0) {
+          customQty = parsedQty;
+          rawQuery = rawQuery.substring(starIndex + 1).trim();
+        }
+      }
+
+      const query = rawQuery.toLowerCase();
+
+      // Si tenemos resultados en la lista flotante y hay un índice seleccionado, agregamos al carrito
+      if (query !== '' && products.length > 0 && selectedSearchIndex >= 0 && selectedSearchIndex < products.length) {
+        const selectedProd = products[selectedSearchIndex];
+        handleAddToCart(selectedProd, customQty);
+        setSearchQuery('');
+        setSelectedSearchIndex(0);
+        return;
+      }
+
+      if (query === '') return;
       
       // 1. Buscar en la lista local de productos ya cargados
       let exactMatch = products.find((p: any) => 
@@ -538,8 +629,9 @@ export default function POSInterface() {
       }
 
       if (exactMatch) {
-        handleAddToCart(exactMatch);
+        handleAddToCart(exactMatch, customQty);
         setSearchQuery('');
+        setSelectedSearchIndex(0);
       } else {
         alert('Ningún producto coincide con el código de barras, SKU o nombre ingresado.');
       }
@@ -960,6 +1052,13 @@ export default function POSInterface() {
 
   const handleCheckout = async (metodoPago: string) => {
     if (cart.length === 0) return;
+
+    if (!activeTurno && (currentUser?.rol === 'Administrador' || currentUser?.rol === 'Gerente' || currentUser?.rol === 'Cajero')) {
+      alert('Operación Bloqueada: Debes abrir el turno de caja antes de realizar ventas.');
+      setShowCheckoutModal(false);
+      setShowTurnoModal(true);
+      return;
+    }
 
     let finalMetodo = metodoPago;
     if (metodoPago === 'MIXTO') {
@@ -1477,6 +1576,7 @@ export default function POSInterface() {
           <div className="relative group">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-500 w-4 h-4 group-focus-within:text-amber-500 transition-colors" />
             <input
+              id="pos-search-input"
               type="text"
               placeholder="Escanear código de barras o escribir SKU/Nombre... (Enter para agregar)"
               className={`w-full rounded-md py-2 pl-8 pr-10 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-all shadow-inner ${
@@ -1485,7 +1585,12 @@ export default function POSInterface() {
                   : 'bg-slate-100 text-slate-900 placeholder-slate-400 border-slate-200'
               }`}
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={(e) => {
+                setSearchQuery(e.target.value);
+                setSelectedSearchIndex(0); // Resetear índice al escribir
+              }}
+              onFocus={() => setIsSearchFocused(true)}
+              onBlur={() => setTimeout(() => setIsSearchFocused(false), 200)}
               onKeyDown={handleSearchKeyDown}
             />
             <div className={`absolute right-2 top-1/2 transform -translate-y-1/2 text-xs px-1 py-0.5 rounded font-mono border ${
@@ -1494,31 +1599,37 @@ export default function POSInterface() {
           </div>
 
           {/* Autocomplete Dropdown Search Results */}
-          {searchQuery.trim() && (
+          {searchQuery.trim() && isSearchFocused && (
             <div className={`absolute left-2 right-2 mt-1 max-h-60 overflow-y-auto rounded-xl border shadow-2xl z-50 ${
               theme === 'dark' ? 'bg-[#13151b] border-[#262836]' : 'bg-white border-slate-250'
             }`}>
-              {products
-                .filter((p: any) => 
-                  p.nombre.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                  p.sku.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                  (p.codigoBarras && p.codigoBarras.includes(searchQuery))
-                )
-                .map((product: any) => (
+              {products.map((product: any, idx: number) => {
+                const isSelected = idx === selectedSearchIndex;
+                return (
                   <div 
                     key={product.id}
                     onClick={() => {
-                      handleAddToCart(product);
+                      let rawQuery = searchQuery.trim();
+                      let customQty = 1;
+                      const starIndex = rawQuery.indexOf('*');
+                      if (starIndex > 0 && starIndex < rawQuery.length - 1) {
+                        const parsedQty = parseFloat(rawQuery.substring(0, starIndex));
+                        if (!isNaN(parsedQty) && parsedQty > 0) {
+                          customQty = parsedQty;
+                        }
+                      }
+                      handleAddToCart(product, customQty);
                       setSearchQuery('');
+                      setSelectedSearchIndex(0);
                     }}
                     className={`flex items-center justify-between px-4 py-2.5 cursor-pointer text-xs transition-colors border-b last:border-b-0 ${
-                      theme === 'dark' 
-                        ? 'border-[#1e202b] hover:bg-slate-800 text-slate-300' 
-                        : 'border-slate-100 hover:bg-slate-50 text-slate-700'
+                      isSelected
+                        ? (theme === 'dark' ? 'bg-[#252837] text-white border-[#383b4f]' : 'bg-slate-100 text-slate-900 border-slate-300')
+                        : (theme === 'dark' ? 'border-[#1e202b] text-slate-300 hover:bg-[#1a1c24]' : 'border-slate-100 text-slate-700 hover:bg-slate-50')
                     }`}
                   >
                     <div>
-                      <p className={`font-bold ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>{product.nombre}</p>
+                      <p className={`font-bold ${isSelected ? 'text-amber-500' : (theme === 'dark' ? 'text-white' : 'text-slate-900')}`}>{product.nombre}</p>
                       <p className="text-[10px] text-slate-500 font-mono mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-0.5">
                         <span>SKU: <span className="text-amber-500 font-bold">{product.sku}</span></span>
                         {product.codigoBarras && (
@@ -1533,12 +1644,9 @@ export default function POSInterface() {
                     </div>
                     <span className="font-mono font-bold text-sm text-amber-500">${product.precio.toFixed(2)}</span>
                   </div>
-                ))}
-              {products.filter((p: any) => 
-                p.nombre.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                p.sku.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                (p.codigoBarras && p.codigoBarras.includes(searchQuery))
-              ).length === 0 && (
+                );
+              })}
+              {products.length === 0 && (
                 <div className="p-4 text-center text-xs text-slate-500">Ningún artículo coincide con tu búsqueda</div>
               )}
             </div>
@@ -1626,6 +1734,18 @@ export default function POSInterface() {
           >
             <Printer className="w-5 h-5" />
           </button>
+
+          {/* Botón de Caja/Turno */}
+          {currentUser && (
+            <button 
+              onClick={() => setShowTurnoModal(true)}
+              className="text-xs text-amber-500 hover:text-amber-400 hover:bg-amber-500/10 px-2.5 py-1.5 rounded-lg transition-colors bg-transparent border border-transparent hover:border-amber-500/20 cursor-pointer font-bold flex items-center gap-1 mr-1"
+              title="Abrir, registrar flujos o cerrar el turno de caja"
+            >
+              <DollarSign className="w-3.5 h-3.5" />
+              Caja
+            </button>
+          )}
 
           {/* Cajero Activo y Botón de Bloqueo */}
           <div className="flex items-center gap-3">
@@ -2523,6 +2643,16 @@ export default function POSInterface() {
             </div>
           </div>
         </div>
+      )}
+      {/* Modal de Control de Caja y Turnos */}
+      {showTurnoModal && currentUser && (
+        <TurnoManager
+          theme={theme}
+          currentUser={currentUser}
+          activeTurno={activeTurno}
+          onTurnoChange={(turno) => setActiveTurno(turno)}
+          onClose={() => setShowTurnoModal(false)}
+        />
       )}
       {/* Modal de Cobro y Medios de Pago */}
       {showCheckoutModal && (

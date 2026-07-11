@@ -71,6 +71,7 @@ model Usuario {
   cotizaciones       Cotizacion[]
   traspasosEnviados  TraspasoMercancia[] @relation("UsuarioEnvia")
   traspasosRecibidos TraspasoMercancia[] @relation("UsuarioRecibe")
+  turnos             TurnoCaja[]
 }
 
 model Sucursal {
@@ -325,4 +326,37 @@ model Categoria {
   creadoAt  DateTime   @default(now())
   
   productos Producto[]
+}
+
+enum EstadoTurno {
+  ABIERTO
+  CERRADO
+}
+
+model TurnoCaja {
+  id              String           @id @default(uuid())
+  usuarioId       String
+  usuario         Usuario          @relation(fields: [usuarioId], references: [id])
+  fondoInicial    Decimal          @db.Decimal(10, 2)
+  efectivoCierre  Decimal?         @db.Decimal(10, 2)
+  estado          EstadoTurno      @default(ABIERTO)
+  observaciones   String?
+  abiertoAt       DateTime         @default(now())
+  cerradoAt       DateTime?
+  flujos          FlujoEfectivo[]
+}
+
+enum TipoFlujo {
+  INGRESO
+  EGRESO
+}
+
+model FlujoEfectivo {
+  id          String    @id @default(uuid())
+  turnoId     String
+  turno       TurnoCaja @relation(fields: [turnoId], references: [id], onDelete: Cascade)
+  tipo        TipoFlujo
+  monto       Decimal   @db.Decimal(10, 2)
+  motivo      String
+  creadoAt    DateTime  @default(now())
 }

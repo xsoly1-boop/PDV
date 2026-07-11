@@ -2130,6 +2130,156 @@ app.post('/api/v1/ventas/cancelar', async (req, res) => {
   }
 });
 
+// --- ENPOINTS DE CONTROL DE TURNO Y CAJA ---
+
+// Obtener turno activo
+app.get('/api/v1/turnos/activo/:usuarioId', async (req, res) => {
+  try {
+    const { usuarioId } = req.params;
+    const turno = await prisma.turnoCaja.findFirst({
+      where: { usuarioId, estado: 'ABIERTO' },
+      include: { flujos: true }
+    });
+    res.json(turno);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Abrir turno
+app.post('/api/v1/turnos/abrir', async (req, res) => {
+  try {
+    const { usuarioId, fondoInicial } = req.body;
+    
+    // Verificar si ya tiene un turno abierto
+    const existente = await prisma.turnoCaja.findFirst({
+      where: { usuarioId, estado: 'ABIERTO' }
+    });
+    if (existente) {
+      return res.status(400).json({ error: 'Ya tienes un turno abierto en esta caja.' });
+    }
+
+    const turno = await prisma.turnoCaja.create({
+      data: {
+        usuarioId,
+        fondoInicial: Number(fondoInicial)
+      }
+    });
+    res.json(turno);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Registrar movimiento de flujo (ingreso o egreso de caja)
+app.post('/api/v1/turnos/flujo', async (req, res) => {
+  try {
+    const { turnoId, tipo, monto, motivo } = req.body;
+    const flujo = await prisma.flujoEfectivo.create({
+      data: {
+        turnoId,
+        tipo, // 'INGRESO' | 'EGRESO'
+        monto: Number(monto),
+        motivo
+      }
+    });
+    res.json(flujo);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Cerrar turno y calcular arqueo
+app.post('/api/v1/turnos/cerrar', async (req, res) => {
+  try {
+    const { turnoId, efectivoCierre, observaciones } = req.body;
+    
+    const turno = await prisma.turnoCaja.findUnique({
+      where: { id: turnoId },
+      include: { flujos: true }
+    });
+
+    if (!turno) {
+      return res.status(404).json({ error: 'Turno no encontrado.' });
+    }
+
+    // Buscar ventas registradas por este usuario desde la apertura del turno
+    const ventas = await prisma.venta.findMany({
+      where: {
+        usuarioId: turno.usuarioId,
+        creadoAt: {
+          gte: turno.abiertoAt
+        }
+      }
+    });
+
+    let totalVentasEfectivo = 0;
+    let totalVentasTarjeta = 0;
+    let totalVentasTransferencia = 0;
+
+    ventas.forEach((v: any) => {
+      const m = v.metodo.toUpperCase();
+      if (m.includes('EFECTIVO')) {
+        totalVentasEfectivo += Number(v.total);
+      } else if (m.includes('TARJETA')) {
+        totalVentasTarjeta += Number(v.total);
+      } else if (m.includes('TRANSFERENCIA')) {
+        totalVentasTransferencia += Number(v.total);
+      } else if (m.includes('MIXTO')) {
+        const cashMatch = v.metodo.match(/Efectivo:\s*\$(\d+\.?\d*)/i);
+        if (cashMatch) totalVentasEfectivo += Number(cashMatch[1]);
+        
+        const cardMatch = v.metodo.match(/Tarjeta:\s*\$(\d+\.?\d*)/i);
+        if (cardMatch) totalVentasTarjeta += Number(cardMatch[1]);
+
+        const transMatch = v.metodo.match(/Transferencia:\s*\$(\d+\.?\d*)/i);
+        if (transMatch) totalVentasTransferencia += Number(transMatch[1]);
+      }
+    });
+
+    let totalIngresosFlujo = 0;
+    let totalEgresosFlujo = 0;
+
+    turno.flujos.forEach((f) => {
+      if (f.tipo === 'INGRESO') {
+        totalIngresosFlujo += Number(f.monto);
+      } else {
+        totalEgresosFlujo += Number(f.monto);
+      }
+    });
+
+    const efectivoTeorico = Number(turno.fondoInicial) + totalVentasEfectivo + totalIngresosFlujo - totalEgresosFlujo;
+
+    const turnoCerrado = await prisma.turnoCaja.update({
+      where: { id: turnoId },
+      data: {
+        efectivoCierre: Number(efectivoCierre),
+        estado: 'CERRADO',
+        observaciones,
+        cerradoAt: new Date()
+      }
+    });
+
+    res.json({
+      success: true,
+      turno: turnoCerrado,
+      reporte: {
+        fondoInicial: Number(turno.fondoInicial),
+        ventasEfectivo: totalVentasEfectivo,
+        ventasTarjeta: totalVentasTarjeta,
+        ventasTransferencia: totalVentasTransferencia,
+        ingresosCaja: totalIngresosFlujo,
+        egresosCaja: totalEgresosFlujo,
+        efectivoTeorico,
+        efectivoDeclarado: Number(efectivoCierre),
+        diferencia: Number(efectivoCierre) - efectivoTeorico
+      }
+    });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 seedDatabase().then(() => {
   app.listen(PORT, () => {
     console.log(`🚀 Servidor POS backend corriendo en el puerto ${PORT}`);

@@ -11,6 +11,7 @@
     "test": "npm test --workspaces --if-present"
   },
   "devDependencies": {
+    "electron": "^43.1.0",
     "typescript": "^5.3.3"
   }
 }
