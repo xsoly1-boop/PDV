@@ -36,7 +36,7 @@ De esta manera, el flujo de activación puede configurar tanto la **URL del Serv
 > Dado que en el primer arranque de la aplicación la base de datos **no está conectada**, no es posible autenticar al Super Admin contra los usuarios de la base de datos de PostgreSQL (como `Admin` o `Dorian`).
 > 
 > Para solucionar esto:
-> 1. **Acceso al Setup**: Se implementará un paso de autenticación previo para el desbloqueo del formulario de configuración. Este paso requerirá una **Llave Maestra / Master Key** local estática (por ejemplo, configurada en tiempo de compilación o mediante una contraseña de proveedor hardcodeada como `APEX-SETUP-MASTER-2026` o similar).
+> 1. **Acceso al Setup**: Se implementará un paso de autenticación previo para el desbloqueo del formulario de configuración. Este paso requerirá una **Llave Maestra / Master Key** local estática (la clave maestra establecida es **`APEX2401`**).
 > 2. **Diferente de la Plataforma**: Estas credenciales maestras de instalación serán exclusivas de la aplicación cliente nativa y totalmente ajenas a la base de datos del POS, evitando que administradores comunes del negocio puedan alterar las conexiones de red de las terminales.
 > 3. **Modificaciones Posteriores**: Si se desea volver a ingresar a la pantalla de red/activación desde la terminal activa, el sistema solicitará la misma Master Key local antes de exponer los campos sensibles de Supabase o Render.
 
