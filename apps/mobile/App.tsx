@@ -25,15 +25,18 @@ try {
   console.log('react-native-tcp-socket not available in this environment');
 }
 
-let BluetoothEscposPrinter: any = null;
-let BluetoothManager: any = null;
-try {
-  const BT = require('@vardrz/react-native-bluetooth-escpos-printer');
-  BluetoothEscposPrinter = BT.BluetoothEscposPrinter;
-  BluetoothManager = BT.BluetoothManager;
-} catch (e) {
-  console.log('@vardrz/react-native-bluetooth-escpos-printer not available in this environment');
-}
+// Helper puro JS para codificar en Base64 (requerido para mandar comandos raw a RawBT)
+const toBase64 = (str: string) => {
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
+  let output = '';
+  for (let block = 0, charCode, i = 0, map = chars;
+       str.charAt(i | 0) || (map = '=', i % 1);
+       output += map.charAt(63 & block >> 8 - i % 1 * 8)) {
+    charCode = str.charCodeAt(i += 3/4);
+    block = block << 8 | charCode;
+  }
+  return output;
+};
 
 // ─── Constants ────────────────────────────────────────────────────────────
 const API_URL = 'https://pdventa.onrender.com/api/v1';
@@ -452,15 +455,24 @@ function MainApp({ user, onLogout }: { user: AuthUser; onLogout: () => void }) {
           console.log("MOCK WiFi PRINT:", ticket);
         }
       } else if (type === 'bluetooth') {
-        const mac = await AsyncStorage.getItem('printer_bluetooth_mac');
-        if (!mac) return;
-
-        if (BluetoothEscposPrinter && BluetoothManager) {
-          await BluetoothManager.connect(mac);
-          await BluetoothEscposPrinter.printerInit();
-          await BluetoothEscposPrinter.printText(ticket, {});
-        } else {
-          console.log("MOCK Bluetooth PRINT:", ticket);
+        try {
+          const base64Ticket = toBase64(ticket);
+          const url = `rawbt:base64,${base64Ticket}`;
+          const supported = await Linking.canOpenURL(url);
+          if (supported) {
+            await Linking.openURL(url);
+          } else {
+            Alert.alert(
+              'Spooler RawBT no encontrado',
+              'Para imprimir por Bluetooth, instala la app gratuita "RawBT Print Service" desde Play Store.',
+              [
+                { text: 'Instalar desde Play Store', onPress: () => Linking.openURL('https://play.google.com/store/apps/details?id=rawbt.sdk.print') },
+                { text: 'Cancelar', style: 'cancel' }
+              ]
+            );
+          }
+        } catch (err) {
+          console.error('Error al enviar ticket a RawBT:', err);
         }
       }
     } catch (err) {
@@ -1658,9 +1670,6 @@ function PrinterConfigView({ theme, onBack }: PrinterConfigViewProps) {
   const [activeTab, setActiveTab] = useState<'wifi' | 'bluetooth'>('wifi');
   const [ip, setIp] = useState('');
   const [port, setPort] = useState('9100');
-  const [devices, setDevices] = useState<any[]>([]);
-  const [selectedDevice, setSelectedDevice] = useState<string>('');
-  const [isScanning, setIsScanning] = useState(false);
 
   useEffect(() => {
     // Cargar configuracion actual
@@ -1670,46 +1679,15 @@ function PrinterConfigView({ theme, onBack }: PrinterConfigViewProps) {
       
       const savedIp = await AsyncStorage.getItem('printer_wifi_ip');
       if (savedIp) setIp(savedIp);
-      
-      const savedMac = await AsyncStorage.getItem('printer_bluetooth_mac');
-      if (savedMac) setSelectedDevice(savedMac);
     };
     loadConfig();
-    
-    if (activeTab === 'bluetooth') {
-      scanDevices();
-    }
   }, [activeTab]);
-
-  const scanDevices = async () => {
-    if (!BluetoothManager) {
-      console.log('Bluetooth no disponible');
-      return;
-    }
-    setIsScanning(true);
-    try {
-      // Buscar emparejados
-      const paired = await BluetoothManager.isBluetoothEnabled();
-      if (paired) {
-        const devicesList = await BluetoothManager.getBondedDevices();
-        setDevices(devicesList || []);
-      } else {
-        Alert.alert('Bluetooth Desactivado', 'Por favor activa el Bluetooth en tu dispositivo.');
-      }
-    } catch (e) {
-      console.error(e);
-    } finally {
-      setIsScanning(false);
-    }
-  };
 
   const handleSave = async () => {
     try {
       await AsyncStorage.setItem('printer_type', activeTab);
       if (activeTab === 'wifi') {
         await AsyncStorage.setItem('printer_wifi_ip', ip.trim());
-      } else {
-        await AsyncStorage.setItem('printer_bluetooth_mac', selectedDevice);
       }
       Alert.alert('Configuración Guardada', 'Los ajustes de la impresora local se han guardado con éxito.');
       onBack();
@@ -1744,18 +1722,25 @@ function PrinterConfigView({ theme, onBack }: PrinterConfigViewProps) {
           Alert.alert('Modo Simulación', 'TCP Socket no disponible. Ticket de prueba:\n\n' + testTicket);
         }
       } else {
-        if (!selectedDevice) { Alert.alert('Error', 'Selecciona un dispositivo Bluetooth.'); return; }
-        if (BluetoothEscposPrinter && BluetoothManager) {
-          await BluetoothManager.connect(selectedDevice);
-          await BluetoothEscposPrinter.printerInit();
-          await BluetoothEscposPrinter.printText(testTicket, {});
-          Alert.alert('Prueba Enviada', 'Se ha enviado la señal de impresión vía Bluetooth.');
+        // Enviar vía RawBT
+        const base64Ticket = toBase64(testTicket);
+        const url = `rawbt:base64,${base64Ticket}`;
+        const supported = await Linking.canOpenURL(url);
+        if (supported) {
+          await Linking.openURL(url);
         } else {
-          Alert.alert('Modo Simulación', 'Bluetooth no disponible. Ticket de prueba:\n\n' + testTicket);
+          Alert.alert(
+            'Spooler RawBT no encontrado',
+            'Para imprimir por Bluetooth, instala la app gratuita "RawBT Print Service" desde Play Store.',
+            [
+              { text: 'Descargar RawBT', onPress: () => Linking.openURL('https://play.google.com/store/apps/details?id=rawbt.sdk.print') },
+              { text: 'Cancelar', style: 'cancel' }
+            ]
+          );
         }
       }
     } catch (err: any) {
-      Alert.alert('Error de Impresión', err.message || 'No se pudo conectar al hardware.');
+      Alert.alert('Error de Impresión', err.message || 'No se pudo procesar la impresión.');
     }
   };
 
@@ -1781,7 +1766,7 @@ function PrinterConfigView({ theme, onBack }: PrinterConfigViewProps) {
           onPress={() => setActiveTab('bluetooth')}
           style={{ flex: 1, paddingVertical: 10, alignItems: 'center', backgroundColor: activeTab === 'bluetooth' ? '#374151' : 'transparent', borderRadius: 8 }}
         >
-          <Text style={{ color: activeTab === 'bluetooth' ? '#f59e0b' : '#aaa', fontWeight: 'bold', fontSize: 13 }}>Bluetooth</Text>
+          <Text style={{ color: activeTab === 'bluetooth' ? '#f59e0b' : '#aaa', fontWeight: 'bold', fontSize: 13 }}>Bluetooth (RawBT)</Text>
         </TouchableOpacity>
       </View>
 
@@ -1807,42 +1792,15 @@ function PrinterConfigView({ theme, onBack }: PrinterConfigViewProps) {
           />
         </View>
       ) : (
-        <View style={{ flex: 1 }}>
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-            <Text style={{ color: '#888', fontSize: 11, fontWeight: 'bold', textTransform: 'uppercase' }}>Dispositivos Enlazados</Text>
-            <TouchableOpacity onPress={scanDevices} disabled={isScanning}>
-              <Text style={{ color: '#f59e0b', fontSize: 12, fontWeight: 'bold' }}>{isScanning ? 'Buscando...' : '🔄 Buscar'}</Text>
-            </TouchableOpacity>
-          </View>
-
-          {devices.length === 0 ? (
-            <View style={{ padding: 24, backgroundColor: '#13151b', borderRadius: 12, alignItems: 'center', justifyContent: 'center', marginBottom: 24 }}>
-              <Text style={{ color: '#555', fontSize: 12 }}>Ninguna impresora vinculada aún</Text>
-            </View>
-          ) : (
-            <ScrollView style={{ maxHeight: 200, backgroundColor: '#13151b', borderRadius: 12, padding: 8, marginBottom: 24 }}>
-              {devices.map((dev: any) => (
-                <TouchableOpacity 
-                  key={dev.address}
-                  onPress={() => setSelectedDevice(dev.address)}
-                  style={{ 
-                    flexDirection: 'row', 
-                    justifyContent: 'space-between', 
-                    alignItems: 'center', 
-                    paddingVertical: 12, 
-                    paddingHorizontal: 8,
-                    borderBottomWidth: 1, 
-                    borderBottomColor: '#20222b',
-                    backgroundColor: selectedDevice === dev.address ? '#374151' : 'transparent',
-                    borderRadius: 8
-                  }}
-                >
-                  <Text style={{ color: '#fff', fontSize: 12, fontWeight: 'bold' }}>🖨️ {dev.name || 'Impresora Genérica'}</Text>
-                  <Text style={{ color: '#666', fontSize: 10 }}>{dev.address}</Text>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-          )}
+        <View style={{ flex: 1, backgroundColor: '#13151b', borderRadius: 16, padding: 16, marginBottom: 24, borderWidth: 1, borderColor: '#20222b' }}>
+          <Text style={{ color: '#f59e0b', fontSize: 14, fontWeight: 'bold', marginBottom: 10 }}>📲 Canal de Impresión Universal (RawBT)</Text>
+          <Text style={{ color: '#aaa', fontSize: 12, lineHeight: 18, marginBottom: 12 }}>
+            La impresión por Bluetooth utiliza el spooler universal de RawBT. Esto garantiza compatibilidad estable y rápida con cualquier impresora portátil.
+          </Text>
+          <Text style={{ color: '#fff', fontSize: 11, fontWeight: 'bold', textTransform: 'uppercase', marginBottom: 6 }}>Pasos de Configuración:</Text>
+          <Text style={{ color: '#888', fontSize: 11, lineHeight: 16, marginBottom: 4 }}>1. Asegúrate de tener la app "RawBT Print Service" instalada en tu dispositivo.</Text>
+          <Text style={{ color: '#888', fontSize: 11, lineHeight: 16, marginBottom: 4 }}>2. Abre RawBT, enciende tu impresora y vincúlala en los ajustes de la app.</Text>
+          <Text style={{ color: '#888', fontSize: 11, lineHeight: 16 }}>3. ¡Listo! Presiona "Probar Impresora" abajo para verificar.</Text>
         </View>
       )}
 
