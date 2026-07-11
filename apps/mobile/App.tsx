@@ -17,6 +17,24 @@ try {
   console.warn('expo-camera not available:', e);
 }
 
+// ─── Lazy-load printing modules ─────────────────────────────────────────────
+let TcpSocket: any = null;
+try {
+  TcpSocket = require('react-native-tcp-socket');
+} catch (e) {
+  console.log('react-native-tcp-socket not available in this environment');
+}
+
+let BluetoothEscposPrinter: any = null;
+let BluetoothManager: any = null;
+try {
+  const BT = require('react-native-bluetooth-escpos-printer');
+  BluetoothEscposPrinter = BT.BluetoothEscposPrinter;
+  BluetoothManager = BT.BluetoothManager;
+} catch (e) {
+  console.log('react-native-bluetooth-escpos-printer not available in this environment');
+}
+
 // ─── Constants ────────────────────────────────────────────────────────────
 const API_URL = 'https://pdventa.onrender.com/api/v1';
 const STORAGE_USER_KEY = '@apexpos_user';
@@ -220,7 +238,7 @@ function LoginScreen({ onLogin }: { onLogin: (user: AuthUser) => void }) {
 
 // ─── Main App ──────────────────────────────────────────────────────────────
 function MainApp({ user, onLogout }: { user: AuthUser; onLogout: () => void }) {
-  const [currentView, setCurrentView] = useState<'catalog' | 'scanner' | 'cart' | 'result' | 'inventory'>('catalog');
+  const [currentView, setCurrentView] = useState<'catalog' | 'scanner' | 'cart' | 'result' | 'inventory' | 'printer'>('catalog');
   const [searchQuery, setSearchQuery] = useState('');
   const [products, setProducts] = useState<Product[]>([]);   // ← starts empty, no demo data
   const [cart, setCart] = useState<CartItem[]>([]);
@@ -388,6 +406,68 @@ function MainApp({ user, onLogout }: { user: AuthUser; onLogout: () => void }) {
     }
   };
 
+  const printReceipt = async (payload: any) => {
+    try {
+      const type = await AsyncStorage.getItem('printer_type');
+      if (!type || type === 'none') {
+        console.log('[Impresión] Sin impresora local configurada en móvil.');
+        return;
+      }
+
+      let ticket = "";
+      // Formatear cabecera ESC/POS
+      ticket += "\x1b\x61\x01"; // Centrar
+      ticket += "APEX POS - MOVIL\n";
+      ticket += "================================\n";
+      ticket += "\x1b\x61\x00"; // Izquierda
+      ticket += `Folio: ${payload.folio}\n`;
+      ticket += `Fecha: ${new Date().toLocaleString('es-MX')}\n`;
+      ticket += `Vendedor: ${user.nombre}\n`;
+      ticket += "--------------------------------\n";
+      
+      payload.detalles.forEach((det: any) => {
+        ticket += `${det.nombre}\n`;
+        ticket += `  ${det.cantidad} x $${Number(det.precioUnitario).toFixed(2)}   $${Number(det.subtotal).toFixed(2)}\n`;
+      });
+
+      ticket += "--------------------------------\n";
+      ticket += `Total: $${Number(payload.total).toFixed(2)}\n`;
+      ticket += "================================\n";
+      ticket += "\x1b\x61\x01"; // Centrar
+      ticket += "Gracias por su compra!\n\n\n\n\x1b\x69"; // Salto + Corte
+
+      if (type === 'wifi') {
+        const ip = await AsyncStorage.getItem('printer_wifi_ip');
+        if (!ip) return;
+        
+        if (TcpSocket) {
+          const client = TcpSocket.createConnection({ port: 9100, host: ip }, () => {
+            client.write(ticket);
+            client.destroy();
+          });
+          client.on('error', (err: any) => {
+            console.error('Error al imprimir por WiFi:', err);
+          });
+        } else {
+          console.log("MOCK WiFi PRINT:", ticket);
+        }
+      } else if (type === 'bluetooth') {
+        const mac = await AsyncStorage.getItem('printer_bluetooth_mac');
+        if (!mac) return;
+
+        if (BluetoothEscposPrinter && BluetoothManager) {
+          await BluetoothManager.connect(mac);
+          await BluetoothEscposPrinter.printerInit();
+          await BluetoothEscposPrinter.printText(ticket, {});
+        } else {
+          console.log("MOCK Bluetooth PRINT:", ticket);
+        }
+      }
+    } catch (err) {
+      console.error('Error en proceso de impresion móvil:', err);
+    }
+  };
+
   const handleCompleteSale = async () => {
     if (cart.length === 0) return;
     
@@ -431,6 +511,18 @@ function MainApp({ user, onLogout }: { user: AuthUser; onLogout: () => void }) {
         const errorData = await response.json();
         throw new Error(errorData.error || 'Error al completar la venta');
       }
+
+      // Invocar ticketera local
+      printReceipt({
+        folio: payload.folio,
+        total: payload.total,
+        detalles: cart.map(item => ({
+          nombre: item.product.nombre,
+          cantidad: item.quantity,
+          precioUnitario: item.product.precio,
+          subtotal: item.product.precio * item.quantity
+        }))
+      });
 
       // Vaciar carrito, ocultar modal y limpiar estados
       setCart([]);
@@ -616,9 +708,19 @@ function MainApp({ user, onLogout }: { user: AuthUser; onLogout: () => void }) {
           <Text style={styles.headerTitle}>APEX MÓVIL</Text>
           <Text style={styles.headerSubtitle}>👤 {user.nombre} · {user.role.toUpperCase()}</Text>
         </View>
-        <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout}>
-          <Text style={styles.logoutText}>Salir</Text>
-        </TouchableOpacity>
+        <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}>
+          {(user.role === 'admin' || user.role === 'gerente') && (
+            <TouchableOpacity 
+              style={[styles.logoutBtn, { backgroundColor: '#374151' }]} 
+              onPress={() => setCurrentView('printer')}
+            >
+              <Text style={styles.logoutText}>⚙️ Impresora</Text>
+            </TouchableOpacity>
+          )}
+          <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout}>
+            <Text style={styles.logoutText}>Salir</Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       {/* CATALOG VIEW */}
@@ -891,6 +993,13 @@ function MainApp({ user, onLogout }: { user: AuthUser; onLogout: () => void }) {
             <Text style={styles.checkoutBtnText}>+ Nuevo Pedido</Text>
           </TouchableOpacity>
         </View>
+      )}
+
+      {/* PRINTER CONFIG VIEW */}
+      {currentView === 'printer' && (
+        <AuthGuard user={user} allowedRoles={['admin', 'gerente']}>
+          <PrinterConfigView theme="dark" onBack={() => setCurrentView('catalog')} />
+        </AuthGuard>
       )}
 
       {/* Checkout Modal for Admin/Gerente */}
@@ -1539,3 +1648,220 @@ const modalStyles = StyleSheet.create({
     fontWeight: 'bold',
   },
 });
+
+interface PrinterConfigViewProps {
+  theme: 'dark' | 'light';
+  onBack: () => void;
+}
+
+function PrinterConfigView({ theme, onBack }: PrinterConfigViewProps) {
+  const [activeTab, setActiveTab] = useState<'wifi' | 'bluetooth'>('wifi');
+  const [ip, setIp] = useState('');
+  const [port, setPort] = useState('9100');
+  const [devices, setDevices] = useState<any[]>([]);
+  const [selectedDevice, setSelectedDevice] = useState<string>('');
+  const [isScanning, setIsScanning] = useState(false);
+
+  useEffect(() => {
+    // Cargar configuracion actual
+    const loadConfig = async () => {
+      const type = await AsyncStorage.getItem('printer_type');
+      if (type === 'bluetooth') setActiveTab('bluetooth');
+      
+      const savedIp = await AsyncStorage.getItem('printer_wifi_ip');
+      if (savedIp) setIp(savedIp);
+      
+      const savedMac = await AsyncStorage.getItem('printer_bluetooth_mac');
+      if (savedMac) setSelectedDevice(savedMac);
+    };
+    loadConfig();
+    
+    if (activeTab === 'bluetooth') {
+      scanDevices();
+    }
+  }, [activeTab]);
+
+  const scanDevices = async () => {
+    if (!BluetoothManager) {
+      console.log('Bluetooth no disponible');
+      return;
+    }
+    setIsScanning(true);
+    try {
+      // Buscar emparejados
+      const paired = await BluetoothManager.isBluetoothEnabled();
+      if (paired) {
+        const devicesList = await BluetoothManager.getBondedDevices();
+        setDevices(devicesList || []);
+      } else {
+        Alert.alert('Bluetooth Desactivado', 'Por favor activa el Bluetooth en tu dispositivo.');
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setIsScanning(false);
+    }
+  };
+
+  const handleSave = async () => {
+    try {
+      await AsyncStorage.setItem('printer_type', activeTab);
+      if (activeTab === 'wifi') {
+        await AsyncStorage.setItem('printer_wifi_ip', ip.trim());
+      } else {
+        await AsyncStorage.setItem('printer_bluetooth_mac', selectedDevice);
+      }
+      Alert.alert('Configuración Guardada', 'Los ajustes de la impresora local se han guardado con éxito.');
+      onBack();
+    } catch (e) {
+      Alert.alert('Error', 'No se pudo guardar la configuración.');
+    }
+  };
+
+  const handleTest = async () => {
+    let testTicket = "";
+    testTicket += "\x1b\x61\x01"; // Centrar
+    testTicket += "PRUEBA DE CONEXION\n";
+    testTicket += "APEX POS MOVIL - TEST OK\n";
+    testTicket += "================================\n";
+    testTicket += `Fecha: ${new Date().toLocaleDateString()}\n`;
+    testTicket += "--------------------------------\n";
+    testTicket += "Impresora vinculada con exito!\n\n\n\n\x1b\x69"; // Corte
+
+    try {
+      if (activeTab === 'wifi') {
+        if (!ip.trim()) { Alert.alert('Error', 'Ingresa una dirección IP válida.'); return; }
+        if (TcpSocket) {
+          const client = TcpSocket.createConnection({ port: parseInt(port), host: ip.trim() }, () => {
+            client.write(testTicket);
+            client.destroy();
+            Alert.alert('Prueba Enviada', 'Se ha enviado la señal de impresión a ' + ip);
+          });
+          client.on('error', (err: any) => {
+            Alert.alert('Fallo de Conexión', 'No se pudo conectar a la IP de la impresora.');
+          });
+        } else {
+          Alert.alert('Modo Simulación', 'TCP Socket no disponible. Ticket de prueba:\n\n' + testTicket);
+        }
+      } else {
+        if (!selectedDevice) { Alert.alert('Error', 'Selecciona un dispositivo Bluetooth.'); return; }
+        if (BluetoothEscposPrinter && BluetoothManager) {
+          await BluetoothManager.connect(selectedDevice);
+          await BluetoothEscposPrinter.printerInit();
+          await BluetoothEscposPrinter.printText(testTicket, {});
+          Alert.alert('Prueba Enviada', 'Se ha enviado la señal de impresión vía Bluetooth.');
+        } else {
+          Alert.alert('Modo Simulación', 'Bluetooth no disponible. Ticket de prueba:\n\n' + testTicket);
+        }
+      }
+    } catch (err: any) {
+      Alert.alert('Error de Impresión', err.message || 'No se pudo conectar al hardware.');
+    }
+  };
+
+  return (
+    <View style={[styles.content, { backgroundColor: '#0d0e12', padding: 20 }]}>
+      {/* Header */}
+      <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 24 }}>
+        <TouchableOpacity onPress={onBack} style={{ marginRight: 16 }}>
+          <Text style={{ color: '#f59e0b', fontSize: 24, fontWeight: 'bold' }}>←</Text>
+        </TouchableOpacity>
+        <Text style={{ color: '#fff', fontSize: 18, fontWeight: 'bold' }}>Ajustes de Impresora Local</Text>
+      </View>
+
+      {/* Segmented Tabs */}
+      <View style={{ flexDirection: 'row', backgroundColor: '#13151b', borderRadius: 12, padding: 4, marginBottom: 24 }}>
+        <TouchableOpacity 
+          onPress={() => setActiveTab('wifi')}
+          style={{ flex: 1, paddingVertical: 10, alignItems: 'center', backgroundColor: activeTab === 'wifi' ? '#374151' : 'transparent', borderRadius: 8 }}
+        >
+          <Text style={{ color: activeTab === 'wifi' ? '#f59e0b' : '#aaa', fontWeight: 'bold', fontSize: 13 }}>Wi-Fi / Red</Text>
+        </TouchableOpacity>
+        <TouchableOpacity 
+          onPress={() => setActiveTab('bluetooth')}
+          style={{ flex: 1, paddingVertical: 10, alignItems: 'center', backgroundColor: activeTab === 'bluetooth' ? '#374151' : 'transparent', borderRadius: 8 }}
+        >
+          <Text style={{ color: activeTab === 'bluetooth' ? '#f59e0b' : '#aaa', fontWeight: 'bold', fontSize: 13 }}>Bluetooth</Text>
+        </TouchableOpacity>
+      </View>
+
+      {activeTab === 'wifi' ? (
+        <View style={{ flex: 1 }}>
+          <Text style={{ color: '#888', fontSize: 11, fontWeight: 'bold', textTransform: 'uppercase', marginBottom: 8 }}>Dirección IP Impresora</Text>
+          <TextInput 
+            placeholder="Ej: 192.168.1.100"
+            placeholderTextColor="#555"
+            style={[modalStyles.input, { textAlign: 'left', marginBottom: 16 }]}
+            value={ip}
+            onChangeText={setIp}
+          />
+
+          <Text style={{ color: '#888', fontSize: 11, fontWeight: 'bold', textTransform: 'uppercase', marginBottom: 8 }}>Puerto Raw</Text>
+          <TextInput 
+            placeholder="9100"
+            placeholderTextColor="#555"
+            style={[modalStyles.input, { textAlign: 'left', marginBottom: 24 }]}
+            value={port}
+            onChangeText={setPort}
+            keyboardType="numeric"
+          />
+        </View>
+      ) : (
+        <View style={{ flex: 1 }}>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+            <Text style={{ color: '#888', fontSize: 11, fontWeight: 'bold', textTransform: 'uppercase' }}>Dispositivos Enlazados</Text>
+            <TouchableOpacity onPress={scanDevices} disabled={isScanning}>
+              <Text style={{ color: '#f59e0b', fontSize: 12, fontWeight: 'bold' }}>{isScanning ? 'Buscando...' : '🔄 Buscar'}</Text>
+            </TouchableOpacity>
+          </View>
+
+          {devices.length === 0 ? (
+            <View style={{ padding: 24, backgroundColor: '#13151b', borderRadius: 12, alignItems: 'center', justifyContent: 'center', marginBottom: 24 }}>
+              <Text style={{ color: '#555', fontSize: 12 }}>Ninguna impresora vinculada aún</Text>
+            </View>
+          ) : (
+            <ScrollView style={{ maxHeight: 200, backgroundColor: '#13151b', borderRadius: 12, padding: 8, marginBottom: 24 }}>
+              {devices.map((dev: any) => (
+                <TouchableOpacity 
+                  key={dev.address}
+                  onPress={() => setSelectedDevice(dev.address)}
+                  style={{ 
+                    flexDirection: 'row', 
+                    justifyContent: 'space-between', 
+                    alignItems: 'center', 
+                    paddingVertical: 12, 
+                    paddingHorizontal: 8,
+                    borderBottomWidth: 1, 
+                    borderBottomColor: '#20222b',
+                    backgroundColor: selectedDevice === dev.address ? '#374151' : 'transparent',
+                    borderRadius: 8
+                  }}
+                >
+                  <Text style={{ color: '#fff', fontSize: 12, fontWeight: 'bold' }}>🖨️ {dev.name || 'Impresora Genérica'}</Text>
+                  <Text style={{ color: '#666', fontSize: 10 }}>{dev.address}</Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          )}
+        </View>
+      )}
+
+      {/* Buttons */}
+      <View style={{ gap: 12, marginTop: 'auto' }}>
+        <TouchableOpacity 
+          onPress={handleTest}
+          style={{ backgroundColor: '#f59e0b', paddingVertical: 14, borderRadius: 12, alignItems: 'center', justifyContent: 'center' }}
+        >
+          <Text style={{ color: '#0d0e12', fontWeight: 'bold', fontSize: 14 }}>🖨️ PROBAR IMPRESORA</Text>
+        </TouchableOpacity>
+        <TouchableOpacity 
+          onPress={handleSave}
+          style={{ backgroundColor: 'transparent', borderWidth: 1, borderColor: '#f59e0b', paddingVertical: 14, borderRadius: 12, alignItems: 'center', justifyContent: 'center' }}
+        >
+          <Text style={{ color: '#f59e0b', fontWeight: 'bold', fontSize: 14 }}>GUARDAR AJUSTES</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
+}
+
