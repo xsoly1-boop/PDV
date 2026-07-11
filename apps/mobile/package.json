@@ -16,7 +16,7 @@
     "react": "18.2.0",
     "react-native": "0.74.5",
     "react-native-tcp-socket": "^6.2.1",
-    "@vardrz/react-native-bluetooth-escpos-printer": "^1.1.0"
+    "@vardrz/react-native-bluetooth-escpos-printer": "^0.1.2"
   },
   "devDependencies": {
     "@babel/core": "^7.20.0",
