@@ -362,13 +362,29 @@ export default function POSInterface() {
     }
   }, [authToken, currentUser]);
 
-  // Verificar turno activo de caja
+  // Verificar turno activo de caja (online/offline)
   useEffect(() => {
     const fetchActiveTurno = async () => {
       if (!currentUser || !currentUser.id) {
         setActiveTurno(null);
         return;
       }
+      
+      if (!isOnline) {
+        // Modo Offline: buscar turno local en Dexie
+        try {
+          const data = await offlineStore.obtenerTurnoActivoLocal(currentUser.id);
+          setActiveTurno(data);
+          if (!data && (currentUser.rol === 'Administrador' || currentUser.rol === 'Gerente' || currentUser.rol === 'Cajero')) {
+            setShowTurnoModal(true);
+          }
+        } catch (err) {
+          console.warn('Error al verificar turno local:', err);
+        }
+        return;
+      }
+
+      // Modo Online: buscar en servidor central
       try {
         const response = await fetch(`${API_V1}/turnos/activo/${currentUser.id}`);
         if (response.ok) {
@@ -381,10 +397,20 @@ export default function POSInterface() {
         }
       } catch (err) {
         console.warn('Error al verificar turno de caja:', err);
+        // Fallback inmediato a IndexedDB si falla la red
+        try {
+          const data = await offlineStore.obtenerTurnoActivoLocal(currentUser.id);
+          setActiveTurno(data);
+          if (!data && (currentUser.rol === 'Administrador' || currentUser.rol === 'Gerente' || currentUser.rol === 'Cajero')) {
+            setShowTurnoModal(true);
+          }
+        } catch (errLocal) {
+          console.warn('Error en fallback de turno de caja:', errLocal);
+        }
       }
     };
     fetchActiveTurno();
-  }, [currentUser]);
+  }, [currentUser, isOnline]);
 
   const [theme, setTheme] = useState<'dark' | 'light'>('dark');
   const [currentView, setCurrentView] = useState<'pos' | 'admin' | 'quotes'>('pos');
@@ -2650,6 +2676,7 @@ export default function POSInterface() {
           theme={theme}
           currentUser={currentUser}
           activeTurno={activeTurno}
+          isOnline={isOnline}
           onTurnoChange={(turno) => setActiveTurno(turno)}
           onClose={() => setShowTurnoModal(false)}
         />

@@ -4,17 +4,19 @@ import {
   CheckCircle2, X, AlertTriangle, Printer 
 } from 'lucide-react';
 import { API_V1 } from './config';
+import { offlineStore } from './services/offlineStore';
 
 interface TurnoManagerProps {
   theme: 'dark' | 'light';
   currentUser: any;
   activeTurno: any;
+  isOnline: boolean;
   onTurnoChange: (turno: any) => void;
   onClose: () => void;
 }
 
 export default function TurnoManager({ 
-  theme, currentUser, activeTurno, onTurnoChange, onClose 
+  theme, currentUser, activeTurno, isOnline, onTurnoChange, onClose 
 }: TurnoManagerProps) {
   const [mode, setMode] = useState<'status' | 'open' | 'flow' | 'close' | 'report'>('status');
   
@@ -47,13 +49,29 @@ export default function TurnoManager({
       return;
     }
 
+    const m = Number(fondoInicial);
+
+    // MODO OFFLINE
+    if (!isOnline) {
+      try {
+        const localTurno = await offlineStore.abrirTurnoLocal(currentUser.id, m);
+        onTurnoChange(localTurno);
+        alert('Caja abierta localmente (Modo Offline Activo).');
+        onClose();
+      } catch (err) {
+        alert('Error al abrir caja localmente.');
+      }
+      return;
+    }
+
+    // MODO ONLINE
     try {
       const response = await fetch(`${API_V1}/turnos/abrir`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           usuarioId: currentUser.id,
-          fondoInicial: Number(fondoInicial)
+          fondoInicial: m
         })
       });
       const data = await response.json();
@@ -79,6 +97,29 @@ export default function TurnoManager({
       return;
     }
 
+    const m = Number(flowMonto);
+    const mot = flowMotivo.trim();
+
+    // MODO OFFLINE (o turno iniciado de manera local)
+    if (!isOnline || activeTurno.id.startsWith('local-')) {
+      try {
+        await offlineStore.agregarFlujoLocal(activeTurno.id, flowTipo, m, mot);
+        // Volver a obtener el turno activo local para actualizar el estado
+        const activeLocal = await offlineStore.obtenerTurnoActivoLocal(currentUser.id);
+        if (activeLocal) {
+          onTurnoChange(activeLocal);
+        }
+        alert('Movimiento de caja registrado localmente.');
+        setFlowMonto('');
+        setFlowMotivo('');
+        setMode('status');
+      } catch (err) {
+        alert('Error al registrar flujo localmente.');
+      }
+      return;
+    }
+
+    // MODO ONLINE
     try {
       const response = await fetch(`${API_V1}/turnos/flujo`, {
         method: 'POST',
@@ -86,12 +127,11 @@ export default function TurnoManager({
         body: JSON.stringify({
           turnoId: activeTurno.id,
           tipo: flowTipo,
-          monto: Number(flowMonto),
-          motivo: flowMotivo.trim()
+          monto: m,
+          motivo: mot
         })
       });
       if (response.ok) {
-        // Recargar datos de turno activo para refrescar flujos
         const resActivo = await fetch(`${API_V1}/turnos/activo/${currentUser.id}`);
         if (resActivo.ok) {
           const data = await resActivo.json();
@@ -115,20 +155,90 @@ export default function TurnoManager({
       return;
     }
 
+    const deCierre = Number(efectivoCierre);
+
+    // MODO OFFLINE (o turno iniciado de manera local)
+    if (!isOnline || activeTurno.id.startsWith('local-')) {
+      try {
+        // Consultar ventas guardadas localmente en Dexie encolador de ventas
+        const encoladas = await offlineStore.obtenerVentasEncoladas();
+        
+        // Filtrar ventas realizadas desde la fecha de apertura de este turno local
+        const shiftSales = encoladas.filter(
+          (s) => new Date(s.creadoAt) >= new Date(activeTurno.abiertoAt)
+        );
+
+        let totalVentasEfectivo = 0;
+        let totalVentasTarjeta = 0;
+        let totalVentasTransferencia = 0;
+
+        shiftSales.forEach((s) => {
+          const m = s.metodo.toUpperCase();
+          if (m.includes('EFECTIVO')) {
+            totalVentasEfectivo += Number(s.total);
+          } else if (m.includes('TARJETA')) {
+            totalVentasTarjeta += Number(s.total);
+          } else if (m.includes('TRANSFERENCIA')) {
+            totalVentasTransferencia += Number(s.total);
+          }
+        });
+
+        // Sumar flujos de caja locales
+        let totalIngresosFlujo = 0;
+        let totalEgresosFlujo = 0;
+
+        activeTurno.flujos.forEach((f: any) => {
+          if (f.tipo === 'INGRESO') {
+            totalIngresosFlujo += Number(f.monto);
+          } else {
+            totalEgresosFlujo += Number(f.monto);
+          }
+        });
+
+        const efectivoTeorico = Number(activeTurno.fondoInicial) + totalVentasEfectivo + totalIngresosFlujo - totalEgresosFlujo;
+        const diferencia = deCierre - efectivoTeorico;
+
+        const localReport = {
+          fondoInicial: Number(activeTurno.fondoInicial),
+          ventasEfectivo: totalVentasEfectivo,
+          ventasTarjeta: totalVentasTarjeta,
+          ventasTransferencia: totalVentasTransferencia,
+          ingresosCaja: totalIngresosFlujo,
+          egresosCaja: totalEgresosFlujo,
+          efectivoTeorico,
+          efectivoDeclarado: deCierre,
+          diferencia
+        };
+
+        // Guardar cierre del turno local en IndexedDB
+        await offlineStore.cerrarTurnoLocal(activeTurno.id, deCierre, observacionesCierre.trim(), localReport);
+        
+        setReporte(localReport);
+        onTurnoChange(null);
+        setMode('report');
+        alert('Caja cerrada localmente (Reporte de arqueo generado offline).');
+      } catch (err) {
+        console.error(err);
+        alert('Error al cerrar caja localmente.');
+      }
+      return;
+    }
+
+    // MODO ONLINE
     try {
       const response = await fetch(`${API_V1}/turnos/cerrar`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           turnoId: activeTurno.id,
-          efectivoCierre: Number(efectivoCierre),
+          efectivoCierre: deCierre,
           observaciones: observacionesCierre.trim()
         })
       });
       const data = await response.json();
       if (response.ok && data.success) {
         setReporte(data.reporte);
-        onTurnoChange(null); // Quitar turno activo del estado
+        onTurnoChange(null);
         setMode('report');
       } else {
         alert(data.error || 'No se pudo cerrar el turno.');
@@ -170,7 +280,7 @@ Diferencia:      $${reporte.diferencia.toFixed(2)}
         <div className="flex items-center justify-between mb-6 pb-4 border-b border-dashed border-slate-700/30">
           <h2 className="text-base font-bold flex items-center gap-2">
             <DollarSign className="w-5 h-5 text-amber-500" />
-            Control de Caja y Turnos
+            Control de Caja y Turnos {!isOnline && <span className="text-[10px] text-rose-500 bg-rose-500/10 px-1 py-0.5 rounded font-mono font-bold animate-pulse">OFFLINE</span>}
           </h2>
           {mode !== 'open' && mode !== 'report' && (
             <button onClick={onClose} className="p-1 rounded-lg hover:bg-slate-800 transition-colors">
