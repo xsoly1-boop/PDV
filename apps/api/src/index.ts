@@ -522,6 +522,55 @@ app.put('/api/v1/cotizaciones/:id/estado', async (req, res) => {
   }
 });
 
+// DELETE /api/v1/cotizaciones/:id (eliminar cotización y liberar stock reservado)
+app.delete('/api/v1/cotizaciones/:id', async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const cotizacion = await prisma.cotizacion.findUnique({
+      where: { id },
+      include: { reservas: true }
+    });
+
+    if (!cotizacion) {
+      return res.status(404).json({ error: 'Cotización no encontrada' });
+    }
+
+    await prisma.$transaction(async (tx) => {
+      // 1. Restaurar stock reservado en el balance para todas sus reservas activas
+      for (const reserva of cotizacion.reservas) {
+        if (reserva.estado === 'ACTIVA') {
+          await tx.inventarioBalance.update({
+            where: {
+              sucursalId_productoId: {
+                sucursalId: reserva.sucursalId,
+                productoId: reserva.productoId
+              }
+            },
+            data: {
+              reservado: { decrement: Number(reserva.cantidad) }
+            }
+          });
+        }
+      }
+
+      // 2. Eliminar reservas temporales asociadas
+      await tx.reservaTemporal.deleteMany({
+        where: { cotizacionId: id }
+      });
+
+      // 3. Eliminar la cotización físicamente
+      await tx.cotizacion.delete({
+        where: { id }
+      });
+    });
+
+    res.json({ success: true, message: 'Cotización eliminada y stock liberado correctamente.' });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // Buscar cotización por código corto de 4 dígitos
 app.get('/api/v1/cotizaciones/buscar/:codigoCorto', async (req, res) => {
   const { codigoCorto } = req.params;

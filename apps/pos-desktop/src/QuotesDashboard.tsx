@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { 
   Search, X, Printer, ArrowRight, Clock, User, 
-  Calendar, ArrowLeft, Eye
+  Calendar, ArrowLeft, Eye, Trash2
 } from 'lucide-react';
 import { API_V1 } from './config';
 
@@ -71,6 +71,26 @@ export default function QuotesDashboard({ theme, onClose, onConvertToSale }: Quo
       }
     } else {
       window.print();
+    }
+  };
+
+  const handleDeleteQuote = async (quote: any) => {
+    const confirm = window.confirm(`¿Estás seguro de que deseas eliminar permanentemente la cotización ${quote.folio}? Esta acción liberará el stock reservado.`);
+    if (!confirm) return;
+
+    try {
+      const response = await fetch(`${API_V1}/cotizaciones/${quote.id}`, {
+        method: 'DELETE'
+      });
+      if (response.ok) {
+        alert('Cotización eliminada y stock liberado correctamente.');
+        fetchQuotes(); // Recargar lista
+      } else {
+        const data = await response.json();
+        alert(data.error || 'No se pudo eliminar la cotización.');
+      }
+    } catch (err) {
+      alert('Error de red al intentar eliminar la cotización.');
     }
   };
 
@@ -217,13 +237,22 @@ export default function QuotesDashboard({ theme, onClose, onConvertToSale }: Quo
                           <Printer className="w-4 h-4" /> Imprimir
                         </button>
                         {quote.estado === 'ACTIVA' && (
-                          <button 
-                            onClick={() => onConvertToSale(quote)}
-                            className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold p-2 rounded-lg flex items-center gap-1 text-xs transition-all border-0 cursor-pointer shadow active:scale-95"
-                            title="Importar al carrito de caja"
-                          >
-                            <ArrowRight className="w-4 h-4" /> Cobrar
-                          </button>
+                          <>
+                            <button 
+                              onClick={() => onConvertToSale(quote)}
+                              className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold p-2 rounded-lg flex items-center gap-1 text-xs transition-all border-0 cursor-pointer shadow active:scale-95"
+                              title="Importar al carrito de caja"
+                            >
+                              <ArrowRight className="w-4 h-4" /> Cobrar
+                            </button>
+                            <button 
+                              onClick={() => handleDeleteQuote(quote)}
+                              className="bg-rose-500/10 hover:bg-rose-500 hover:text-white text-rose-500 font-bold p-2 rounded-lg flex items-center gap-1 text-xs transition-all border border-rose-500/20 cursor-pointer shadow active:scale-95"
+                              title="Eliminar cotización y liberar stock"
+                            >
+                              <Trash2 className="w-4 h-4" /> Eliminar
+                            </button>
+                          </>
                         )}
                       </div>
                     </td>
@@ -338,15 +367,26 @@ export default function QuotesDashboard({ theme, onClose, onConvertToSale }: Quo
                 <Printer className="w-4.5 h-4.5" /> Imprimir Cotización
               </button>
               {selectedQuote.estado === 'ACTIVA' && (
-                <button 
-                  onClick={() => {
-                    setSelectedQuote(null);
-                    onConvertToSale(selectedQuote);
-                  }}
-                  className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-4 py-2.5 rounded-xl flex items-center gap-2 text-sm transition-all border-0 cursor-pointer shadow active:scale-95"
-                >
-                  <ArrowRight className="w-4.5 h-4.5" /> Convertir a Venta
-                </button>
+                <>
+                  <button 
+                    onClick={() => {
+                      setSelectedQuote(null);
+                      handleDeleteQuote(selectedQuote);
+                    }}
+                    className="bg-rose-500/10 hover:bg-rose-500 hover:text-white text-rose-500 font-bold px-4 py-2.5 rounded-xl flex items-center gap-2 text-sm transition-all border border-rose-500/25 cursor-pointer shadow active:scale-95"
+                  >
+                    <Trash2 className="w-4.5 h-4.5" /> Eliminar Cotización
+                  </button>
+                  <button 
+                    onClick={() => {
+                      setSelectedQuote(null);
+                      onConvertToSale(selectedQuote);
+                    }}
+                    className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-4 py-2.5 rounded-xl flex items-center gap-2 text-sm transition-all border-0 cursor-pointer shadow active:scale-95"
+                  >
+                    <ArrowRight className="w-4.5 h-4.5" /> Convertir a Venta
+                  </button>
+                </>
               )}
             </div>
           </div>
