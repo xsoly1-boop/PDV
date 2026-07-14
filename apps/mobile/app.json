@@ -44,6 +44,12 @@
         }
       ]
     ],
+    "updates": {
+      "url": "https://u.expo.dev/0edc2193-1fc9-4e8c-9992-890ca9de6b21"
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
     "owner": "miyagisteam",
     "extra": {
       "eas": {

@@ -30,6 +30,12 @@
       "favicon": "./assets/favicon.png"
     },
     "owner": "miyagisteam",
+    "updates": {
+      "url": "https://u.expo.dev/8abbf506-76f3-4a07-b10e-7d7661d984fe"
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
     "extra": {
       "eas": {
         "projectId": "8abbf506-76f3-4a07-b10e-7d7661d984fe"

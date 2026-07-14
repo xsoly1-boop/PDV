@@ -1,5 +1,10 @@
 {
   "appId": "com.vante.pos.server",
+  "publish": {
+    "provider": "github",
+    "owner": "xsoly1-boop",
+    "repo": "PDV"
+  },
   "productName": "VantePOS-Server",
   "electronVersion": "30.0.0",
   "directories": {

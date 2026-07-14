@@ -85,6 +85,42 @@ export default function POSInterface() {
   const [isPreloadingPresets, setIsPreloadingPresets] = useState(false);
   const [preloadingMessage, setPreloadingMessage] = useState('');
   const [isSearchFocused, setIsSearchFocused] = useState(false);
+  
+  // Estados de actualizaciones automáticas
+  const [updateStatus, setUpdateStatus] = useState<'idle' | 'checking' | 'available' | 'downloading' | 'downloaded' | 'error'>('idle');
+  const [updateInfo, setUpdateInfo] = useState<any>(null);
+  const [downloadPercent, setDownloadPercent] = useState(0);
+
+  useEffect(() => {
+    const api = (window as any).electronAPI;
+    if (!api) return;
+
+    const unsubAvailable = api.onUpdateAvailable((info: any) => {
+      setUpdateStatus('available');
+      setUpdateInfo(info);
+    });
+
+    const unsubProgress = api.onUpdateProgress((progress: any) => {
+      setUpdateStatus('downloading');
+      setDownloadPercent(Math.round(progress.percent || 0));
+    });
+
+    const unsubDownloaded = api.onUpdateDownloaded((info: any) => {
+      setUpdateStatus('downloaded');
+      setUpdateInfo(info);
+    });
+
+    const unsubError = api.onUpdateError((err: string) => {
+      console.error('[UPDATER-FRONTEND] Error de actualizaciones:', err);
+    });
+
+    return () => {
+      unsubAvailable();
+      unsubProgress();
+      unsubDownloaded();
+      unsubError();
+    };
+  }, []);
   const [selectedSearchIndex, setSelectedSearchIndex] = useState(0);
   const [tabs, setTabs] = useState<any[]>(() => {
     const saved = localStorage.getItem('pos_tabs');
@@ -4446,6 +4482,52 @@ ${articulosTexto}
               className="bg-amber-500 hover:bg-amber-400 text-slate-950 font-black py-2.5 px-6 rounded-xl border-0 cursor-pointer text-xs w-full mt-6 shadow-[0_0_15px_rgba(245,158,11,0.25)] transition-all uppercase tracking-wider"
             >
               Aceptar
+            </button>
+          </div>
+        </div>
+      )}
+      {/* UPDATE NOTIFICATION BANNER */}
+      {updateStatus !== 'idle' && updateStatus !== 'checking' && (
+        <div className="fixed bottom-6 right-6 z-[9999] max-w-sm w-full bg-[#11131c] border border-violet-500/30 rounded-2xl p-4 shadow-[0_8px_32px_rgba(139,92,246,0.25)] animate-[slideInRight_0.3s_ease] backdrop-blur-md">
+          <div className="flex gap-3">
+            <div className="w-10 h-10 rounded-xl bg-violet-500/10 border border-violet-500/20 flex items-center justify-center text-xl shrink-0">
+              ⚡
+            </div>
+            <div className="flex-1 min-w-0">
+              <h4 className="text-white font-bold text-sm tracking-tight">
+                {updateStatus === 'available' && 'Actualización Detectada'}
+                {updateStatus === 'downloading' && 'Descargando Nueva Versión'}
+                {updateStatus === 'downloaded' && 'Actualización Lista'}
+              </h4>
+              <p className="text-slate-400 text-xs mt-0.5 leading-relaxed truncate">
+                {updateStatus === 'available' && `Versión ${updateInfo?.version || ''} encontrada.`}
+                {updateStatus === 'downloading' && `Progreso: ${downloadPercent}%`}
+                {updateStatus === 'downloaded' && 'La descarga finalizó con éxito.'}
+              </p>
+              
+              {updateStatus === 'downloading' && (
+                <div className="w-full h-1 bg-slate-800 rounded-full overflow-hidden mt-3">
+                  <div className="h-full bg-violet-500 transition-all duration-300" style={{ width: `${downloadPercent}%` }} />
+                </div>
+              )}
+
+              {updateStatus === 'downloaded' && (
+                <button
+                  onClick={() => {
+                    const api = (window as any).electronAPI;
+                    if (api) api.quitAndInstallUpdate();
+                  }}
+                  className="mt-3 w-full py-2 bg-gradient-to-r from-violet-600 to-indigo-600 text-white font-bold text-xs rounded-xl hover:from-violet-500 hover:to-indigo-500 shadow-md active:scale-95 transition-all"
+                >
+                  Reiniciar y Aplicar Ahora
+                </button>
+              )}
+            </div>
+            <button 
+              onClick={() => setUpdateStatus('idle')} 
+              className="text-slate-500 hover:text-slate-300 transition-colors shrink-0"
+            >
+              <X size={16} />
             </button>
           </div>
         </div>

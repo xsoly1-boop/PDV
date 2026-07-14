@@ -1,4 +1,8 @@
 const { app, BrowserWindow, ipcMain, utilityProcess } = require('electron');
+const { autoUpdater } = require('electron-updater');
+
+// Configuración básica de autoUpdater
+autoUpdater.autoDownload = true;
 const path = require('path');
 const fs = require('fs');
 const os = require('os');
@@ -92,6 +96,11 @@ function createWindow() {
 app.whenReady().then(() => {
   startLocalAPI();
   createWindow();
+
+  // Buscar actualizaciones al iniciar de forma silenciosa en producción
+  if (app.isPackaged) {
+    autoUpdater.checkForUpdatesAndNotify();
+  }
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
@@ -370,6 +379,58 @@ ipcMain.handle('check-superadmin-dongle', () => {
 
 ipcMain.handle('check-license-dongle', () => {
   return checkUsbDongle('vante_license.key');
+});
+// --- AUTO UPDATER IPC HANDLERS & EVENTS ---
+ipcMain.handle('check-for-updates', () => {
+  if (app.isPackaged) {
+    autoUpdater.checkForUpdates();
+    return { success: true, message: 'Verificando actualizaciones...' };
+  }
+  return { success: false, message: 'Modo desarrollo: verificación omitida.' };
+});
+
+ipcMain.handle('quit-and-install-update', () => {
+  autoUpdater.quitAndInstall();
+  return { success: true };
+});
+
+autoUpdater.on('checking-for-update', () => {
+  console.log('[ELECTRON-MAIN] [Updater] Buscando actualizaciones...');
+});
+
+autoUpdater.on('update-available', (info) => {
+  console.log('[ELECTRON-MAIN] [Updater] Actualización disponible:', info.version);
+  if (mainWindow) {
+    mainWindow.webContents.send('update-available', info);
+  }
+});
+
+autoUpdater.on('update-not-available', (info) => {
+  console.log('[ELECTRON-MAIN] [Updater] No hay actualizaciones disponibles.');
+  if (mainWindow) {
+    mainWindow.webContents.send('update-not-available', info);
+  }
+});
+
+autoUpdater.on('download-progress', (progressObj) => {
+  console.log(`[ELECTRON-MAIN] [Updater] Progreso de descarga: ${progressObj.percent}%`);
+  if (mainWindow) {
+    mainWindow.webContents.send('update-download-progress', progressObj);
+  }
+});
+
+autoUpdater.on('update-downloaded', (info) => {
+  console.log('[ELECTRON-MAIN] [Updater] Actualización descargada con éxito y lista para instalar:', info.version);
+  if (mainWindow) {
+    mainWindow.webContents.send('update-downloaded', info);
+  }
+});
+
+autoUpdater.on('error', (err) => {
+  console.error('[ELECTRON-MAIN] [Updater] Error en el actualizador:', err);
+  if (mainWindow) {
+    mainWindow.webContents.send('update-error', err.message || err.toString());
+  }
 });
 
 app.on('will-quit', () => {

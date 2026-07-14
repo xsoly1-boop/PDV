@@ -15,6 +15,7 @@
   "dependencies": {
     "@punto-de-venta/shared-types": "*",
     "dexie": "^4.0.8",
+    "electron-updater": "^6.8.9",
     "lucide-react": "^1.24.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0"
