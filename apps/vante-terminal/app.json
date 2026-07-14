@@ -1,9 +1,9 @@
 {
   "expo": {
     "name": "Vante Terminal",
-    "slug": "apex-pos-mobile",
+    "slug": "vante-terminal",
     "version": "1.0.0",
-    "orientation": "landscape",
+    "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "dark",
     "splash": {
@@ -16,24 +16,24 @@
     ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.vante.terminal"
+      "bundleIdentifier": "com.vante.vterm"
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#0d0e12"
       },
-      "package": "com.vante.terminal",
+      "package": "com.vante.vterm",
       "versionCode": 1
     },
     "web": {
       "favicon": "./assets/favicon.png"
     },
+    "owner": "miyagi1",
     "extra": {
       "eas": {
-        "projectId": "9c4f5f3b-f024-4673-9fba-62496e82157f"
+        "projectId": "aae3bd30-d9c8-490b-8712-618dd47c23bd"
       }
-    },
-    "owner": "miyagi1"
+    }
   }
 }
