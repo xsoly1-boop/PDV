@@ -1387,7 +1387,8 @@ export default function POSInterface() {
     }
     const res = await SyncService.syncPendingMovimientos();
     if (res.success) {
-      alert(`Sincronización exitosa: ${res.processed} movimientos cargados a PostgreSQL.`);
+      const isHybrid = localStorage.getItem('vante_deployment_mode') === 'HYBRID';
+      alert(`Sincronización exitosa: ${res.processed} movimientos cargados ${isHybrid ? 'en la nube' : 'en el servidor local'}.`);
     } else {
       alert(`Fallo en sincronización: ${res.error}`);
     }
@@ -1502,7 +1503,8 @@ export default function POSInterface() {
           const drawerMsg = (config.allowDrawer && hasCashPayment)
             ? '\n\n[Hardware] Cajón de dinero abierto (Comando: ' + (config.drawerCommand || '27,112,0,25,250') + ')'
             : '';
-          alert('Venta registrada y sincronizada en PostgreSQL central con éxito!' + drawerMsg);
+          const isHybrid = localStorage.getItem('vante_deployment_mode') === 'HYBRID';
+          alert(`Venta registrada y sincronizada ${isHybrid ? 'en la nube' : 'en local'} con éxito!` + drawerMsg);
         } else {
           alert('Venta registrada en base de datos local.\nAlerta de Red: ' + res.error + '. Se sincronizará automáticamente al detectar conexión.');
         }

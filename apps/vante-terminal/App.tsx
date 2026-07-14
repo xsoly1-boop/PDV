@@ -627,8 +627,9 @@ export default function App() {
       if (Platform.OS === 'android') {
         try {
           const NavigationBar = require('expo-navigation-bar');
-          await NavigationBar.setVisibilityAsync('hidden');
-          await NavigationBar.setBehaviorAsync('interactive-immersive');
+          // Llamar sin bloquear la inicialización de la app
+          NavigationBar.setVisibilityAsync('hidden').catch(() => {});
+          NavigationBar.setBehaviorAsync('interactive-immersive').catch(() => {});
         } catch (e) {}
       }
 
