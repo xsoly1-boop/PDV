@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { 
   Search, Wifi, User, Clock, 
   Trash2, Plus, Minus, AlertCircle, 
-  Wrench, CarFront, PackageOpen, Printer, Zap,
+  CarFront, PackageOpen, Printer, Zap,
   Sun, Moon, LayoutDashboard, Bookmark, RotateCw, MessageCircle, CheckCircle2, X, DollarSign,
   ClipboardList, Check, TrendingUp, Lock, ShieldCheck
 } from 'lucide-react';
@@ -59,6 +59,13 @@ interface CompanyConfig {
   scaleModel?: string;
   sessionTimeout?: number;
   cotizacionExpiracionMins?: number;
+  showWhatsAppPostSale?: boolean;
+  enableCloudBackups?: boolean;
+  enableIntegratedPayments?: boolean;
+  paymentTerminalProvider?: 'mp' | 'clip' | 'none';
+  paymentTerminalDeviceId?: string;
+  enableAutoUpdates?: boolean;
+  enableAdvancedInventory?: boolean;
   businessStartHour?: string;
   businessEndHour?: string;
   allowGerenteLogin?: boolean;
@@ -434,7 +441,7 @@ export default function POSInterface() {
   const handleSuperAdminAuthSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setSuperAdminAuthError('');
-    if (superAdminAuthPin === 'APEX2401') {
+    if (superAdminAuthPin === 'VANTE2401') {
       localStorage.setItem('vante_super_admin_active', 'true');
       localStorage.setItem('vante_super_admin_method', 'password');
       setShowSuperAdminSetup(true);
@@ -552,6 +559,25 @@ export default function POSInterface() {
     }
   };
 
+  const handleToggleDeploymentMode = () => {
+    const currentMode = localStorage.getItem('vante_deployment_mode') as 'LOCAL' | 'HYBRID' || 'LOCAL';
+    if (currentMode === 'LOCAL') {
+      const savedRenderUrl = localStorage.getItem('backup_render_url') || 'https://pdventa.onrender.com';
+      localStorage.setItem('vante_deployment_mode', 'HYBRID');
+      localStorage.setItem('pos_api_base_url', savedRenderUrl);
+      alert('Cambiando a Modo Híbrido Nube (Remoto)...');
+    } else {
+      const currentRenderUrl = localStorage.getItem('pos_api_base_url') || 'https://pdventa.onrender.com';
+      if (currentRenderUrl !== 'http://localhost:3001') {
+        localStorage.setItem('backup_render_url', currentRenderUrl);
+      }
+      localStorage.setItem('vante_deployment_mode', 'LOCAL');
+      localStorage.setItem('pos_api_base_url', 'http://localhost:3001');
+      alert('Cambiando a Modo Caja Local (localhost)...');
+    }
+    window.location.reload();
+  };
+
   // Verificar turno activo de caja (online/offline)
   useEffect(() => {
     const fetchActiveTurno = async () => {
@@ -602,7 +628,28 @@ export default function POSInterface() {
     fetchActiveTurno();
   }, [currentUser, isOnline]);
 
-  const [theme, setTheme] = useState<'dark' | 'light'>('dark');
+  const [theme, setTheme] = useState<'dark' | 'light'>(() => {
+    const saved = localStorage.getItem('vante_theme');
+    return (saved === 'light' || saved === 'dark') ? saved : 'dark';
+  });
+
+  useEffect(() => {
+    if (theme === 'dark') {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  }, [theme]);
+
+  const [isLoadingIntro, setIsLoadingIntro] = useState(true);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setIsLoadingIntro(false);
+    }, 3000);
+    return () => clearTimeout(timer);
+  }, []);
+
   const [currentView, setCurrentView] = useState<'pos' | 'admin' | 'quotes' | 'crm' | 'reports'>('pos');
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [showCheckoutModal, setShowCheckoutModal] = useState(false);
@@ -1499,7 +1546,9 @@ ${articulosTexto}
 ¡Gracias por su compra!`;
 
     setCheckoutWhatsAppMessage(encodeURIComponent(text));
-    setShowWhatsAppModal(true);
+    if (config.showWhatsAppPostSale !== false) {
+      setShowWhatsAppModal(true);
+    }
 
     // Avanzar al siguiente ticket y persistirlo
     const nextTicket = ticketNumber + 1;
@@ -1579,7 +1628,11 @@ ${articulosTexto}
       alert('Acceso Denegado: Solo el Administrador de sistema puede cambiar el tema visual del POS.');
       return;
     }
-    setTheme(prev => prev === 'dark' ? 'light' : 'dark');
+    setTheme(prev => {
+      const next = prev === 'dark' ? 'light' : 'dark';
+      localStorage.setItem('vante_theme', next);
+      return next;
+    });
   };
 
   const handlePrintMock = async () => {
@@ -1803,6 +1856,48 @@ ${articulosTexto}
 
   const selectedItem = cart.find((item: any) => item.id === selectedItemId);
 
+  // 0. PANTALLA DE INTRO (LOADING)
+  if (isLoadingIntro) {
+    return (
+      <div className={`flex flex-col items-center justify-center h-screen font-sans transition-all duration-500 ${
+        theme === 'dark' ? 'bg-[#0d0e12] text-slate-300' : 'bg-slate-50 text-slate-700'
+      }`}>
+        <div className="flex flex-col items-center max-w-sm w-full px-6 animate-fade-in">
+          {/* Logo animado grande */}
+          <div className={`relative mb-8 p-8 rounded-3xl border backdrop-blur-md flex items-center justify-center transition-all ${
+            theme === 'dark' 
+              ? 'bg-[#13151b] border-[#20222b] vante-accent-glow' 
+              : 'bg-white border-slate-200 shadow-xl shadow-slate-200/50'
+          }`}>
+            <img 
+              src={vanteLogo} 
+              alt="Vante POS Logo" 
+              className="h-28 w-auto object-contain animate-pulse" 
+            />
+          </div>
+          
+          {/* Título de la Aplicación */}
+          <h2 className="text-2xl font-black tracking-wider text-center uppercase mb-1">
+            <span className="text-gradient-vante">Vante POS</span>
+          </h2>
+          <p className="text-xs text-slate-400 font-bold tracking-widest uppercase mb-12">
+            Punto de Venta Híbrido
+          </p>
+
+          {/* Barra de progreso de carga */}
+          <div className="w-full bg-slate-200 dark:bg-slate-800 h-1.5 rounded-full overflow-hidden relative border border-slate-500/5">
+            <div className="bg-gradient-vante h-full rounded-full animate-loading-bar" style={{ width: '0%' }}></div>
+          </div>
+          
+          {/* Texto de Carga */}
+          <p className="text-[10px] text-slate-500 dark:text-slate-400 font-black uppercase tracking-widest mt-3.5 animate-pulse">
+            Iniciando base de datos local SQLite...
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   // 1. RENDER DE PANTALLA DE INGRESO (LOGIN POR PIN)
   if (!currentUser) {
     return (
@@ -1845,7 +1940,11 @@ ${articulosTexto}
           </div>
           
           {/* Logo Oficial Vante POS */}
-          <div className="flex justify-center items-center mb-6 w-full px-4 py-2 rounded-2xl bg-[#0d0e12] border border-[#20222b] shadow-inner">
+          <div className={`flex justify-center items-center mb-6 w-full px-4 py-2.5 rounded-2xl border transition-all ${
+            theme === 'dark' 
+              ? 'bg-[#13151b]/80 border-[#20222b] backdrop-blur-md shadow-[0_0_25px_rgba(168,85,247,0.12)]' 
+              : 'bg-white border-slate-200 shadow-sm'
+          }`}>
             <img src={vanteLogo} alt="Vante POS" className="h-14 object-contain" />
           </div>
           <p className="text-xs text-slate-400 mt-1 mb-6">Ingresar PIN de Acceso Rápido</p>
@@ -1985,6 +2084,216 @@ ${articulosTexto}
           </div>
         )}
 
+        {/* MODAL: AUTENTICACIÓN SUPER ADMIN */}
+        {showSuperAdminAuthModal && (
+          <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[150] flex items-center justify-center p-4">
+            <div className={`p-8 rounded-3xl border w-full max-w-sm shadow-2xl relative ${
+              theme === 'dark' ? 'bg-[#13151b] border-[#262836] text-white' : 'bg-white border-slate-200 text-slate-800'
+            }`}>
+              <button 
+                onClick={() => setShowSuperAdminAuthModal(false)}
+                className="absolute top-4 right-4 text-slate-400 hover:text-white bg-transparent border-0 cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+
+              <div className="text-center mb-6">
+                <h3 className="text-md font-bold uppercase tracking-wider">Super Admin Master Setup</h3>
+                <p className="text-xs text-slate-400 mt-2">
+                  Ingrese el PIN maestro de seguridad para desbloquear los parámetros de red e infraestructura.
+                </p>
+              </div>
+
+              {superAdminAuthError && (
+                <div className="text-rose-500 text-xs font-semibold mb-4 bg-rose-500/10 border border-rose-500/20 px-3 py-1.5 rounded-lg text-center">
+                  {superAdminAuthError}
+                </div>
+              )}
+
+              <form onSubmit={handleSuperAdminAuthSubmit} className="space-y-4">
+                <input 
+                  type="password" 
+                  required
+                  maxLength={8}
+                  placeholder="PIN Maestro (8 dígitos)"
+                  className="w-full text-center tracking-widest text-lg font-black rounded-xl p-3 border focus:outline-none focus:ring-2 focus:ring-amber-500 bg-[#0d0e12] border-[#20222b] text-white"
+                  value={superAdminAuthPin}
+                  onChange={e => setSuperAdminAuthPin(e.target.value)}
+                />
+                <button type="submit" className="w-full bg-amber-500 hover:bg-amber-400 text-slate-950 font-black py-3 rounded-xl border-0 cursor-pointer text-xs uppercase tracking-wider transition-all">
+                  Ingresar al Setup
+                </button>
+              </form>
+            </div>
+          </div>
+        )}
+
+        {/* OVERLAY: CONFIGURACIÓN SUPER ADMIN */}
+        {showSuperAdminSetup && (
+          <div className="fixed inset-0 bg-slate-950 z-[200] flex items-center justify-center p-6 overflow-y-auto">
+            <div className="w-full max-w-lg bg-[#13151b] border border-[#20222b] rounded-3xl p-8 shadow-2xl text-slate-100 font-sans">
+              <div className="flex justify-between items-center mb-6">
+                <div>
+                  <h2 className="text-2xl font-black text-white">Vante Super Admin Panel</h2>
+                  <p className="text-xs text-slate-400">Configuración de Red y Despliegue Híbrido</p>
+                </div>
+                <button 
+                  onClick={() => setShowSuperAdminSetup(false)}
+                  className="text-slate-500 hover:text-white border-0 bg-transparent cursor-pointer"
+                >
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+
+              {setupError && (
+                <div className="bg-rose-500/10 border border-rose-500/20 text-rose-400 p-4 rounded-xl text-xs font-semibold mb-6">
+                  ⚠️ {setupError}
+                </div>
+              )}
+
+              <div className="space-y-6">
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">Modo de Despliegue</label>
+                  <div className="grid grid-cols-2 gap-4">
+                    <button
+                      onClick={() => setSetupMode('LOCAL')}
+                      className={`py-3 rounded-xl font-bold text-xs border transition-all cursor-pointer ${
+                        setupMode === 'LOCAL'
+                          ? 'border-amber-500 bg-amber-500/10 text-amber-500'
+                          : 'border-[#262836] bg-[#1a1c24] text-slate-400 hover:border-slate-700'
+                      }`}
+                    >
+                      Caja Local (SQLite)
+                    </button>
+                    <button
+                      onClick={() => setSetupMode('HYBRID')}
+                      className={`py-3 rounded-xl font-bold text-xs border transition-all cursor-pointer ${
+                        setupMode === 'HYBRID'
+                          ? 'border-amber-500 bg-amber-500/10 text-amber-500'
+                          : 'border-[#262836] bg-[#1a1c24] text-slate-400 hover:border-slate-700'
+                      }`}
+                    >
+                      Modo Híbrido Nube (Supabase)
+                    </button>
+                  </div>
+                </div>
+
+                {setupMode === 'HYBRID' && (
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5">Supabase project URL</label>
+                      <input
+                        type="url"
+                        placeholder="https://xxxx.supabase.co"
+                        value={setupSupabaseUrl}
+                        onChange={(e) => setSetupSupabaseUrl(e.target.value)}
+                        className="w-full bg-[#0d0e12] border border-[#20222b] rounded-xl py-2.5 px-4 text-xs text-white outline-none focus:border-amber-500"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5">Supabase Anon Key</label>
+                      <textarea
+                        rows={3}
+                        placeholder="eyJhbGciOi..."
+                        value={setupSupabaseAnonKey}
+                        onChange={(e) => setSetupSupabaseAnonKey(e.target.value)}
+                        className="w-full bg-[#0d0e12] border border-[#20222b] rounded-xl py-2.5 px-4 text-xs text-white outline-none focus:border-amber-500 font-mono resize-none"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5">Servidor API Nube (Render)</label>
+                      <input
+                        type="url"
+                        placeholder="https://vante-api.onrender.com"
+                        value={setupApiBaseUrl}
+                        onChange={(e) => setSetupApiBaseUrl(e.target.value)}
+                        className="w-full bg-[#0d0e12] border border-[#20222b] rounded-xl py-2.5 px-4 text-xs text-white outline-none focus:border-amber-500"
+                      />
+                    </div>
+
+                    <div className="pt-2">
+                      <button
+                        type="button"
+                        disabled={isValidatingSetup}
+                        onClick={handleTestSetupConnection}
+                        className="w-full bg-slate-800 hover:bg-slate-700 disabled:bg-slate-900 text-white font-bold py-2.5 rounded-xl text-xs cursor-pointer border-0 shadow-md"
+                      >
+                        {isValidatingSetup ? 'Validando conexión...' : '⚡ Probar Conexión Supabase'}
+                      </button>
+                    </div>
+
+                    {setupSucursales.length > 0 && (
+                      <div className="space-y-4 border-t border-[#20222b] pt-4">
+                        <div>
+                          <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5">Sucursal Asociada a esta Caja</label>
+                          <select
+                            value={setupSucursalId}
+                            onChange={(e) => {
+                              if (e.target.value === 'new') {
+                                setShowNewSucursalInput(true);
+                              } else {
+                                setShowNewSucursalInput(false);
+                                setSetupSucursalId(e.target.value);
+                              }
+                            }}
+                            className="w-full bg-[#0d0e12] border border-[#20222b] rounded-xl py-2.5 px-4 text-xs text-white outline-none focus:border-amber-500 cursor-pointer"
+                          >
+                            {setupSucursales.map((suc) => (
+                              <option key={suc.id} value={suc.id}>{suc.nombre} ({suc.id})</option>
+                            ))}
+                            <option value="new">+ Registrar Nueva Sucursal</option>
+                          </select>
+                        </div>
+
+                        {showNewSucursalInput && (
+                          <div className="grid grid-cols-2 gap-4 border border-dashed border-[#20222b] p-4 rounded-xl">
+                            <div>
+                              <label className="block text-[10px] font-bold uppercase text-slate-400 mb-1">ID Único (ej. suc-oriente)</label>
+                              <input
+                                type="text"
+                                value={newSucursalId}
+                                onChange={(e) => setNewSucursalId(e.target.value.toLowerCase().replace(/\s+/g, '-'))}
+                                className="w-full bg-[#0d0e12] border border-[#20222b] rounded-xl py-2 px-3 text-xs text-white outline-none focus:border-amber-500"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-[10px] font-bold uppercase text-slate-400 mb-1">Nombre Sucursal</label>
+                              <input
+                                type="text"
+                                value={newSucursalName}
+                                onChange={(e) => setNewSucursalName(e.target.value)}
+                                className="w-full bg-[#0d0e12] border border-[#20222b] rounded-xl py-2 px-3 text-xs text-white outline-none focus:border-amber-500"
+                              />
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              <div className="mt-8 flex justify-end gap-3 border-t border-[#20222b] pt-6">
+                <button
+                  onClick={() => setShowSuperAdminSetup(false)}
+                  className="py-3 px-6 rounded-xl border border-[#20222b] text-slate-400 hover:bg-[#1a1c24] font-bold text-xs cursor-pointer"
+                >
+                  Cerrar Panel
+                </button>
+                <button
+                  disabled={savingSetup}
+                  onClick={handleSaveSetup}
+                  className="bg-amber-500 hover:bg-amber-400 disabled:bg-slate-900 text-slate-950 font-black py-3 px-8 rounded-xl border-0 cursor-pointer text-xs uppercase tracking-wider"
+                >
+                  Guardar Parámetros
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
       </div>
     );
   }
@@ -2026,8 +2335,8 @@ ${articulosTexto}
           {config.logoUrl ? (
             <img src={config.logoUrl} alt="Logo" className="w-11 h-11 object-contain rounded-xl bg-white p-1 shadow-sm border border-slate-200" />
           ) : (
-            <div className="bg-amber-500 text-slate-950 font-black px-3 py-2 rounded-lg flex items-center gap-2 shadow-[0_0_15px_rgba(245,158,11,0.35)] border-0">
-              <Wrench className="w-5 h-5 text-slate-955" /> POS
+            <div className="flex items-center">
+              <img src={vanteLogo} alt="Vante POS Logo" className="h-8 object-contain" />
             </div>
           )}
           <div>
@@ -2191,6 +2500,39 @@ ${articulosTexto}
             >
               <DollarSign className="w-3.5 h-3.5" />
               Caja
+            </button>
+          )}
+
+          {/* Botón de Alternancia de Red para Super Admin */}
+          {localStorage.getItem('vante_super_admin_active') === 'true' && (
+            <button
+              onClick={handleToggleDeploymentMode}
+              className={`text-xs px-3 py-1.5 rounded-lg font-bold transition-all border cursor-pointer mr-2 flex items-center gap-1.5 ${
+                localStorage.getItem('vante_deployment_mode') === 'HYBRID'
+                  ? 'bg-sky-500/10 border-sky-500/30 text-sky-400 hover:bg-sky-500/20'
+                  : 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/20'
+              }`}
+              title={`Modo de Red Activo: ${
+                localStorage.getItem('vante_deployment_mode') === 'HYBRID' ? 'NUBE / REMOTO' : 'LOCAL'
+              }. Haz clic para cambiar.`}
+            >
+              {localStorage.getItem('vante_deployment_mode') === 'HYBRID' ? (
+                <>
+                  <span className="relative flex h-2 w-2">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-sky-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-sky-500"></span>
+                  </span>
+                  ☁️ Remoto (Render)
+                </>
+              ) : (
+                <>
+                  <span className="relative flex h-2 w-2">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                  </span>
+                  🔌 Local (SQLite)
+                </>
+              )}
             </button>
           )}
 

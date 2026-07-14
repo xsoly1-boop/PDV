@@ -1,9 +1,9 @@
 {
   "expo": {
-    "name": "Vante POS Móvil",
+    "name": "Vante Terminal",
     "slug": "apex-pos-mobile",
-    "version": "1.1.1",
-    "orientation": "portrait",
+    "version": "1.0.0",
+    "orientation": "landscape",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "dark",
     "splash": {
@@ -16,15 +16,15 @@
     ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.vante.posmobile"
+      "bundleIdentifier": "com.vante.terminal"
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#0d0e12"
       },
-      "package": "com.vante.posmobile",
-      "versionCode": 3,
+      "package": "com.vante.terminal",
+      "versionCode": 1,
       "permissions": [
         "CAMERA",
         "READ_EXTERNAL_STORAGE",

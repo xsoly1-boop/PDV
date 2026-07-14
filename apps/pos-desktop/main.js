@@ -1,36 +1,55 @@
-const { app, BrowserWindow, ipcMain } = require('electron');
+const { app, BrowserWindow, ipcMain, utilityProcess } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const os = require('os');
 
-const { spawn } = require('child_process');
 let mainWindow;
 let apiProcess = null;
 
-// Levantar el backend API automáticamente si es el compilado Server
-const isServer = app.name.toLowerCase().includes('server') || app.getName().toLowerCase().includes('server');
+function startLocalAPI() {
+  const isServer = app.name.toLowerCase().includes('server') || app.getName().toLowerCase().includes('server');
+  if (!isServer) return;
 
-if (isServer) {
   const apiPath = app.isPackaged
     ? path.join(process.resourcesPath, 'api/dist/index.js')
     : path.join(__dirname, '../api/dist/index.js');
 
   console.log('[ELECTRON-MAIN] Iniciando backend API local en modo Server desde:', apiPath);
   try {
-    apiProcess = spawn(process.execPath, [apiPath], {
+    const userDataPath = app.getPath('userData');
+    if (!fs.existsSync(userDataPath)) {
+      fs.mkdirSync(userDataPath, { recursive: true });
+    }
+    const logPath = path.join(userDataPath, 'local-api.log');
+    console.log('[ELECTRON-MAIN] Escribiendo logs del backend en:', logPath);
+    const logStream = fs.createWriteStream(logPath, { flags: 'a' });
+    logStream.write(`\n\n=== LOG INICIALIZADO: ${new Date().toISOString()} ===\n`);
+
+    apiProcess = utilityProcess.fork(apiPath, {
+      stdio: 'pipe',
       env: {
         ...process.env,
-        ELECTRON_RUN_AS_NODE: '1',
         PORT: '3001'
       }
     });
 
-    apiProcess.stdout.on('data', (data) => {
-      console.log(`[LOCAL-API] ${data}`);
-    });
+    if (apiProcess.stdout) {
+      apiProcess.stdout.on('data', (data) => {
+        console.log(`[LOCAL-API] ${data}`);
+        logStream.write(`[STDOUT] ${data}`);
+      });
+    }
 
-    apiProcess.stderr.on('data', (data) => {
-      console.error(`[LOCAL-API-ERROR] ${data}`);
+    if (apiProcess.stderr) {
+      apiProcess.stderr.on('data', (data) => {
+        console.error(`[LOCAL-API-ERROR] ${data}`);
+        logStream.write(`[STDERR] ${data}`);
+      });
+    }
+
+    apiProcess.on('exit', (code) => {
+      console.log(`[ELECTRON-MAIN] El proceso local-api terminó con código: ${code}`);
+      logStream.write(`[EXIT] El proceso local-api terminó con código: ${code}\n`);
     });
   } catch (e) {
     console.error('[ELECTRON-MAIN] Error al levantar el proceso local-api:', e);
@@ -53,6 +72,8 @@ function createWindow() {
     }
   });
 
+  mainWindow.maximize();
+
   // Si estamos en desarrollo, cargar desde el servidor local de Vite
   const isDev = !app.isPackaged;
   if (isDev) {
@@ -69,6 +90,7 @@ function createWindow() {
 }
 
 app.whenReady().then(() => {
+  startLocalAPI();
   createWindow();
 
   app.on('activate', () => {

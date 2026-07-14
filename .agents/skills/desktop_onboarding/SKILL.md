@@ -37,7 +37,7 @@ De esta manera, el flujo de activación puede configurar tanto la **URL del Serv
 > 
 > Para solucionar esto, el desbloqueo del formulario de configuración aceptará **dos métodos alternativos**:
 > 
-> 1. **Método A: Contraseña Master Key**: Introducir manualmente la clave maestra local estática establecida: **`APEX2401`**.
+> 1. **Método A: Contraseña Master Key**: Introducir manualmente la clave maestra local estática establecida: **`VANTE2401`**.
 > 2. **Método B: Dongle USB de Licencia Digital**: Insertar una memoria USB autorizada que contenga el archivo criptográfico `apex_license.key`.
 >    * **Funcionamiento**: Electron leerá el número de serie de hardware único de fábrica de la memoria USB conectada.
 >    * **Validación**: Desencriptará el archivo de licencia utilizando la clave pública incrustada y verificará que el número de serie codificado coincida exactamente con el de la memoria física. Si coincide, la pantalla de configuración se desbloqueará de forma automática sin necesidad de escribir la clave.
@@ -269,7 +269,7 @@ Para permitir el aprovisionamiento de la licencia:
 
 ### 6.3 Acceso Oculto al Setup Super Admin (Híbrido)
 Para configurar las llaves de Supabase + Render en el Server, el panel se mantiene invisible usando exclusivamente dos métodos de entrada:
-1.  **Vía A - Atajo de Teclado**: Presionar `Ctrl + Shift + A` (Windows) o `Cmd + Shift + A` (macOS) en la pantalla de PIN de login abre una ventana flotante pidiendo la contraseña maestra (**`APEX2401`**).
+1.  **Vía A - Atajo de Teclado**: Presionar `Ctrl + Shift + A` (Windows) o `Cmd + Shift + A` (macOS) en la pantalla de PIN de login abre una ventana flotante pidiendo la contraseña maestra (**`VANTE2401`**).
 2.  **Vía B - Dongle USB Físico**: Al insertar una memoria USB con el archivo criptográfico `apex_superadmin.key`, Electron detecta el dispositivo y abre directamente la pantalla de configuración híbrida (sin escribir contraseñas).
 
 ![Mockup de la Pantalla de Configuración Super Admin](./super_admin_hybrid_setup_mockup.jpg)

@@ -9,6 +9,30 @@
   .animate-slide-in {
     animation: slideIn 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
   }
+  
+  /* Text and border gradients */
+  .text-gradient-vante {
+    background: linear-gradient(135deg, #8b5cf6 0%, #06b6d4 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  
+  .bg-gradient-vante {
+    background: linear-gradient(135deg, #8b5cf6 0%, #06b6d4 100%);
+  }
+
+  .border-gradient-vante {
+    border-image: linear-gradient(135deg, #8b5cf6 0%, #06b6d4 100%) 1;
+  }
+
+  /* Add custom glow accent for Vante theme in dark mode */
+  .vante-accent-glow {
+    box-shadow: 0 0 15px rgba(139, 92, 246, 0.25);
+  }
+
+  .vante-cyan-glow {
+    box-shadow: 0 0 15px rgba(6, 182, 212, 0.25);
+  }
 }
 
 @keyframes fadeIn {
@@ -20,3 +44,14 @@
   from { transform: translateX(100%); }
   to { transform: translateX(0); }
 }
+
+@keyframes loadingBar {
+  from { width: 0%; }
+  to { width: 100%; }
+}
+
+.animate-loading-bar {
+  animation: loadingBar 3s linear forwards;
+}
+
+

@@ -14,5 +14,6 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // Licenciamiento y Dongles
   getHardwareId: () => ipcRenderer.invoke('get-hardware-id'),
   checkSuperAdminDongle: () => ipcRenderer.invoke('check-superadmin-dongle'),
-  checkLicenseDongle: () => ipcRenderer.invoke('check-license-dongle')
+  checkLicenseDongle: () => ipcRenderer.invoke('check-license-dongle'),
+  backupSqliteDb: (params) => ipcRenderer.invoke('backup-sqlite-db', params)
 });

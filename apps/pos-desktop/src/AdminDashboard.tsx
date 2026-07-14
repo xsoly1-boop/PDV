@@ -36,6 +36,13 @@ interface CompanyConfig {
   scaleModel?: string;
   sessionTimeout?: number;
   cotizacionExpiracionMins?: number;
+  showWhatsAppPostSale?: boolean;
+  enableCloudBackups?: boolean;
+  enableIntegratedPayments?: boolean;
+  paymentTerminalProvider?: 'mp' | 'clip' | 'none';
+  paymentTerminalDeviceId?: string;
+  enableAutoUpdates?: boolean;
+  enableAdvancedInventory?: boolean;
   businessStartHour?: string;
   businessEndHour?: string;
   allowGerenteLogin?: boolean;
@@ -2037,6 +2044,127 @@ export default function AdminDashboard({
                       />
                       Transferencia Bancaria
                     </label>
+                  </div>
+                </div>
+
+                {/* CARD 3.5: COMPORTAMIENTO POST-VENTA */}
+                <div className={`p-6 rounded-2xl border ${
+                  theme === 'dark' ? 'bg-[#13151b] border-[#20222b]' : 'bg-white border-slate-200 shadow-sm'
+                }`}>
+                  <h3 className="text-sm font-bold uppercase tracking-wider mb-4 text-slate-400">Comportamiento Post-Venta</h3>
+                  <p className="text-xs text-slate-500 mb-4">Configura si deseas habilitar avisos o modales al concluir el cobro del ticket.</p>
+                  
+                  <div className="flex flex-wrap gap-6">
+                    <label className="flex items-center gap-3 cursor-pointer text-sm">
+                      <input
+                        type="checkbox"
+                        className="w-4 h-4 rounded text-amber-500 focus:ring-amber-500 border-slate-600 bg-slate-800"
+                        checked={config.showWhatsAppPostSale !== false}
+                        onChange={e => setConfig({ ...config, showWhatsAppPostSale: e.target.checked })}
+                      />
+                      Mostrar modal para enviar recibo por WhatsApp
+                    </label>
+                  </div>
+                </div>
+
+                {/* CARD 3.6: ESCALABILIDAD Y MÓDULOS AVANZADOS */}
+                <div className={`p-6 rounded-2xl border ${
+                  theme === 'dark' ? 'bg-[#13151b] border-[#20222b]' : 'bg-white border-slate-200 shadow-sm'
+                }`}>
+                  <h3 className="text-sm font-bold uppercase tracking-wider mb-4 text-slate-400">Escalabilidad y Módulos Avanzados</h3>
+                  <p className="text-xs text-slate-500 mb-4">Habilita y configura características adicionales para la escala comercial de tu negocio.</p>
+                  
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {/* Respaldos en la Nube */}
+                      <label className="flex items-center gap-3 cursor-pointer text-sm">
+                        <input
+                          type="checkbox"
+                          className="w-4 h-4 rounded text-amber-500 focus:ring-amber-500 border-slate-600 bg-slate-800"
+                          checked={config.enableCloudBackups === true}
+                          onChange={e => setConfig({ ...config, enableCloudBackups: e.target.checked })}
+                        />
+                        <div>
+                          <span className="font-bold text-slate-350">Habilitar Respaldos en la Nube</span>
+                          <span className="block text-[10px] text-slate-500 mt-0.5">Respaldos diarios automáticos y encriptados de la base de datos SQLite en Supabase.</span>
+                        </div>
+                      </label>
+
+                      {/* Actualizaciones Automáticas */}
+                      <label className="flex items-center gap-3 cursor-pointer text-sm">
+                        <input
+                          type="checkbox"
+                          className="w-4 h-4 rounded text-amber-500 focus:ring-amber-500 border-slate-600 bg-slate-800"
+                          checked={config.enableAutoUpdates === true}
+                          onChange={e => setConfig({ ...config, enableAutoUpdates: e.target.checked })}
+                        />
+                        <div>
+                          <span className="font-bold text-slate-350">Habilitar Buscar Actualizaciones</span>
+                          <span className="block text-[10px] text-slate-500 mt-0.5">Descarga actualizaciones en segundo plano; se solicitará permiso antes de instalar.</span>
+                        </div>
+                      </label>
+
+                      {/* Control de Inventario Avanzado */}
+                      <label className="flex items-center gap-3 cursor-pointer text-sm">
+                        <input
+                          type="checkbox"
+                          className="w-4 h-4 rounded text-amber-500 focus:ring-amber-500 border-slate-600 bg-slate-800"
+                          checked={config.enableAdvancedInventory === true}
+                          onChange={e => setConfig({ ...config, enableAdvancedInventory: e.target.checked })}
+                        />
+                        <div>
+                          <span className="font-bold text-slate-350">Control de Inventario Avanzado</span>
+                          <span className="block text-[10px] text-slate-500 mt-0.5">Cálculo de Costo Promedio Ponderado en compras y alertas visuales de mínimos en stock.</span>
+                        </div>
+                      </label>
+
+                      {/* Terminales de Pago Integradas */}
+                      <label className="flex items-center gap-3 cursor-pointer text-sm">
+                        <input
+                          type="checkbox"
+                          className="w-4 h-4 rounded text-amber-500 focus:ring-amber-500 border-slate-600 bg-slate-800"
+                          checked={config.enableIntegratedPayments === true}
+                          onChange={e => setConfig({ ...config, enableIntegratedPayments: e.target.checked })}
+                        />
+                        <div>
+                          <span className="font-bold text-slate-350">Conciliación de Terminales de Pago</span>
+                          <span className="block text-[10px] text-slate-500 mt-0.5">Enviar de forma automática los montos de cobro por tarjeta a tu terminal física.</span>
+                        </div>
+                      </label>
+                    </div>
+
+                    {/* Ajustes específicos de Terminal de Pago */}
+                    {config.enableIntegratedPayments && (
+                      <div className="pt-4 mt-4 border-t border-slate-700/30 grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-1">
+                          <label className="text-[10px] font-bold uppercase text-slate-400">Proveedor de Terminal</label>
+                          <select
+                            className={`w-full rounded-lg p-2 border text-xs focus:outline-none focus:ring-1 focus:ring-amber-500 ${
+                              theme === 'dark' ? 'bg-[#0d0e12] border-[#20222b] text-slate-200' : 'bg-slate-50 border-slate-200'
+                            }`}
+                            value={config.paymentTerminalProvider || 'none'}
+                            onChange={e => setConfig({ ...config, paymentTerminalProvider: e.target.value as 'mp' | 'clip' | 'none' })}
+                          >
+                            <option value="none">Seleccionar Proveedor</option>
+                            <option value="mp">Mercado Pago Point</option>
+                            <option value="clip">Clip Terminal</option>
+                          </select>
+                        </div>
+
+                        <div className="space-y-1">
+                          <label className="text-[10px] font-bold uppercase text-slate-400">ID de Dispositivo (Device ID)</label>
+                          <input
+                            type="text"
+                            placeholder="Ej. MP-12345 o Serial de Terminal"
+                            className={`w-full rounded-lg p-2 border text-xs focus:outline-none focus:ring-1 focus:ring-amber-500 ${
+                              theme === 'dark' ? 'bg-[#0d0e12] border-[#20222b] text-slate-200' : 'bg-slate-50 border-slate-200'
+                            }`}
+                            value={config.paymentTerminalDeviceId || ''}
+                            onChange={e => setConfig({ ...config, paymentTerminalDeviceId: e.target.value })}
+                          />
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
 

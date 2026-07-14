@@ -3,7 +3,7 @@ import {
   StyleSheet, Text, View, TextInput, TouchableOpacity,
   FlatList, ScrollView, SafeAreaView, ActivityIndicator,
   Alert, Linking, Platform, PermissionsAndroid, Modal,
-  Animated, Easing,
+  Animated, Easing, Image,
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -39,7 +39,7 @@ const toBase64 = (str: string) => {
 };
 
 // ─── Constants ────────────────────────────────────────────────────────────
-const API_URL = 'https://pdventa.onrender.com/api/v1';
+export let API_URL = 'https://pdventa.onrender.com/api/v1';
 const STORAGE_USER_KEY = '@vantepos_user';
 
 // ─── Interfaces ───────────────────────────────────────────────────────────
@@ -193,12 +193,25 @@ function LoginScreen({ onLogin }: { onLogin: (user: AuthUser) => void }) {
   }, [pin]);
 
   const keys = ['1','2','3','4','5','6','7','8','9','','0','←'];
+  const [showConfigModal, setShowConfigModal] = useState(false);
+  const [tempApiUrl, setTempApiUrl] = useState(API_URL);
 
   return (
     <SafeAreaView style={loginStyles.container}>
       <StatusBar style="light" />
+      
+      <TouchableOpacity 
+        style={loginStyles.configButton}
+        onPress={() => {
+          setTempApiUrl(API_URL);
+          setShowConfigModal(true);
+        }}
+      >
+        <Text style={loginStyles.configButtonText}>⚙️</Text>
+      </TouchableOpacity>
+
       <View style={loginStyles.logoBox}>
-        <Text style={loginStyles.logo}>⬡</Text>
+        <Image source={require('./assets/vante_logo.png')} style={loginStyles.logo} />
         <Text style={loginStyles.brand}>VANTE POS MÓVIL</Text>
         <Text style={loginStyles.tagline}>Acceso de Vendedor Autorizado</Text>
       </View>
@@ -235,6 +248,80 @@ function LoginScreen({ onLogin }: { onLogin: (user: AuthUser) => void }) {
       </TouchableOpacity>
 
       <Text style={loginStyles.hint}>Ingresa tu PIN de acceso (4–6 dígitos)</Text>
+
+      <Modal
+        visible={showConfigModal}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => setShowConfigModal(false)}
+      >
+        <View style={loginStyles.modalOverlay}>
+          <View style={loginStyles.modalContent}>
+            <Text style={loginStyles.modalTitle}>Configurar Servidor POS</Text>
+            <Text style={loginStyles.modalDescription}>
+              Ingresa la dirección IP o dominio del servidor de caja principal:
+            </Text>
+            
+            <TextInput
+              style={loginStyles.modalInput}
+              value={tempApiUrl}
+              onChangeText={setTempApiUrl}
+              placeholder="Ej: http://192.168.1.100:3001/api/v1"
+              placeholderTextColor="#555"
+              autoCapitalize="none"
+              autoCorrect={false}
+            />
+            
+            <View style={loginStyles.modalButtons}>
+              <TouchableOpacity 
+                style={[loginStyles.modalButton, loginStyles.modalCancelButton]} 
+                onPress={() => setShowConfigModal(false)}
+              >
+                <Text style={loginStyles.modalButtonText}>Cancelar</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity 
+                style={[loginStyles.modalButton, loginStyles.modalSaveButton]}
+                onPress={async () => {
+                  if (!tempApiUrl.trim()) {
+                    Alert.alert('Error', 'La dirección del servidor no puede estar vacía.');
+                    return;
+                  }
+                  let targetUrl = tempApiUrl.trim();
+                  if (!targetUrl.includes('/api/v1')) {
+                    if (targetUrl.endsWith('/')) {
+                      targetUrl = targetUrl.slice(0, -1);
+                    }
+                    targetUrl = `${targetUrl}/api/v1`;
+                  }
+                  
+                  setLoading(true);
+                  try {
+                    const controller = new AbortController();
+                    const timeoutId = setTimeout(() => controller.abort(), 6000);
+                    
+                    const testResp = await fetch(`${targetUrl}/productos`, { 
+                      signal: controller.signal 
+                    });
+                    clearTimeout(timeoutId);
+                    
+                    API_URL = targetUrl;
+                    await AsyncStorage.setItem('@vantepos_api_url', targetUrl);
+                    Alert.alert('Conexión Exitosa', 'Se estableció conexión con el servidor correctamente.');
+                    setShowConfigModal(false);
+                  } catch (err: any) {
+                    Alert.alert('Fallo de Conexión', 'No se pudo conectar con el servidor. Verifica que el servidor de escritorio esté encendido, en la misma red Wi-Fi y con el puerto 3001 abierto.');
+                  } finally {
+                    setLoading(false);
+                  }
+                }}
+              >
+                <Text style={[loginStyles.modalButtonText, { color: '#000' }]}>Guardar y Probar</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -1303,15 +1390,74 @@ function MainApp({ user, onLogout }: { user: AuthUser; onLogout: () => void }) {
 function RootApp() {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [booting, setBooting] = useState(true);
+  const [isLoadingIntro, setIsLoadingIntro] = useState(true);
 
-  // Restore session from AsyncStorage on launch
+  const CURRENT_VERSION = '1.1.1';
+
   useEffect(() => {
-    AsyncStorage.getItem(STORAGE_USER_KEY).then(raw => {
-      if (raw) {
-        try { setUser(JSON.parse(raw)); } catch {}
-      }
+    const initializeApp = async () => {
+      // 1. Cargar URL guardada del API
+      try {
+        const savedUrl = await AsyncStorage.getItem('@vantepos_api_url');
+        if (savedUrl) {
+          API_URL = savedUrl;
+        }
+      } catch (e) {}
+
+      // 2. Restaurar sesión de usuario
+      try {
+        const rawUser = await AsyncStorage.getItem(STORAGE_USER_KEY);
+        if (rawUser) {
+          setUser(JSON.parse(rawUser));
+        }
+      } catch (e) {}
+
       setBooting(false);
-    });
+
+      // 3. Temporizador de 3 segundos para el Splash de marca
+      const timer = setTimeout(() => {
+        setIsLoadingIntro(false);
+      }, 3000);
+
+      // 4. Buscar actualizaciones en segundo plano
+      try {
+        const checkResp = await fetch(`${API_URL}/versiones`);
+        if (checkResp.ok) {
+          const data = await checkResp.json();
+          if (data.mobile && data.mobile !== CURRENT_VERSION) {
+            const serverVer = data.mobile.split('.').map(Number);
+            const localVer = CURRENT_VERSION.split('.').map(Number);
+            
+            let hasNew = false;
+            for (let i = 0; i < 3; i++) {
+              if (serverVer[i] > localVer[i]) {
+                hasNew = true;
+                break;
+              } else if (serverVer[i] < localVer[i]) {
+                break;
+              }
+            }
+            
+            if (hasNew) {
+              Alert.alert(
+                'Actualización Disponible',
+                `Hay una nueva versión de Vante POS Móvil (v${data.mobile}) disponible. ¿Deseas descargarla ahora?`,
+                [
+                  { text: 'Cancelar', style: 'cancel' },
+                  { text: 'Descargar', onPress: () => Linking.openURL(data.mobileUrl) }
+                ]
+              );
+            }
+          }
+        }
+      } catch (err) {
+        console.log('Error checking updates:', err);
+      }
+
+      return () => clearTimeout(timer);
+    };
+
+    initializeApp();
   }, []);
 
   const handleLogin = (u: AuthUser) => setUser(u);
@@ -1321,10 +1467,20 @@ function RootApp() {
     setUser(null);
   };
 
-  if (booting) {
+  if (booting || isLoadingIntro) {
     return (
       <SafeAreaView style={{ flex: 1, backgroundColor: '#0d0e12', justifyContent: 'center', alignItems: 'center' }}>
-        <ActivityIndicator color="#f59e0b" size="large" />
+        <StatusBar style="light" />
+        <View style={{ alignItems: 'center', justifyContent: 'center' }}>
+          <Image 
+            source={require('./assets/vante_logo.png')} 
+            style={{ width: 180, height: 100, resizeMode: 'contain', marginBottom: 24 }} 
+          />
+          <ActivityIndicator color="#f59e0b" size="large" />
+          <Text style={{ color: '#9ca3af', fontSize: 13, fontWeight: 'bold', marginTop: 16 }}>
+            Iniciando Vante POS Móvil...
+          </Text>
+        </View>
       </SafeAreaView>
     );
   }
@@ -1351,7 +1507,7 @@ const loginStyles = StyleSheet.create({
     paddingHorizontal: 24,
   },
   logoBox: { alignItems: 'center', marginBottom: 40 },
-  logo: { fontSize: 64, color: '#f59e0b' },
+  logo: { width: 140, height: 75, resizeMode: 'contain' },
   brand: { color: '#fff', fontSize: 22, fontWeight: '900', letterSpacing: 3, marginTop: 8 },
   tagline: { color: '#555', fontSize: 12, marginTop: 4 },
   pinBox: {
@@ -1395,6 +1551,85 @@ const loginStyles = StyleSheet.create({
   },
   loginBtnText: { color: '#000', fontWeight: '900', fontSize: 16, letterSpacing: 2 },
   hint: { color: '#333', fontSize: 11, marginTop: 16 },
+  configButton: {
+    position: 'absolute',
+    top: 50,
+    right: 24,
+    width: 40,
+    height: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: 20,
+    backgroundColor: '#13151b',
+    borderWidth: 1,
+    borderColor: '#20222b',
+    zIndex: 10,
+  },
+  configButtonText: {
+    fontSize: 18,
+  },
+  modalOverlay: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0,0,0,0.75)',
+    padding: 24,
+  },
+  modalContent: {
+    width: '100%',
+    maxWidth: 340,
+    backgroundColor: '#13151b',
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: '#20222b',
+    padding: 24,
+  },
+  modalTitle: {
+    color: '#fff',
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  modalDescription: {
+    color: '#9ca3af',
+    fontSize: 12,
+    lineHeight: 18,
+    marginBottom: 16,
+    textAlign: 'center',
+  },
+  modalInput: {
+    backgroundColor: '#0d0e12',
+    borderWidth: 1,
+    borderColor: '#20222b',
+    borderRadius: 12,
+    color: '#fff',
+    fontSize: 13,
+    padding: 12,
+    marginBottom: 20,
+  },
+  modalButtons: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  modalButton: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  modalCancelButton: {
+    backgroundColor: '#1f2937',
+  },
+  modalSaveButton: {
+    backgroundColor: '#f59e0b',
+  },
+  modalButtonText: {
+    color: '#fff',
+    fontSize: 13,
+    fontWeight: 'bold',
+  },
 });
 
 // ─── Styles: Main App ──────────────────────────────────────────────────────

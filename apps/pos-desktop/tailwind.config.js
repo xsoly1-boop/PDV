@@ -14,9 +14,17 @@ export default {
       colors: {
         slate: {
           850: '#1e293b',
+        },
+        // Native Vante brand colors
+        vante: {
+          purple: '#8b5cf6',
+          cyan: '#06b6d4',
+          'cyan-hover': '#22d3ee',
+          'purple-dark': '#7c3aed',
         }
       }
     },
   },
   plugins: [],
 }
+

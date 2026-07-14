@@ -20,7 +20,8 @@
         "node_modules/**/*",
         "!node_modules/@punto-de-venta/**/*",
         "prisma/**/*",
-        "package.json"
+        "package.json",
+        ".env"
       ]
     }
   ],

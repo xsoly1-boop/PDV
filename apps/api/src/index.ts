@@ -1,3 +1,32 @@
+import fs from 'fs';
+import path from 'path';
+
+// Intentar cargar .env de forma síncrona antes de instanciar PrismaClient
+try {
+  const envPath = path.resolve(__dirname, '../.env');
+  if (fs.existsSync(envPath)) {
+    const envConfig = fs.readFileSync(envPath, 'utf8');
+    envConfig.split('\n').forEach(line => {
+      const trimmed = line.trim();
+      if (trimmed && !trimmed.startsWith('#')) {
+        const firstEquals = trimmed.indexOf('=');
+        if (firstEquals !== -1) {
+          const key = trimmed.substring(0, firstEquals).trim();
+          let val = trimmed.substring(firstEquals + 1).trim();
+          if ((val.startsWith('"') && val.endsWith('"')) || (val.startsWith("'") && val.endsWith("'"))) {
+            val = val.substring(1, val.length - 1);
+          }
+          if (!process.env[key]) {
+            process.env[key] = val;
+          }
+        }
+      }
+    });
+  }
+} catch (e) {
+  console.error('[API-ENV] Error al cargar .env:', e);
+}
+
 import express from 'express';
 import cors from 'cors';
 import { prisma } from './prisma.js';
@@ -492,7 +521,8 @@ app.get('/api/v1/cotizaciones', async (req, res) => {
         },
         usuario: {
           select: { nombre: true }
-        }
+        },
+        cliente: true
       }
     });
     res.json(cotizaciones);
@@ -708,6 +738,15 @@ app.get('/api/v1/inventario/balance-global', async (req, res) => {
   } catch (error) {
     res.status(500).json({ error: 'Error al consultar balances de inventario' });
   }
+});
+
+// GET /api/v1/versiones — Consulta versiones disponibles para actualizaciones
+app.get('/api/v1/versiones', (req, res) => {
+  res.json({
+    desktop: '2.0.0',
+    mobile: '1.1.2',
+    mobileUrl: 'https://pdventa.onrender.com/downloads/vante_pos_movil.apk'
+  });
 });
 
 // POST /api/v1/auth/login — Autenticación general por PIN (cualquier usuario activo)
@@ -1065,6 +1104,22 @@ async function seedDatabase() {
         direccion: ''
       }
     });
+
+    // Garantizar administrador maestro inicial para el primer ingreso
+    const adminUser = await prisma.usuario.findFirst({ where: { id: 'ADMIN' } });
+    if (!adminUser) {
+      await prisma.usuario.create({
+        data: {
+          id: 'ADMIN',
+          nombre: 'Administrador Principal',
+          pin: '8888',
+          rol: Rol.ADMINISTRADOR,
+          activo: true
+        }
+      });
+      console.log('[SEED] Usuario Administrador Principal creado con éxito (PIN: 8888).');
+    }
+
     console.log('[SEED] Infraestructura base lista. El negocio se configura desde el panel de administración.');
   } catch (error) {
     console.error('[SEED] Error al inicializar infraestructura:', error);
