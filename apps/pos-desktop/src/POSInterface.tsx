@@ -641,6 +641,14 @@ export default function POSInterface() {
     }
   }, [theme]);
 
+  const [customAlert, setCustomAlert] = useState<{ visible: boolean; message: string }>({ visible: false, message: '' });
+
+  useEffect(() => {
+    window.alert = (msg) => {
+      setCustomAlert({ visible: true, message: String(msg) });
+    };
+  }, []);
+
   const [isLoadingIntro, setIsLoadingIntro] = useState(true);
 
   useEffect(() => {
@@ -4331,6 +4339,30 @@ ${articulosTexto}
                 {savingSetup ? 'Guardando...' : 'Guardar y Reiniciar'}
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Custom Global Alert Modal (Vante POS Dark Theme with 30% Transparency blur card) */}
+      {customAlert.visible && (
+        <div className="fixed inset-0 flex items-center justify-center bg-slate-950/70 backdrop-blur-sm z-[99999] transition-all">
+          <div className="bg-[#13151b]/75 border border-[#20222b]/50 rounded-2xl p-6 w-96 backdrop-blur-md shadow-[0_0_40px_rgba(168,85,247,0.15)] flex flex-col items-center">
+            {/* Custom Glowing Icon */}
+            <div className="w-12 h-12 rounded-full bg-amber-500/10 border border-amber-500/25 flex items-center justify-center shadow-[0_0_15px_rgba(245,158,11,0.15)]">
+              <AlertCircle className="w-6 h-6 text-amber-500" />
+            </div>
+            
+            <span className="text-[10px] font-bold text-amber-500/80 uppercase tracking-widest mt-4">Notificación Vante</span>
+            <p className="text-slate-200 text-sm mt-3 text-center font-medium leading-relaxed">
+              {customAlert.message}
+            </p>
+            
+            <button
+              onClick={() => setCustomAlert({ visible: false, message: '' })}
+              className="bg-amber-500 hover:bg-amber-400 text-slate-950 font-black py-2.5 px-6 rounded-xl border-0 cursor-pointer text-xs w-full mt-6 shadow-[0_0_15px_rgba(245,158,11,0.25)] transition-all uppercase tracking-wider"
+            >
+              Aceptar
+            </button>
           </div>
         </div>
       )}
