@@ -44,11 +44,11 @@
         }
       ]
     ],
+    "owner": "miyagisteam",
     "extra": {
       "eas": {
-        "projectId": "9c4f5f3b-f024-4673-9fba-62496e82157f"
+        "projectId": "0edc2193-1fc9-4e8c-9992-890ca9de6b21"
       }
-    },
-    "owner": "miyagi1"
+    }
   }
 }
