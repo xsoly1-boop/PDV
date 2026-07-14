@@ -6,6 +6,7 @@ import {
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as NavigationBar from 'expo-navigation-bar';
 
 // --- Global variables for dynamically updating endpoints ---
 export let API_URL = 'https://pdventa.onrender.com/api/v1';
@@ -626,10 +627,9 @@ export default function App() {
       // Ocultar barra de navegación en Android de manera inmersiva
       if (Platform.OS === 'android') {
         try {
-          const NavigationBar = require('expo-navigation-bar');
           // Llamar sin bloquear la inicialización de la app
           NavigationBar.setVisibilityAsync('hidden').catch(() => {});
-          NavigationBar.setBehaviorAsync('interactive-immersive').catch(() => {});
+          NavigationBar.setBehaviorAsync('overlay-swipe').catch(() => {});
         } catch (e) {}
       }
 
