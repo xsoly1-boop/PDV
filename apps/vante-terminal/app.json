@@ -3,7 +3,7 @@
     "name": "Vante Terminal",
     "slug": "vante-terminal",
     "version": "1.0.0",
-    "orientation": "portrait",
+    "orientation": "landscape",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "dark",
     "splash": {
