@@ -24,26 +24,11 @@
         "backgroundColor": "#0d0e12"
       },
       "package": "com.vante.terminal",
-      "versionCode": 1,
-      "permissions": [
-        "CAMERA",
-        "READ_EXTERNAL_STORAGE",
-        "android.permission.CAMERA"
-      ]
+      "versionCode": 1
     },
     "web": {
       "favicon": "./assets/favicon.png"
     },
-    "plugins": [
-      [
-        "expo-camera",
-        {
-          "cameraPermission": "Permitir acceso a la cámara para escanear códigos de barras de los productos.",
-          "microphonePermission": "Permitir acceso al micrófono.",
-          "recordAudioAndroid": false
-        }
-      ]
-    ],
     "extra": {
       "eas": {
         "projectId": "9c4f5f3b-f024-4673-9fba-62496e82157f"
