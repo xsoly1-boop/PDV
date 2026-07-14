@@ -82,6 +82,8 @@ interface CompanyConfig {
 export default function POSInterface() {
   const [time, setTime] = useState(new Date().toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' }));
   const [searchQuery, setSearchQuery] = useState('');
+  const [isPreloadingPresets, setIsPreloadingPresets] = useState(false);
+  const [preloadingMessage, setPreloadingMessage] = useState('');
   const [isSearchFocused, setIsSearchFocused] = useState(false);
   const [selectedSearchIndex, setSelectedSearchIndex] = useState(0);
   const [tabs, setTabs] = useState<any[]>(() => {
@@ -2325,23 +2327,82 @@ ${articulosTexto}
   // 1.5. WIZARD DE CONFIGURACIÓN INICIAL (ONBOARDING)
   if (showOnboarding) {
     return (
-      <OnboardingWizard
-        onComplete={(newConfigData) => {
-          const mapped = {
-            businessName: newConfigData.nombre,
-            rfc: newConfigData.rfc || '',
-            currency: 'MXN ($)',
-            taxRate: 16,
-            address: newConfigData.direccion || '',
-            phone: newConfigData.telefono || '',
-            logoUrl: '',
-            giro: newConfigData.giro
-          };
-          setConfig(mapped);
-          localStorage.setItem('pos_config', JSON.stringify(mapped));
-          setShowOnboarding(false);
-        }}
-      />
+      <div className="relative w-screen h-screen">
+        <OnboardingWizard
+          onComplete={async (newConfigData) => {
+            const mapped = {
+              businessName: newConfigData.nombre,
+              rfc: newConfigData.rfc || '',
+              currency: 'MXN ($)',
+              taxRate: 16,
+              address: newConfigData.direccion || '',
+              phone: newConfigData.telefono || '',
+              logoUrl: '',
+              giro: newConfigData.giro
+            };
+            setConfig(mapped);
+            localStorage.setItem('pos_config', JSON.stringify(mapped));
+
+            if (newConfigData.precargarCatalogos) {
+              setIsPreloadingPresets(true);
+              setPreloadingMessage(`Generando catálogo inicial de 1,000+ artículos de ${newConfigData.giro}...`);
+              try {
+                const res = await fetch(`${API_V1}/presets/load`, {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ giro: newConfigData.giro, limpiarExistentes: true })
+                });
+                if (!res.ok) {
+                  const err = await res.json();
+                  console.error('Error al precargarPreset:', err);
+                  alert(`Error al precargar catálogo: ${err.error || 'Desconocido'}`);
+                }
+              } catch (err) {
+                console.error(err);
+                alert('Error de red al precargar el catálogo.');
+              } finally {
+                setIsPreloadingPresets(false);
+                setShowOnboarding(false);
+              }
+            } else {
+              setShowOnboarding(false);
+            }
+          }}
+        />
+        
+        {isPreloadingPresets && (
+          <div className="absolute inset-0 bg-[#07080d]/90 backdrop-blur-md z-[9999] flex flex-col items-center justify-center animate-[fadeIn_0.3s_ease]">
+            <div className="relative flex items-center justify-center mb-8">
+              {/* Outer glowing spinner */}
+              <div className="absolute w-24 h-24 rounded-full border-4 border-amber-500/10 border-t-amber-500 animate-spin" />
+              {/* Inner slower reverse spinner */}
+              <div className="absolute w-16 h-16 rounded-full border-4 border-violet-500/10 border-t-violet-500 animate-[spin_1.5s_linear_infinite_reverse]" />
+              {/* Center icon */}
+              <div className="text-3xl animate-pulse">📦</div>
+            </div>
+            
+            <h3 className="text-white font-extrabold text-2xl mb-2 tracking-tight">
+              Precargando Catálogo de Vante
+            </h3>
+            <p className="text-slate-400 text-sm max-w-md text-center px-6 leading-relaxed font-medium">
+              {preloadingMessage}
+            </p>
+            
+            {/* Visual Progress Bar simulation */}
+            <div className="w-64 h-1.5 bg-slate-800 rounded-full overflow-hidden mt-6 border border-slate-700/50">
+              <div className="h-full bg-gradient-to-r from-amber-500 to-violet-500 animate-[loadingBar_3s_ease-in-out_infinite]" />
+            </div>
+            
+            <style>{`
+              @keyframes loadingBar {
+                0% { width: 0%; transform: translateX(-10%); }
+                50% { width: 70%; }
+                100% { width: 100%; transform: translateX(0); }
+              }
+            `}</style>
+          </div>
+        )}
+      </div>
     );
   }
 

@@ -51,6 +51,7 @@ const GIROS = [
 export default function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
   const [step, setStep] = useState(1);
   const [selectedGiro, setSelectedGiro] = useState<string | null>(null);
+  const [precargarCatalogos, setPrecargarCatalogos] = useState(true);
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({
     nombre: '',
@@ -324,9 +325,32 @@ export default function OnboardingWizard({ onComplete }: OnboardingWizardProps) 
                 </div>
               ))}
             </div>
+            
+            <div 
+              className="flex items-center gap-3 bg-[#0d0f18]/40 border border-[#1e2030] rounded-2xl p-4 mb-6 hover:bg-[#0d0f18]/80 transition-all cursor-pointer select-none" 
+              onClick={() => setPrecargarCatalogos(!precargarCatalogos)}
+            >
+              <input
+                type="checkbox"
+                id="preload-demo"
+                checked={precargarCatalogos}
+                onChange={(e) => setPrecargarCatalogos(e.target.checked)}
+                onClick={(e) => e.stopPropagation()}
+                className="w-5 h-5 rounded border-[#334155] focus:ring-offset-0 transition-colors cursor-pointer"
+                style={{ accentColor: giroInfo?.accent || '#f59e0b' }}
+              />
+              <div className="text-left font-sans">
+                <label htmlFor="preload-demo" className="text-white text-sm font-bold block cursor-pointer">
+                  Precargar catálogo de demostración
+                </label>
+                <span className="text-slate-500 text-xs block mt-0.5">
+                  Importa automáticamente 1,000+ artículos con precios, códigos de barra y categorías.
+                </span>
+              </div>
+            </div>
 
             <button
-              onClick={() => onComplete({ ...form, giro: selectedGiro })}
+              onClick={() => onComplete({ ...form, giro: selectedGiro, precargarCatalogos })}
               className="w-full py-4 rounded-2xl font-black text-base text-[#080910] transition-all duration-200"
               style={{
                 background: `linear-gradient(135deg, ${giroInfo?.accent}, ${giroInfo?.accent}cc)`,

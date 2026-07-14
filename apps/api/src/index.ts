@@ -2986,6 +2986,111 @@ app.get('/api/v1/auditoria', async (req, res) => {
   }
 });
 
+// ==========================================
+// 12. Cargar Catálogos Precargados por Giro
+// ==========================================
+app.post('/api/v1/presets/load', async (req: any, res: any) => {
+  const { giro, limpiarExistentes } = req.body;
+  
+  if (!giro) {
+    return res.status(400).json({ error: 'El giro es obligatorio' });
+  }
+  
+  try {
+    const fs = require('fs');
+    const path = require('path');
+    const crypto = require('crypto');
+    
+    let normalizedGiro = giro.toUpperCase();
+    if (normalizedGiro === 'TIENDA') {
+      normalizedGiro = 'ABARROTES';
+    }
+    
+    const validGiros = ['ABARROTES', 'FARMACIA', 'FERRETERIA', 'REFACCIONARIA'];
+    if (!validGiros.includes(normalizedGiro)) {
+      return res.status(400).json({ error: `Giro no válido. Debe ser uno de: ${validGiros.join(', ')}` });
+    }
+    
+    const presetPath = path.join(process.cwd(), 'src', 'presets', `${normalizedGiro.toLowerCase()}.json`);
+    if (!fs.existsSync(presetPath)) {
+      return res.status(404).json({ error: `No se encontró el preset para el giro ${normalizedGiro}` });
+    }
+    
+    const rawData = fs.readFileSync(presetPath, 'utf-8');
+    const products = JSON.parse(rawData);
+    
+    // Opcional: Limpiar inventario y catálogo existente para evitar duplicaciones
+    if (limpiarExistentes === true) {
+      // Borrar registros asociados primero para evitar violación de llave foránea
+      await prisma.kardexMovimiento.deleteMany({});
+      await prisma.reservaTemporal.deleteMany({});
+      await prisma.detalleVenta.deleteMany({});
+      await prisma.detalleCotizacion.deleteMany({});
+      await prisma.detalleTraspaso.deleteMany({});
+      await prisma.inventarioBalance.deleteMany({});
+      await prisma.loteStock.deleteMany({});
+      await prisma.codigoBarras.deleteMany({});
+      await prisma.producto.deleteMany({});
+    }
+    
+    // 1. Obtener o crear todas las categorías únicas en la base de datos
+    const uniqueCategories = [...new Set(products.map((p: any) => p.categoria))] as string[];
+    const categoriesMap = new Map<string, string>();
+    
+    for (const catName of uniqueCategories) {
+      if (!catName) continue;
+      let cat = await prisma.categoria.findUnique({ where: { nombre: catName } });
+      if (!cat) {
+        cat = await prisma.categoria.create({ data: { nombre: catName } });
+      }
+      categoriesMap.set(catName, cat.id);
+    }
+    
+    // 2. Preparar el bulk insert de productos y códigos de barra
+    const productsToInsert: any[] = [];
+    const barcodesToInsert: any[] = [];
+    
+    for (const p of products) {
+      const productId = crypto.randomUUID();
+      
+      productsToInsert.push({
+        id: productId,
+        sku: p.sku,
+        nombre: p.nombre,
+        costo: p.costo,
+        precio: p.precio,
+        permiteFracciones: p.permiteFracciones || false,
+        categoriaId: categoriesMap.get(p.categoria) || null,
+        metadatos: p.metadatos || {}
+      });
+      
+      if (Array.isArray(p.codigos)) {
+        for (const code of p.codigos) {
+          barcodesToInsert.push({
+            id: crypto.randomUUID(),
+            codigo: code,
+            productoId: productId
+          });
+        }
+      }
+    }
+    
+    // 3. Insertar masivamente dentro de una transacción única
+    await prisma.$transaction([
+      prisma.producto.createMany({ data: productsToInsert }),
+      prisma.codigoBarras.createMany({ data: barcodesToInsert })
+    ]);
+    
+    res.json({
+      success: true,
+      message: `Catálogo de ${giro} precargado con éxito. Se insertaron ${productsToInsert.length} productos y ${barcodesToInsert.length} códigos de barras.`
+    });
+  } catch (error: any) {
+    console.error('Error al precargar catálogo:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 seedDatabase().then(() => {
 
   app.listen(PORT, () => {
