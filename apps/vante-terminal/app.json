@@ -29,10 +29,10 @@
     "web": {
       "favicon": "./assets/favicon.png"
     },
-    "owner": "miyagi1",
+    "owner": "dnestudio",
     "extra": {
       "eas": {
-        "projectId": "aae3bd30-d9c8-490b-8712-618dd47c23bd"
+        "projectId": "8d8e57f3-601a-477f-ace3-152b96448d0b"
       }
     }
   }
