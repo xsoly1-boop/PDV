@@ -753,14 +753,21 @@ export default function POSInterface() {
       allowCash: true,
       allowCard: true,
       allowTransfer: true,
-      allowDrawer: true,
+      allowDrawer: false,
       drawerCommand: '27,112,0,25,250',
       allowScale: false,
       scalePort: 'COM1',
-      scaleBaudRate: 9605,
+      scaleBaudRate: 9600,
       scaleModel: 'torrey',
       sessionTimeout: 0,
       cotizacionExpiracionMins: 1440,
+      showWhatsAppPostSale: false,
+      enableCloudBackups: false,
+      enableIntegratedPayments: false,
+      paymentTerminalProvider: 'none',
+      paymentTerminalDeviceId: '',
+      enableAutoUpdates: false,
+      enableAdvancedInventory: false,
       businessStartHour: '08:00',
       businessEndHour: '20:00',
       allowGerenteLogin: true,
@@ -1556,7 +1563,7 @@ ${articulosTexto}
 ¡Gracias por su compra!`;
 
     setCheckoutWhatsAppMessage(encodeURIComponent(text));
-    if (config.showWhatsAppPostSale !== false) {
+    if (config.showWhatsAppPostSale === true) {
       setShowWhatsAppModal(true);
     }
 
@@ -1739,7 +1746,7 @@ ${articulosTexto}
               allowCash: data.formatoTicket?.allowCash !== false,
               allowCard: data.formatoTicket?.allowCard !== false,
               allowTransfer: data.formatoTicket?.allowTransfer !== false,
-              allowDrawer: data.formatoTicket?.allowDrawer !== false,
+              allowDrawer: data.formatoTicket?.allowDrawer === true,
               drawerCommand: data.formatoTicket?.drawerCommand || '27,112,0,25,250',
               sessionTimeout: Number(data.formatoTicket?.sessionTimeout) || 0,
               cotizacionExpiracionMins: Number(data.formatoTicket?.cotizacionExpiracionMins) || 1440,
@@ -1747,6 +1754,13 @@ ${articulosTexto}
               scalePort: data.formatoTicket?.scalePort || 'COM1',
               scaleBaudRate: data.formatoTicket?.scaleBaudRate || 9600,
               scaleModel: data.formatoTicket?.scaleModel || 'torrey',
+              showWhatsAppPostSale: data.formatoTicket?.showWhatsAppPostSale === true,
+              enableCloudBackups: data.formatoTicket?.enableCloudBackups === true,
+              enableIntegratedPayments: data.formatoTicket?.enableIntegratedPayments === true,
+              paymentTerminalProvider: data.formatoTicket?.paymentTerminalProvider || 'none',
+              paymentTerminalDeviceId: data.formatoTicket?.paymentTerminalDeviceId || '',
+              enableAutoUpdates: data.formatoTicket?.enableAutoUpdates === true,
+              enableAdvancedInventory: data.formatoTicket?.enableAdvancedInventory === true,
               printerCaja: localStorage.getItem('pos_printer_caja') || data.formatoTicket?.printerCaja || '',
               printerCliente: localStorage.getItem('pos_printer_cliente') || data.formatoTicket?.printerCliente || '',
               printerMovil: localStorage.getItem('pos_printer_movil') || data.formatoTicket?.printerMovil || '',
@@ -3405,7 +3419,14 @@ ${articulosTexto}
                   printerCaja: newConfig.printerCaja || '',
                   printerCliente: newConfig.printerCliente || '',
                   printerMovil: newConfig.printerMovil || '',
-                  printerBodega: newConfig.printerBodega || ''
+                  printerBodega: newConfig.printerBodega || '',
+                  showWhatsAppPostSale: newConfig.showWhatsAppPostSale === true,
+                  enableCloudBackups: newConfig.enableCloudBackups === true,
+                  enableIntegratedPayments: newConfig.enableIntegratedPayments === true,
+                  paymentTerminalProvider: newConfig.paymentTerminalProvider || 'none',
+                  paymentTerminalDeviceId: newConfig.paymentTerminalDeviceId || '',
+                  enableAutoUpdates: newConfig.enableAutoUpdates === true,
+                  enableAdvancedInventory: newConfig.enableAdvancedInventory === true
                 })
               });
             } catch (err) {

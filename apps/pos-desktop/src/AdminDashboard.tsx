@@ -2059,7 +2059,7 @@ export default function AdminDashboard({
                       <input
                         type="checkbox"
                         className="w-4 h-4 rounded text-amber-500 focus:ring-amber-500 border-slate-600 bg-slate-800"
-                        checked={config.showWhatsAppPostSale !== false}
+                        checked={config.showWhatsAppPostSale === true}
                         onChange={e => setConfig({ ...config, showWhatsAppPostSale: e.target.checked })}
                       />
                       Mostrar modal para enviar recibo por WhatsApp

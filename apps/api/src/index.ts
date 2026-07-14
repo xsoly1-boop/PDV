@@ -2013,7 +2013,14 @@ app.post('/api/v1/configuracion-empresa', async (req, res) => {
         printerCliente: printerCliente || '',
         printerMovil: printerMovil || '',
         printerBodega: printerBodega || '',
-        cotizacionExpiracionMins: Number(cotizacionExpiracionMins) || 1440
+        cotizacionExpiracionMins: Number(cotizacionExpiracionMins) || 1440,
+        showWhatsAppPostSale: req.body.showWhatsAppPostSale === true,
+        enableCloudBackups: req.body.enableCloudBackups === true,
+        enableIntegratedPayments: req.body.enableIntegratedPayments === true,
+        paymentTerminalProvider: req.body.paymentTerminalProvider || 'none',
+        paymentTerminalDeviceId: req.body.paymentTerminalDeviceId || '',
+        enableAutoUpdates: req.body.enableAutoUpdates === true,
+        enableAdvancedInventory: req.body.enableAdvancedInventory === true
       } as any,
     };
 
