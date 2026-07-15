@@ -2463,6 +2463,30 @@ ${articulosTexto}
                 >
                   🗑️ Limpiar y Reiniciar de Fábrica
                 </button>
+                <button
+                  onClick={async () => {
+                    const giroActual = config?.giro?.toLowerCase() || 'abarrotes';
+                    if (window.confirm(`¿Recargar el catálogo de ${giroActual.toUpperCase()}? Esto agregará los productos del preset sin borrar ventas ni clientes.`)) {
+                      try {
+                        const res = await fetch(`${API_V1}/presets/load`, {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({ giro: giroActual, limpiarExistentes: true })
+                        });
+                        if (res.ok) {
+                          alert(`✅ Catálogo de ${giroActual.toUpperCase()} cargado con éxito.`);
+                          window.location.reload();
+                        } else {
+                          const err = await res.json();
+                          alert('Error al cargar catálogo: ' + (err.error || 'Desconocido'));
+                        }
+                      } catch (e) { alert('Error de conexión al recargar catálogo.'); }
+                    }
+                  }}
+                  className="py-3 px-5 rounded-xl bg-amber-500/10 hover:bg-amber-500/25 border border-amber-500/30 text-amber-400 font-bold text-xs cursor-pointer transition-all"
+                >
+                  📦 Recargar Catálogo
+                </button>
                 <div className="flex gap-3">
                   <button
                     onClick={() => setShowSuperAdminSetup(false)}
@@ -5198,6 +5222,30 @@ ${articulosTexto}
                 className="py-3 px-5 rounded-xl bg-rose-500/10 hover:bg-rose-500/25 border border-rose-500/30 text-rose-400 font-bold text-xs cursor-pointer transition-all"
               >
                 🗑️ Limpiar y Reiniciar de Fábrica
+              </button>
+              <button
+                onClick={async () => {
+                  const giroActual = config?.giro?.toLowerCase() || 'abarrotes';
+                  if (window.confirm(`¿Recargar el catálogo de ${giroActual.toUpperCase()}? Esto agregará los productos del preset sin borrar ventas ni clientes.`)) {
+                    try {
+                      const res = await fetch(`${API_V1}/presets/load`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ giro: giroActual, limpiarExistentes: true })
+                      });
+                      if (res.ok) {
+                        alert(`✅ Catálogo de ${giroActual.toUpperCase()} cargado con éxito.`);
+                        window.location.reload();
+                      } else {
+                        const err = await res.json();
+                        alert('Error al cargar catálogo: ' + (err.error || 'Desconocido'));
+                      }
+                    } catch (e) { alert('Error de conexión al recargar catálogo.'); }
+                  }
+                }}
+                className="py-3 px-5 rounded-xl bg-amber-500/10 hover:bg-amber-500/25 border border-amber-500/30 text-amber-400 font-bold text-xs cursor-pointer transition-all"
+              >
+                📦 Recargar Catálogo
               </button>
               <div className="flex gap-3">
                 <button
