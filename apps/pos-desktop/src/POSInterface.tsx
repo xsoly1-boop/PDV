@@ -2279,8 +2279,8 @@ ${articulosTexto}
                 <input 
                   type="password" 
                   required
-                  maxLength={8}
-                  placeholder="PIN Maestro (8 dígitos)"
+                  maxLength={12}
+                  placeholder="Clave Maestra"
                   className="w-full text-center tracking-widest text-lg font-black rounded-xl p-3 border focus:outline-none focus:ring-2 focus:ring-amber-500 bg-[#0d0e12] border-[#20222b] text-white"
                   value={superAdminAuthPin}
                   onChange={e => setSuperAdminAuthPin(e.target.value)}
@@ -2440,20 +2440,33 @@ ${articulosTexto}
                 )}
               </div>
 
-              <div className="mt-8 flex justify-end gap-3 border-t border-[#20222b] pt-6">
+              <div className="mt-8 flex justify-between items-center border-t border-[#20222b] pt-6">
                 <button
-                  onClick={() => setShowSuperAdminSetup(false)}
-                  className="py-3 px-6 rounded-xl border border-[#20222b] text-slate-400 hover:bg-[#1a1c24] font-bold text-xs cursor-pointer"
+                  onClick={() => {
+                    if (window.confirm('🚨 ¿Está seguro de que desea REINICIAR TODO EL SISTEMA? Esto borrará el catálogo, usuarios y configuraciones locales regresando al estado de fábrica.')) {
+                      localStorage.clear();
+                      window.location.reload();
+                    }
+                  }}
+                  className="py-3 px-5 rounded-xl bg-rose-500/10 hover:bg-rose-500/25 border border-rose-500/30 text-rose-400 font-bold text-xs cursor-pointer transition-all"
                 >
-                  Cerrar Panel
+                  🗑️ Limpiar y Reiniciar de Fábrica
                 </button>
-                <button
-                  disabled={savingSetup}
-                  onClick={handleSaveSetup}
-                  className="bg-amber-500 hover:bg-amber-400 disabled:bg-slate-900 text-slate-950 font-black py-3 px-8 rounded-xl border-0 cursor-pointer text-xs uppercase tracking-wider"
-                >
-                  Guardar Parámetros
-                </button>
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => setShowSuperAdminSetup(false)}
+                    className="py-3 px-6 rounded-xl border border-[#20222b] text-slate-400 hover:bg-[#1a1c24] font-bold text-xs cursor-pointer"
+                  >
+                    Cerrar Panel
+                  </button>
+                  <button
+                    disabled={savingSetup}
+                    onClick={handleSaveSetup}
+                    className="bg-amber-500 hover:bg-amber-400 disabled:bg-slate-900 text-slate-950 font-black py-3 px-8 rounded-xl border-0 cursor-pointer text-xs uppercase tracking-wider"
+                  >
+                    {savingSetup ? 'Guardando...' : 'Guardar Parámetros'}
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -4760,8 +4773,8 @@ ${articulosTexto}
               <input 
                 type="password" 
                 required
-                maxLength={8}
-                placeholder="PIN Maestro (8 dígitos)"
+                maxLength={12}
+                placeholder="Clave Maestra"
                 className="w-full text-center tracking-widest text-lg font-black rounded-xl p-3 border focus:outline-none focus:ring-2 focus:ring-amber-500 bg-[#0d0e12] border-[#20222b] text-white"
                 value={superAdminAuthPin}
                 onChange={e => setSuperAdminAuthPin(e.target.value)}
@@ -4921,20 +4934,33 @@ ${articulosTexto}
               )}
             </div>
 
-            <div className="mt-8 flex justify-end gap-3 border-t border-[#20222b] pt-6">
+            <div className="mt-8 flex justify-between items-center border-t border-[#20222b] pt-6">
               <button
-                onClick={() => setShowSuperAdminSetup(false)}
-                className="py-3 px-6 rounded-xl border border-[#20222b] text-slate-400 hover:bg-[#1a1c24] font-bold text-xs cursor-pointer"
+                onClick={() => {
+                  if (window.confirm('🚨 ¿Está seguro de que desea REINICIAR TODO EL SISTEMA? Esto borrará el catálogo, usuarios y configuraciones locales regresando al estado de fábrica.')) {
+                    localStorage.clear();
+                    window.location.reload();
+                  }
+                }}
+                className="py-3 px-5 rounded-xl bg-rose-500/10 hover:bg-rose-500/25 border border-rose-500/30 text-rose-400 font-bold text-xs cursor-pointer transition-all"
               >
-                Cerrar Panel
+                🗑️ Limpiar y Reiniciar de Fábrica
               </button>
-              <button
-                disabled={savingSetup}
-                onClick={handleSaveSetup}
-                className="bg-amber-500 hover:bg-amber-400 disabled:bg-slate-900 text-slate-950 font-black py-3 px-8 rounded-xl border-0 cursor-pointer text-xs uppercase tracking-wider"
-              >
-                {savingSetup ? 'Guardando...' : 'Guardar y Reiniciar'}
-              </button>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setShowSuperAdminSetup(false)}
+                  className="py-3 px-6 rounded-xl border border-[#20222b] text-slate-400 hover:bg-[#1a1c24] font-bold text-xs cursor-pointer"
+                >
+                  Cerrar Panel
+                </button>
+                <button
+                  disabled={savingSetup}
+                  onClick={handleSaveSetup}
+                  className="bg-amber-500 hover:bg-amber-400 disabled:bg-slate-900 text-slate-950 font-black py-3 px-8 rounded-xl border-0 cursor-pointer text-xs uppercase tracking-wider"
+                >
+                  {savingSetup ? 'Guardando...' : 'Guardar y Reiniciar'}
+                </button>
+              </div>
             </div>
           </div>
         </div>
