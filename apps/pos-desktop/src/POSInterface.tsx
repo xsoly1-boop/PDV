@@ -2502,7 +2502,8 @@ ${articulosTexto}
 
             if (newConfigData.precargarCatalogos) {
               setIsPreloadingPresets(true);
-              setPreloadingMessage(`Generando catálogo inicial de 1,000+ artículos de ${newConfigData.giro}...`);
+              const presetCount = newConfigData.giro === 'cafeteria' ? '200' : '1,000+';
+              setPreloadingMessage(`Generando catálogo inicial de ${presetCount} artículos de ${newConfigData.giro}...`);
               try {
                 const res = await fetch(`${API_V1}/presets/load`, {
                   method: 'POST',
