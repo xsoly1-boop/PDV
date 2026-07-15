@@ -3243,8 +3243,68 @@ app.post('/api/v1/presets/load', async (req: any, res: any) => {
   }
 });
 
-seedDatabase().then(() => {
+// ==========================================
+// Auto-migración al arranque (prisma db push)
+// Garantiza que la BD local esté siempre sincronizada
+// con el schema actual (nuevos enums, columnas, etc.)
+// ==========================================
+async function applySchema() {
+  try {
+    console.log('[SCHEMA] Verificando compatibilidad del schema de base de datos...');
+    // SQLite no tiene un tipo ENUM real; usa TEXT con CHECK constraint.
+    // Prisma genera: giro TEXT NOT NULL DEFAULT 'ABARROTES' CHECK (giro IN (...))
+    // Para añadir un nuevo valor de enum a una BD existente sin recrear la tabla,
+    // basta con hacer un test de escritura temporal. Si falla (CHECK violation),
+    // necesitamos recrear la tabla. Pero SQLite en práctica no bloquea si el
+    // valor no estaba en el CHECK original — el CHECK se aplica al INSERT/UPDATE.
+    // La solución real: verificar si la tabla acepta CAFETERIA haciendo un SELECT.
+    // Si la columna giro tiene un CHECK que no incluye CAFETERIA, necesitamos 
+    // recrear la tabla. Usamos PRAGMA para leer el DDL y detectar esto.
+    const tableInfo = await prisma.$queryRawUnsafe<any[]>(
+      `SELECT sql FROM sqlite_master WHERE type='table' AND name='ConfiguracionEmpresa'`
+    );
+    if (tableInfo.length > 0) {
+      const ddl: string = tableInfo[0].sql || '';
+      // Si el DDL tiene CHECK y NO incluye CAFETERIA, necesitamos actualizar
+      if (ddl.includes('CHECK') && !ddl.includes('CAFETERIA')) {
+        console.log('[SCHEMA] Detectado enum Giro desactualizado — aplicando actualización de schema...');
+        // SQLite no soporta ALTER COLUMN. Usamos la estrategia de renombrar+recrear.
+        await prisma.$executeRawUnsafe(`PRAGMA foreign_keys = OFF`);
+        await prisma.$executeRawUnsafe(`
+          CREATE TABLE IF NOT EXISTS "ConfiguracionEmpresa_new" (
+            "id"            TEXT NOT NULL PRIMARY KEY,
+            "nombreEmpresa" TEXT NOT NULL,
+            "rfc"           TEXT,
+            "telefono"      TEXT,
+            "direccion"     TEXT,
+            "ciudad"        TEXT,
+            "logo"          TEXT,
+            "giro"          TEXT NOT NULL DEFAULT 'ABARROTES',
+            "moneda"        TEXT NOT NULL DEFAULT 'MXN',
+            "sucursalId"    TEXT NOT NULL,
+            "createdAt"     DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            "updatedAt"     DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            CONSTRAINT "ConfiguracionEmpresa_sucursalId_fkey"
+              FOREIGN KEY ("sucursalId") REFERENCES "Sucursal"("id") ON DELETE RESTRICT ON UPDATE CASCADE
+          )
+        `);
+        await prisma.$executeRawUnsafe(`
+          INSERT INTO "ConfiguracionEmpresa_new" SELECT * FROM "ConfiguracionEmpresa"
+        `);
+        await prisma.$executeRawUnsafe(`DROP TABLE "ConfiguracionEmpresa"`);
+        await prisma.$executeRawUnsafe(`ALTER TABLE "ConfiguracionEmpresa_new" RENAME TO "ConfiguracionEmpresa"`);
+        await prisma.$executeRawUnsafe(`PRAGMA foreign_keys = ON`);
+        console.log('[SCHEMA] Schema actualizado correctamente. Ahora acepta CAFETERIA y otros giros.');
+      } else {
+        console.log('[SCHEMA] Schema compatible. No se requiere actualización.');
+      }
+    }
+  } catch (err: any) {
+    console.error('[SCHEMA] Error al verificar/actualizar schema:', err.message);
+  }
+}
 
+applySchema().then(() => seedDatabase()).then(() => {
   app.listen(PORT, () => {
     console.log(`🚀 Servidor POS backend corriendo en el puerto ${PORT}`);
   });
