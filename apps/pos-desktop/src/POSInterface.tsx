@@ -1636,20 +1636,26 @@ export default function POSInterface() {
     if (ventaGuardadaOffline) {
       alert('Modo Offline: Venta guardada localmente en IndexedDB. Se sincronizará automáticamente al recuperar conexión.');
     } else {
-      if (isOnline) {
+      const isHybrid = localStorage.getItem('vante_deployment_mode') === 'HYBRID';
+      if (isHybrid && isOnline) {
+        // Solo en modo Híbrido intentar sync a la nube
         const res = await SyncService.syncPendingMovimientos();
         if (res.success) {
           const hasCashPayment = metodoPago === 'EFECTIVO' || (metodoPago === 'MIXTO' && Number(mixedCash) > 0);
           const drawerMsg = (config.allowDrawer && hasCashPayment)
             ? '\n\n[Hardware] Cajón de dinero abierto (Comando: ' + (config.drawerCommand || '27,112,0,25,250') + ')'
             : '';
-          const isHybrid = localStorage.getItem('vante_deployment_mode') === 'HYBRID';
-          alert(`Venta registrada y sincronizada ${isHybrid ? 'en la nube' : 'en local'} con éxito!` + drawerMsg);
+          alert(`Venta registrada y sincronizada en la nube con éxito!` + drawerMsg);
         } else {
           alert('Venta registrada en base de datos local.\nAlerta de Red: ' + res.error + '. Se sincronizará automáticamente al detectar conexión.');
         }
       } else {
-        alert('Modo Offline Activo: Venta guardada localmente. Pendiente por sincronizar.');
+        // Modo LOCAL: la venta ya está guardada en SQLite local — éxito directo
+        const hasCashPayment = metodoPago === 'EFECTIVO' || (metodoPago === 'MIXTO' && Number(mixedCash) > 0);
+        const drawerMsg = (config.allowDrawer && hasCashPayment)
+          ? '\n\n[Hardware] Cajón de dinero abierto.'
+          : '';
+        alert(`✅ Venta registrada con éxito!` + drawerMsg);
       }
     }
 
