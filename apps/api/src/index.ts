@@ -3118,7 +3118,11 @@ app.post('/api/v1/presets/load', async (req: any, res: any) => {
       return res.status(400).json({ error: `Giro no válido. Debe ser uno de: ${validGiros.join(', ')}` });
     }
     
-    const presetPath = path.join(process.cwd(), 'src', 'presets', `${normalizedGiro.toLowerCase()}.json`);
+    let presetPath = path.join(__dirname, 'presets', `${normalizedGiro.toLowerCase()}.json`);
+    if (!fs.existsSync(presetPath)) {
+      presetPath = path.join(__dirname, '..', 'src', 'presets', `${normalizedGiro.toLowerCase()}.json`);
+    }
+    
     if (!fs.existsSync(presetPath)) {
       return res.status(404).json({ error: `No se encontró el preset para el giro ${normalizedGiro}` });
     }
