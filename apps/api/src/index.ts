@@ -3060,6 +3060,11 @@ app.post('/api/v1/system/reset', async (req: any, res: any) => {
     await prisma.loteStock.deleteMany({});
     await prisma.codigoBarras.deleteMany({});
     await prisma.producto.deleteMany({});
+    await prisma.venta.deleteMany({});
+    await prisma.cotizacion.deleteMany({});
+    await prisma.traspasoMercancia.deleteMany({});
+    await prisma.turnoCaja.deleteMany({});
+    await prisma.bitacoraAuditoria.deleteMany({});
     await prisma.usuario.deleteMany({});
     await prisma.configuracionEmpresa.deleteMany({});
     await prisma.sucursal.deleteMany({});
