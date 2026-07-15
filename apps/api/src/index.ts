@@ -2040,7 +2040,13 @@ app.post('/api/v1/configuracion-empresa', async (req, res) => {
   if (giro === 'farmacia') mappedGiro = 'FARMACIA';
   else if (giro === 'ferreteria') mappedGiro = 'FERRETERIA';
   else if (giro === 'refaccionaria') mappedGiro = 'REFACCIONARIA';
+  else if (giro === 'cafeteria') mappedGiro = 'CAFETERIA';
   else if (giro === 'tienda') mappedGiro = 'ABARROTES';
+  // También aceptar en mayúsculas por si viene así
+  else if (giro?.toUpperCase() === 'CAFETERIA') mappedGiro = 'CAFETERIA';
+  else if (giro?.toUpperCase() === 'FARMACIA') mappedGiro = 'FARMACIA';
+  else if (giro?.toUpperCase() === 'FERRETERIA') mappedGiro = 'FERRETERIA';
+  else if (giro?.toUpperCase() === 'REFACCIONARIA') mappedGiro = 'REFACCIONARIA';
 
   try {
     const existing = await prisma.configuracionEmpresa.findFirst();
@@ -2087,16 +2093,28 @@ app.post('/api/v1/configuracion-empresa', async (req, res) => {
       } as any,
     };
 
+    const formatoTicketJson = JSON.stringify(data.formatoTicket);
+    const nombreEmpresa = data.nombreEmpresa || '';
+    const rfc2 = data.rfc || null;
+
     if (existing) {
-      const updated = await prisma.configuracionEmpresa.update({
-        where: { id: existing.id },
-        data,
-      });
+      // Usar SQL raw para evitar validación de enum del Prisma client compilado
+      await prisma.$executeRawUnsafe(
+        `UPDATE "ConfiguracionEmpresa" SET "nombreEmpresa" = ?, "giro" = ?, "rfc" = ?, "formatoTicket" = ?, "updatedAt" = datetime('now') WHERE "id" = ?`,
+        nombreEmpresa, mappedGiro, rfc2, formatoTicketJson, existing.id
+      );
+      const updated = await prisma.configuracionEmpresa.findFirst({ where: { id: existing.id } });
       res.json(updated);
     } else {
-      const created = await prisma.configuracionEmpresa.create({
-        data,
-      });
+      const newId = require('crypto').randomUUID();
+      // Obtener la sucursal raíz
+      const sucursal = await prisma.sucursal.findFirst();
+      if (!sucursal) return res.status(500).json({ error: 'No existe sucursal raíz. Reinicia la app.' });
+      await prisma.$executeRawUnsafe(
+        `INSERT INTO "ConfiguracionEmpresa" ("id","nombreEmpresa","giro","rfc","formatoTicket","moneda","sucursalId","createdAt","updatedAt") VALUES (?,?,?,?,?,?,?,datetime('now'),datetime('now'))`,
+        newId, nombreEmpresa, mappedGiro, rfc2, formatoTicketJson, 'MXN', sucursal.id
+      );
+      const created = await prisma.configuracionEmpresa.findFirst({ where: { id: newId } });
       res.json(created);
     }
   } catch (error: any) {
