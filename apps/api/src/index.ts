@@ -3049,6 +3049,45 @@ app.get('/api/v1/auditoria', async (req, res) => {
   }
 });
 
+app.post('/api/v1/system/reset', async (req: any, res: any) => {
+  try {
+    await prisma.kardexMovimiento.deleteMany({});
+    await prisma.reservaTemporal.deleteMany({});
+    await prisma.detalleVenta.deleteMany({});
+    await prisma.detalleCotizacion.deleteMany({});
+    await prisma.detalleTraspaso.deleteMany({});
+    await prisma.inventarioBalance.deleteMany({});
+    await prisma.loteStock.deleteMany({});
+    await prisma.codigoBarras.deleteMany({});
+    await prisma.producto.deleteMany({});
+    await prisma.usuario.deleteMany({});
+    await prisma.configuracionEmpresa.deleteMany({});
+    await prisma.sucursal.deleteMany({});
+    
+    // Volver a sembrar la sucursal raíz y el admin por defecto
+    const rootSucursal = await prisma.sucursal.create({
+      data: {
+        id: 'suc-norte',
+        nombre: 'Sucursal Norte'
+      }
+    });
+
+    await prisma.usuario.create({
+      data: {
+        id: 'ADMIN',
+        nombre: 'Administrador',
+        rol: 'ADMINISTRADOR',
+        pin: '8888'
+      }
+    });
+
+    res.json({ success: true, message: 'Base de datos limpia de fábrica con éxito' });
+  } catch (error: any) {
+    console.error('Error al reiniciar base de datos:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // ==========================================
 // 12. Cargar Catálogos Precargados por Giro
 // ==========================================
@@ -3143,6 +3182,45 @@ app.post('/api/v1/presets/load', async (req: any, res: any) => {
       prisma.producto.createMany({ data: productsToInsert }),
       prisma.codigoBarras.createMany({ data: barcodesToInsert })
     ]);
+
+    // Garantizar que exista una sucursal raíz y el usuario administrador con PIN 8888
+    let rootSucursal = await prisma.sucursal.findFirst();
+    if (!rootSucursal) {
+      rootSucursal = await prisma.sucursal.create({
+        data: {
+          id: 'suc-norte',
+          nombre: 'Sucursal Norte'
+        }
+      });
+    }
+
+    const companyConfig = await prisma.configuracionEmpresa.findFirst();
+    if (!companyConfig) {
+      await prisma.configuracionEmpresa.create({
+        data: {
+          nombreEmpresa: `Vante POS ${giro.charAt(0) + giro.slice(1).toLowerCase()}`,
+          giro: normalizedGiro as any
+        }
+      });
+    } else {
+      await prisma.configuracionEmpresa.update({
+        where: { id: companyConfig.id },
+        data: {
+          giro: normalizedGiro as any
+        }
+      });
+    }
+
+    await prisma.usuario.upsert({
+      where: { id: 'ADMIN' },
+      update: { pin: '8888' },
+      create: {
+        id: 'ADMIN',
+        nombre: 'Administrador',
+        rol: 'ADMINISTRADOR',
+        pin: '8888'
+      }
+    });
     
     res.json({
       success: true,

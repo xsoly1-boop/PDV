@@ -2442,8 +2442,13 @@ ${articulosTexto}
 
               <div className="mt-8 flex justify-between items-center border-t border-[#20222b] pt-6">
                 <button
-                  onClick={() => {
+                  onClick={async () => {
                     if (window.confirm('🚨 ¿Está seguro de que desea REINICIAR TODO EL SISTEMA? Esto borrará el catálogo, usuarios y configuraciones locales regresando al estado de fábrica.')) {
+                      try {
+                        await fetch(`${API_V1}/system/reset`, { method: 'POST' });
+                      } catch (err) {
+                        console.error('Error al reiniciar base de datos local:', err);
+                      }
                       localStorage.clear();
                       window.location.reload();
                     }
@@ -4936,8 +4941,13 @@ ${articulosTexto}
 
             <div className="mt-8 flex justify-between items-center border-t border-[#20222b] pt-6">
               <button
-                onClick={() => {
+                onClick={async () => {
                   if (window.confirm('🚨 ¿Está seguro de que desea REINICIAR TODO EL SISTEMA? Esto borrará el catálogo, usuarios y configuraciones locales regresando al estado de fábrica.')) {
+                    try {
+                      await fetch(`${API_V1}/system/reset`, { method: 'POST' });
+                    } catch (err) {
+                      console.error('Error al reiniciar base de datos local:', err);
+                    }
                     localStorage.clear();
                     window.location.reload();
                   }
