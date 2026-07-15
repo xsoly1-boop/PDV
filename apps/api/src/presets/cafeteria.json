@@ -7,7 +7,7 @@
     "permiteFracciones": false,
     "categoria": "Bebidas",
     "metadatos": {
-      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/latte_art_coffee_1784098785089.jpg",
+      "imagenUrl": "__PRESET_IMG__/latte.jpg",
       "tamanio": "Chico",
       "tipo": "Preparada"
     },
@@ -23,7 +23,7 @@
     "permiteFracciones": false,
     "categoria": "Bebidas",
     "metadatos": {
-      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/latte_art_coffee_1784098785089.jpg",
+      "imagenUrl": "__PRESET_IMG__/latte.jpg",
       "tamanio": "Mediano",
       "tipo": "Preparada"
     },
@@ -39,7 +39,7 @@
     "permiteFracciones": false,
     "categoria": "Bebidas",
     "metadatos": {
-      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/latte_art_coffee_1784098785089.jpg",
+      "imagenUrl": "__PRESET_IMG__/latte.jpg",
       "tamanio": "Grande",
       "tipo": "Preparada"
     },
@@ -55,7 +55,7 @@
     "permiteFracciones": false,
     "categoria": "Bebidas",
     "metadatos": {
-      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/cappuccino_coffee_1784098806019.jpg",
+      "imagenUrl": "__PRESET_IMG__/cappuccino.jpg",
       "tamanio": "Chico",
       "tipo": "Preparada"
     },
@@ -71,7 +71,7 @@
     "permiteFracciones": false,
     "categoria": "Bebidas",
     "metadatos": {
-      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/cappuccino_coffee_1784098806019.jpg",
+      "imagenUrl": "__PRESET_IMG__/cappuccino.jpg",
       "tamanio": "Mediano",
       "tipo": "Preparada"
     },
@@ -87,7 +87,7 @@
     "permiteFracciones": false,
     "categoria": "Bebidas",
     "metadatos": {
-      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/cappuccino_coffee_1784098806019.jpg",
+      "imagenUrl": "__PRESET_IMG__/cappuccino.jpg",
       "tamanio": "Grande",
       "tipo": "Preparada"
     },
@@ -103,7 +103,7 @@
     "permiteFracciones": false,
     "categoria": "Bebidas",
     "metadatos": {
-      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/americano_coffee_1784098879285.jpg",
+      "imagenUrl": "__PRESET_IMG__/americano.jpg",
       "tamanio": "Chico",
       "tipo": "Preparada"
     },
@@ -119,7 +119,7 @@
     "permiteFracciones": false,
     "categoria": "Bebidas",
     "metadatos": {
-      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/americano_coffee_1784098879285.jpg",
+      "imagenUrl": "__PRESET_IMG__/americano.jpg",
       "tamanio": "Mediano",
       "tipo": "Preparada"
     },
@@ -135,7 +135,7 @@
     "permiteFracciones": false,
     "categoria": "Bebidas",
     "metadatos": {
-      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/americano_coffee_1784098879285.jpg",
+      "imagenUrl": "__PRESET_IMG__/americano.jpg",
       "tamanio": "Grande",
       "tipo": "Preparada"
     },
@@ -151,7 +151,7 @@
     "permiteFracciones": false,
     "categoria": "Bebidas",
     "metadatos": {
-      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/americano_coffee_1784098879285.jpg",
+      "imagenUrl": "__PRESET_IMG__/americano.jpg",
       "tamanio": "Chico",
       "tipo": "Preparada"
     },
@@ -167,7 +167,7 @@
     "permiteFracciones": false,
     "categoria": "Bebidas",
     "metadatos": {
-      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/americano_coffee_1784098879285.jpg",
+      "imagenUrl": "__PRESET_IMG__/americano.jpg",
       "tamanio": "Mediano",
       "tipo": "Preparada"
     },
@@ -183,7 +183,7 @@
     "permiteFracciones": false,
     "categoria": "Bebidas",
     "metadatos": {
-      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/americano_coffee_1784098879285.jpg",
+      "imagenUrl": "__PRESET_IMG__/americano.jpg",
       "tamanio": "Grande",
       "tipo": "Preparada"
     },
@@ -199,7 +199,7 @@
     "permiteFracciones": false,
     "categoria": "Bebidas",
     "metadatos": {
-      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/latte_art_coffee_1784098785089.jpg",
+      "imagenUrl": "__PRESET_IMG__/latte.jpg",
       "tamanio": "Chico",
       "tipo": "Preparada"
     },
@@ -215,7 +215,7 @@
     "permiteFracciones": false,
     "categoria": "Bebidas",
     "metadatos": {
-      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/latte_art_coffee_1784098785089.jpg",
+      "imagenUrl": "__PRESET_IMG__/latte.jpg",
       "tamanio": "Mediano",
       "tipo": "Preparada"
     },
@@ -231,7 +231,7 @@
     "permiteFracciones": false,
     "categoria": "Bebidas",
     "metadatos": {
-      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/latte_art_coffee_1784098785089.jpg",
+      "imagenUrl": "__PRESET_IMG__/latte.jpg",
       "tamanio": "Grande",
       "tipo": "Preparada"
     },
@@ -247,7 +247,7 @@
     "permiteFracciones": false,
     "categoria": "Bebidas",
     "metadatos": {
-      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/cappuccino_coffee_1784098806019.jpg",
+      "imagenUrl": "__PRESET_IMG__/cappuccino.jpg",
       "tamanio": "Chico",
       "tipo": "Preparada"
     },
@@ -263,7 +263,7 @@
     "permiteFracciones": false,
     "categoria": "Bebidas",
     "metadatos": {
-      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/cappuccino_coffee_1784098806019.jpg",
+      "imagenUrl": "__PRESET_IMG__/cappuccino.jpg",
       "tamanio": "Mediano",
       "tipo": "Preparada"
     },
@@ -279,7 +279,7 @@
     "permiteFracciones": false,
     "categoria": "Bebidas",
     "metadatos": {
-      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/cappuccino_coffee_1784098806019.jpg",
+      "imagenUrl": "__PRESET_IMG__/cappuccino.jpg",
       "tamanio": "Grande",
       "tipo": "Preparada"
     },
@@ -295,7 +295,7 @@
     "permiteFracciones": false,
     "categoria": "Bebidas",
     "metadatos": {
-      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/latte_art_coffee_1784098785089.jpg",
+      "imagenUrl": "__PRESET_IMG__/latte.jpg",
       "tamanio": "Chico",
       "tipo": "Preparada"
     },
@@ -311,7 +311,7 @@
     "permiteFracciones": false,
     "categoria": "Bebidas",
     "metadatos": {
-      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/latte_art_coffee_1784098785089.jpg",
+      "imagenUrl": "__PRESET_IMG__/latte.jpg",
       "tamanio": "Mediano",
       "tipo": "Preparada"
     },
@@ -327,7 +327,7 @@
     "permiteFracciones": false,
     "categoria": "Bebidas",
     "metadatos": {
-      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/latte_art_coffee_1784098785089.jpg",
+      "imagenUrl": "__PRESET_IMG__/latte.jpg",
       "tamanio": "Grande",
       "tipo": "Preparada"
     },
@@ -343,7 +343,7 @@
     "permiteFracciones": false,
     "categoria": "Bebidas",
     "metadatos": {
-      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/latte_art_coffee_1784098785089.jpg",
+      "imagenUrl": "__PRESET_IMG__/latte.jpg",
       "tamanio": "Chico",
       "tipo": "Preparada"
     },
@@ -359,7 +359,7 @@
     "permiteFracciones": false,
     "categoria": "Bebidas",
     "metadatos": {
-      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/latte_art_coffee_1784098785089.jpg",
+      "imagenUrl": "__PRESET_IMG__/latte.jpg",
       "tamanio": "Mediano",
       "tipo": "Preparada"
     },
@@ -375,7 +375,7 @@
     "permiteFracciones": false,
     "categoria": "Bebidas",
     "metadatos": {
-      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/latte_art_coffee_1784098785089.jpg",
+      "imagenUrl": "__PRESET_IMG__/latte.jpg",
       "tamanio": "Grande",
       "tipo": "Preparada"
     },
@@ -391,7 +391,7 @@
     "permiteFracciones": false,
     "categoria": "Bebidas",
     "metadatos": {
-      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/americano_coffee_1784098879285.jpg",
+      "imagenUrl": "__PRESET_IMG__/americano.jpg",
       "tamanio": "Chico",
       "tipo": "Preparada"
     },
@@ -407,7 +407,7 @@
     "permiteFracciones": false,
     "categoria": "Bebidas",
     "metadatos": {
-      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/americano_coffee_1784098879285.jpg",
+      "imagenUrl": "__PRESET_IMG__/americano.jpg",
       "tamanio": "Mediano",
       "tipo": "Preparada"
     },
@@ -423,7 +423,7 @@
     "permiteFracciones": false,
     "categoria": "Bebidas",
     "metadatos": {
-      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/americano_coffee_1784098879285.jpg",
+      "imagenUrl": "__PRESET_IMG__/americano.jpg",
       "tamanio": "Grande",
       "tipo": "Preparada"
     },
@@ -439,7 +439,7 @@
     "permiteFracciones": false,
     "categoria": "Bebidas",
     "metadatos": {
-      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/latte_art_coffee_1784098785089.jpg",
+      "imagenUrl": "__PRESET_IMG__/latte.jpg",
       "tamanio": "Chico",
       "tipo": "Preparada"
     },
@@ -455,7 +455,7 @@
     "permiteFracciones": false,
     "categoria": "Bebidas",
     "metadatos": {
-      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/latte_art_coffee_1784098785089.jpg",
+      "imagenUrl": "__PRESET_IMG__/latte.jpg",
       "tamanio": "Mediano",
       "tipo": "Preparada"
     },
@@ -471,7 +471,7 @@
     "permiteFracciones": false,
     "categoria": "Bebidas",
     "metadatos": {
-      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/latte_art_coffee_1784098785089.jpg",
+      "imagenUrl": "__PRESET_IMG__/latte.jpg",
       "tamanio": "Grande",
       "tipo": "Preparada"
     },
@@ -487,7 +487,7 @@
     "permiteFracciones": false,
     "categoria": "Bebidas",
     "metadatos": {
-      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/latte_art_coffee_1784098785089.jpg",
+      "imagenUrl": "__PRESET_IMG__/latte.jpg",
       "sabor": "Vainilla",
       "tipo": "Especial"
     },
@@ -503,7 +503,7 @@
     "permiteFracciones": false,
     "categoria": "Bebidas",
     "metadatos": {
-      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/cappuccino_coffee_1784098806019.jpg",
+      "imagenUrl": "__PRESET_IMG__/cappuccino.jpg",
       "sabor": "Caramelo",
       "tipo": "Especial"
     },
@@ -519,7 +519,7 @@
     "permiteFracciones": false,
     "categoria": "Bebidas",
     "metadatos": {
-      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/americano_coffee_1784098879285.jpg",
+      "imagenUrl": "__PRESET_IMG__/americano.jpg",
       "sabor": "Avellana",
       "tipo": "Especial"
     },
@@ -535,7 +535,7 @@
     "permiteFracciones": false,
     "categoria": "Bebidas",
     "metadatos": {
-      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/americano_coffee_1784098879285.jpg",
+      "imagenUrl": "__PRESET_IMG__/americano.jpg",
       "sabor": "Menta",
       "tipo": "Especial"
     },
@@ -551,7 +551,7 @@
     "permiteFracciones": false,
     "categoria": "Bebidas",
     "metadatos": {
-      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/latte_art_coffee_1784098785089.jpg",
+      "imagenUrl": "__PRESET_IMG__/latte.jpg",
       "sabor": "Coco",
       "tipo": "Especial"
     },
@@ -567,7 +567,7 @@
     "permiteFracciones": false,
     "categoria": "Bebidas",
     "metadatos": {
-      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/cappuccino_coffee_1784098806019.jpg",
+      "imagenUrl": "__PRESET_IMG__/cappuccino.jpg",
       "sabor": "Irish Cream",
       "tipo": "Especial"
     },
@@ -583,7 +583,7 @@
     "permiteFracciones": false,
     "categoria": "Bebidas",
     "metadatos": {
-      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/latte_art_coffee_1784098785089.jpg",
+      "imagenUrl": "__PRESET_IMG__/latte.jpg",
       "sabor": "Chocolate",
       "tipo": "Especial"
     },
@@ -599,7 +599,7 @@
     "permiteFracciones": false,
     "categoria": "Bebidas",
     "metadatos": {
-      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/latte_art_coffee_1784098785089.jpg",
+      "imagenUrl": "__PRESET_IMG__/latte.jpg",
       "sabor": "Amaretto",
       "tipo": "Especial"
     },
@@ -615,7 +615,7 @@
     "permiteFracciones": false,
     "categoria": "Bebidas",
     "metadatos": {
-      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/americano_coffee_1784098879285.jpg",
+      "imagenUrl": "__PRESET_IMG__/americano.jpg",
       "sabor": "Cajeta",
       "tipo": "Especial"
     },
@@ -631,7 +631,7 @@
     "permiteFracciones": false,
     "categoria": "Bebidas",
     "metadatos": {
-      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/latte_art_coffee_1784098785089.jpg",
+      "imagenUrl": "__PRESET_IMG__/latte.jpg",
       "sabor": "Canela",
       "tipo": "Especial"
     },
@@ -647,7 +647,7 @@
     "permiteFracciones": false,
     "categoria": "Bebidas",
     "metadatos": {
-      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/latte_art_coffee_1784098785089.jpg",
+      "imagenUrl": "__PRESET_IMG__/latte.jpg",
       "sabor": "Vainilla",
       "tipo": "Especial"
     },
@@ -663,7 +663,7 @@
     "permiteFracciones": false,
     "categoria": "Bebidas",
     "metadatos": {
-      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/cappuccino_coffee_1784098806019.jpg",
+      "imagenUrl": "__PRESET_IMG__/cappuccino.jpg",
       "sabor": "Caramelo",
       "tipo": "Especial"
     },
@@ -679,7 +679,7 @@
     "permiteFracciones": false,
     "categoria": "Bebidas",
     "metadatos": {
-      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/americano_coffee_1784098879285.jpg",
+      "imagenUrl": "__PRESET_IMG__/americano.jpg",
       "sabor": "Avellana",
       "tipo": "Especial"
     },
@@ -695,7 +695,7 @@
     "permiteFracciones": false,
     "categoria": "Bebidas",
     "metadatos": {
-      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/americano_coffee_1784098879285.jpg",
+      "imagenUrl": "__PRESET_IMG__/americano.jpg",
       "sabor": "Menta",
       "tipo": "Especial"
     },
@@ -711,7 +711,7 @@
     "permiteFracciones": false,
     "categoria": "Bebidas",
     "metadatos": {
-      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/latte_art_coffee_1784098785089.jpg",
+      "imagenUrl": "__PRESET_IMG__/latte.jpg",
       "sabor": "Coco",
       "tipo": "Especial"
     },
@@ -727,7 +727,7 @@
     "permiteFracciones": false,
     "categoria": "Bebidas",
     "metadatos": {
-      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/cappuccino_coffee_1784098806019.jpg",
+      "imagenUrl": "__PRESET_IMG__/cappuccino.jpg",
       "sabor": "Irish Cream",
       "tipo": "Especial"
     },
@@ -743,7 +743,7 @@
     "permiteFracciones": false,
     "categoria": "Bebidas",
     "metadatos": {
-      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/latte_art_coffee_1784098785089.jpg",
+      "imagenUrl": "__PRESET_IMG__/latte.jpg",
       "sabor": "Chocolate",
       "tipo": "Especial"
     },
@@ -759,7 +759,7 @@
     "permiteFracciones": false,
     "categoria": "Bebidas",
     "metadatos": {
-      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/latte_art_coffee_1784098785089.jpg",
+      "imagenUrl": "__PRESET_IMG__/latte.jpg",
       "sabor": "Amaretto",
       "tipo": "Especial"
     },
@@ -775,7 +775,7 @@
     "permiteFracciones": false,
     "categoria": "Bebidas",
     "metadatos": {
-      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/americano_coffee_1784098879285.jpg",
+      "imagenUrl": "__PRESET_IMG__/americano.jpg",
       "sabor": "Cajeta",
       "tipo": "Especial"
     },
@@ -791,7 +791,7 @@
     "permiteFracciones": false,
     "categoria": "Bebidas",
     "metadatos": {
-      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/latte_art_coffee_1784098785089.jpg",
+      "imagenUrl": "__PRESET_IMG__/latte.jpg",
       "sabor": "Canela",
       "tipo": "Especial"
     },
@@ -807,7 +807,7 @@
     "permiteFracciones": false,
     "categoria": "Bebidas",
     "metadatos": {
-      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/latte_art_coffee_1784098785089.jpg",
+      "imagenUrl": "__PRESET_IMG__/latte.jpg",
       "sabor": "Vainilla",
       "tipo": "Especial"
     },
@@ -823,7 +823,7 @@
     "permiteFracciones": false,
     "categoria": "Bebidas",
     "metadatos": {
-      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/cappuccino_coffee_1784098806019.jpg",
+      "imagenUrl": "__PRESET_IMG__/cappuccino.jpg",
       "sabor": "Caramelo",
       "tipo": "Especial"
     },
@@ -839,7 +839,7 @@
     "permiteFracciones": false,
     "categoria": "Bebidas",
     "metadatos": {
-      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/americano_coffee_1784098879285.jpg",
+      "imagenUrl": "__PRESET_IMG__/americano.jpg",
       "sabor": "Avellana",
       "tipo": "Especial"
     },
@@ -855,7 +855,7 @@
     "permiteFracciones": false,
     "categoria": "Bebidas",
     "metadatos": {
-      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/americano_coffee_1784098879285.jpg",
+      "imagenUrl": "__PRESET_IMG__/americano.jpg",
       "sabor": "Menta",
       "tipo": "Especial"
     },
@@ -871,7 +871,7 @@
     "permiteFracciones": false,
     "categoria": "Bebidas",
     "metadatos": {
-      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/latte_art_coffee_1784098785089.jpg",
+      "imagenUrl": "__PRESET_IMG__/latte.jpg",
       "sabor": "Coco",
       "tipo": "Especial"
     },
@@ -887,7 +887,7 @@
     "permiteFracciones": false,
     "categoria": "Bebidas",
     "metadatos": {
-      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/cappuccino_coffee_1784098806019.jpg",
+      "imagenUrl": "__PRESET_IMG__/cappuccino.jpg",
       "sabor": "Irish Cream",
       "tipo": "Especial"
     },
@@ -903,7 +903,7 @@
     "permiteFracciones": false,
     "categoria": "Bebidas",
     "metadatos": {
-      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/latte_art_coffee_1784098785089.jpg",
+      "imagenUrl": "__PRESET_IMG__/latte.jpg",
       "sabor": "Chocolate",
       "tipo": "Especial"
     },
@@ -919,7 +919,7 @@
     "permiteFracciones": false,
     "categoria": "Bebidas",
     "metadatos": {
-      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/latte_art_coffee_1784098785089.jpg",
+      "imagenUrl": "__PRESET_IMG__/latte.jpg",
       "sabor": "Amaretto",
       "tipo": "Especial"
     },
@@ -935,7 +935,7 @@
     "permiteFracciones": false,
     "categoria": "Bebidas",
     "metadatos": {
-      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/americano_coffee_1784098879285.jpg",
+      "imagenUrl": "__PRESET_IMG__/americano.jpg",
       "sabor": "Cajeta",
       "tipo": "Especial"
     },
@@ -951,7 +951,7 @@
     "permiteFracciones": false,
     "categoria": "Bebidas",
     "metadatos": {
-      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/latte_art_coffee_1784098785089.jpg",
+      "imagenUrl": "__PRESET_IMG__/latte.jpg",
       "sabor": "Canela",
       "tipo": "Especial"
     },
@@ -967,7 +967,7 @@
     "permiteFracciones": false,
     "categoria": "Bebidas",
     "metadatos": {
-      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/latte_art_coffee_1784098785089.jpg",
+      "imagenUrl": "__PRESET_IMG__/latte.jpg",
       "sabor": "Vainilla",
       "tipo": "Especial"
     },
@@ -983,7 +983,7 @@
     "permiteFracciones": false,
     "categoria": "Bebidas",
     "metadatos": {
-      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/cappuccino_coffee_1784098806019.jpg",
+      "imagenUrl": "__PRESET_IMG__/cappuccino.jpg",
       "sabor": "Caramelo",
       "tipo": "Especial"
     },
@@ -999,7 +999,7 @@
     "permiteFracciones": false,
     "categoria": "Bebidas",
     "metadatos": {
-      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/americano_coffee_1784098879285.jpg",
+      "imagenUrl": "__PRESET_IMG__/americano.jpg",
       "sabor": "Avellana",
       "tipo": "Especial"
     },
@@ -1015,7 +1015,7 @@
     "permiteFracciones": false,
     "categoria": "Bebidas",
     "metadatos": {
-      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/americano_coffee_1784098879285.jpg",
+      "imagenUrl": "__PRESET_IMG__/americano.jpg",
       "sabor": "Menta",
       "tipo": "Especial"
     },
@@ -1031,7 +1031,7 @@
     "permiteFracciones": false,
     "categoria": "Bebidas",
     "metadatos": {
-      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/latte_art_coffee_1784098785089.jpg",
+      "imagenUrl": "__PRESET_IMG__/latte.jpg",
       "sabor": "Coco",
       "tipo": "Especial"
     },
@@ -1047,7 +1047,7 @@
     "permiteFracciones": false,
     "categoria": "Bebidas",
     "metadatos": {
-      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/cappuccino_coffee_1784098806019.jpg",
+      "imagenUrl": "__PRESET_IMG__/cappuccino.jpg",
       "sabor": "Irish Cream",
       "tipo": "Especial"
     },
@@ -1063,7 +1063,7 @@
     "permiteFracciones": false,
     "categoria": "Bebidas",
     "metadatos": {
-      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/latte_art_coffee_1784098785089.jpg",
+      "imagenUrl": "__PRESET_IMG__/latte.jpg",
       "sabor": "Chocolate",
       "tipo": "Especial"
     },
@@ -1079,7 +1079,7 @@
     "permiteFracciones": false,
     "categoria": "Bebidas",
     "metadatos": {
-      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/latte_art_coffee_1784098785089.jpg",
+      "imagenUrl": "__PRESET_IMG__/latte.jpg",
       "sabor": "Amaretto",
       "tipo": "Especial"
     },
@@ -1095,7 +1095,7 @@
     "permiteFracciones": false,
     "categoria": "Bebidas",
     "metadatos": {
-      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/americano_coffee_1784098879285.jpg",
+      "imagenUrl": "__PRESET_IMG__/americano.jpg",
       "sabor": "Cajeta",
       "tipo": "Especial"
     },
@@ -1111,7 +1111,7 @@
     "permiteFracciones": false,
     "categoria": "Bebidas",
     "metadatos": {
-      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/latte_art_coffee_1784098785089.jpg",
+      "imagenUrl": "__PRESET_IMG__/latte.jpg",
       "sabor": "Canela",
       "tipo": "Especial"
     },
@@ -1127,7 +1127,7 @@
     "permiteFracciones": false,
     "categoria": "Bebidas",
     "metadatos": {
-      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/latte_art_coffee_1784098785089.jpg",
+      "imagenUrl": "__PRESET_IMG__/latte.jpg",
       "sabor": "Vainilla",
       "tipo": "Especial"
     },
@@ -1143,7 +1143,7 @@
     "permiteFracciones": false,
     "categoria": "Bebidas",
     "metadatos": {
-      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/cappuccino_coffee_1784098806019.jpg",
+      "imagenUrl": "__PRESET_IMG__/cappuccino.jpg",
       "sabor": "Caramelo",
       "tipo": "Especial"
     },
@@ -1159,7 +1159,7 @@
     "permiteFracciones": false,
     "categoria": "Bebidas",
     "metadatos": {
-      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/americano_coffee_1784098879285.jpg",
+      "imagenUrl": "__PRESET_IMG__/americano.jpg",
       "sabor": "Avellana",
       "tipo": "Especial"
     },
@@ -1175,7 +1175,7 @@
     "permiteFracciones": false,
     "categoria": "Bebidas",
     "metadatos": {
-      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/americano_coffee_1784098879285.jpg",
+      "imagenUrl": "__PRESET_IMG__/americano.jpg",
       "sabor": "Menta",
       "tipo": "Especial"
     },
@@ -1191,7 +1191,7 @@
     "permiteFracciones": false,
     "categoria": "Bebidas",
     "metadatos": {
-      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/latte_art_coffee_1784098785089.jpg",
+      "imagenUrl": "__PRESET_IMG__/latte.jpg",
       "sabor": "Coco",
       "tipo": "Especial"
     },
@@ -1207,7 +1207,7 @@
     "permiteFracciones": false,
     "categoria": "Bebidas",
     "metadatos": {
-      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/cappuccino_coffee_1784098806019.jpg",
+      "imagenUrl": "__PRESET_IMG__/cappuccino.jpg",
       "sabor": "Irish Cream",
       "tipo": "Especial"
     },
@@ -1223,7 +1223,7 @@
     "permiteFracciones": false,
     "categoria": "Bebidas",
     "metadatos": {
-      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/latte_art_coffee_1784098785089.jpg",
+      "imagenUrl": "__PRESET_IMG__/latte.jpg",
       "sabor": "Chocolate",
       "tipo": "Especial"
     },
@@ -1239,7 +1239,7 @@
     "permiteFracciones": false,
     "categoria": "Bebidas",
     "metadatos": {
-      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/latte_art_coffee_1784098785089.jpg",
+      "imagenUrl": "__PRESET_IMG__/latte.jpg",
       "sabor": "Amaretto",
       "tipo": "Especial"
     },
@@ -1255,7 +1255,7 @@
     "permiteFracciones": false,
     "categoria": "Bebidas",
     "metadatos": {
-      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/americano_coffee_1784098879285.jpg",
+      "imagenUrl": "__PRESET_IMG__/americano.jpg",
       "sabor": "Cajeta",
       "tipo": "Especial"
     },
@@ -1271,7 +1271,7 @@
     "permiteFracciones": false,
     "categoria": "Bebidas",
     "metadatos": {
-      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/latte_art_coffee_1784098785089.jpg",
+      "imagenUrl": "__PRESET_IMG__/latte.jpg",
       "sabor": "Canela",
       "tipo": "Especial"
     },
@@ -1287,7 +1287,7 @@
     "permiteFracciones": false,
     "categoria": "Bebidas",
     "metadatos": {
-      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/latte_art_coffee_1784098785089.jpg",
+      "imagenUrl": "__PRESET_IMG__/latte.jpg",
       "sabor": "Vainilla",
       "tipo": "Especial"
     },
@@ -1303,7 +1303,7 @@
     "permiteFracciones": false,
     "categoria": "Bebidas",
     "metadatos": {
-      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/cappuccino_coffee_1784098806019.jpg",
+      "imagenUrl": "__PRESET_IMG__/cappuccino.jpg",
       "sabor": "Caramelo",
       "tipo": "Especial"
     },
@@ -1319,7 +1319,7 @@
     "permiteFracciones": false,
     "categoria": "Bebidas",
     "metadatos": {
-      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/americano_coffee_1784098879285.jpg",
+      "imagenUrl": "__PRESET_IMG__/americano.jpg",
       "sabor": "Avellana",
       "tipo": "Especial"
     },
@@ -1335,7 +1335,7 @@
     "permiteFracciones": false,
     "categoria": "Bebidas",
     "metadatos": {
-      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/americano_coffee_1784098879285.jpg",
+      "imagenUrl": "__PRESET_IMG__/americano.jpg",
       "sabor": "Menta",
       "tipo": "Especial"
     },
@@ -1351,7 +1351,7 @@
     "permiteFracciones": false,
     "categoria": "Bebidas",
     "metadatos": {
-      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/latte_art_coffee_1784098785089.jpg",
+      "imagenUrl": "__PRESET_IMG__/latte.jpg",
       "sabor": "Coco",
       "tipo": "Especial"
     },
@@ -1367,7 +1367,7 @@
     "permiteFracciones": false,
     "categoria": "Bebidas",
     "metadatos": {
-      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/cappuccino_coffee_1784098806019.jpg",
+      "imagenUrl": "__PRESET_IMG__/cappuccino.jpg",
       "sabor": "Irish Cream",
       "tipo": "Especial"
     },
@@ -1383,7 +1383,7 @@
     "permiteFracciones": false,
     "categoria": "Bebidas",
     "metadatos": {
-      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/latte_art_coffee_1784098785089.jpg",
+      "imagenUrl": "__PRESET_IMG__/latte.jpg",
       "sabor": "Chocolate",
       "tipo": "Especial"
     },
@@ -1399,7 +1399,7 @@
     "permiteFracciones": false,
     "categoria": "Bebidas",
     "metadatos": {
-      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/latte_art_coffee_1784098785089.jpg",
+      "imagenUrl": "__PRESET_IMG__/latte.jpg",
       "sabor": "Amaretto",
       "tipo": "Especial"
     },
@@ -1415,7 +1415,7 @@
     "permiteFracciones": false,
     "categoria": "Bebidas",
     "metadatos": {
-      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/americano_coffee_1784098879285.jpg",
+      "imagenUrl": "__PRESET_IMG__/americano.jpg",
       "sabor": "Cajeta",
       "tipo": "Especial"
     },
@@ -1431,7 +1431,7 @@
     "permiteFracciones": false,
     "categoria": "Bebidas",
     "metadatos": {
-      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/latte_art_coffee_1784098785089.jpg",
+      "imagenUrl": "__PRESET_IMG__/latte.jpg",
       "sabor": "Canela",
       "tipo": "Especial"
     },
@@ -1447,7 +1447,7 @@
     "permiteFracciones": false,
     "categoria": "Bebidas",
     "metadatos": {
-      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/latte_art_coffee_1784098785089.jpg",
+      "imagenUrl": "__PRESET_IMG__/latte.jpg",
       "sabor": "Vainilla",
       "tipo": "Especial"
     },
@@ -1463,7 +1463,7 @@
     "permiteFracciones": false,
     "categoria": "Bebidas",
     "metadatos": {
-      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/cappuccino_coffee_1784098806019.jpg",
+      "imagenUrl": "__PRESET_IMG__/cappuccino.jpg",
       "sabor": "Caramelo",
       "tipo": "Especial"
     },
@@ -1479,7 +1479,7 @@
     "permiteFracciones": false,
     "categoria": "Bebidas",
     "metadatos": {
-      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/americano_coffee_1784098879285.jpg",
+      "imagenUrl": "__PRESET_IMG__/americano.jpg",
       "sabor": "Avellana",
       "tipo": "Especial"
     },
@@ -1495,7 +1495,7 @@
     "permiteFracciones": false,
     "categoria": "Bebidas",
     "metadatos": {
-      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/americano_coffee_1784098879285.jpg",
+      "imagenUrl": "__PRESET_IMG__/americano.jpg",
       "sabor": "Menta",
       "tipo": "Especial"
     },
@@ -1511,7 +1511,7 @@
     "permiteFracciones": false,
     "categoria": "Bebidas",
     "metadatos": {
-      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/latte_art_coffee_1784098785089.jpg",
+      "imagenUrl": "__PRESET_IMG__/latte.jpg",
       "sabor": "Coco",
       "tipo": "Especial"
     },
@@ -1527,7 +1527,7 @@
     "permiteFracciones": false,
     "categoria": "Bebidas",
     "metadatos": {
-      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/cappuccino_coffee_1784098806019.jpg",
+      "imagenUrl": "__PRESET_IMG__/cappuccino.jpg",
       "sabor": "Irish Cream",
       "tipo": "Especial"
     },
@@ -1543,7 +1543,7 @@
     "permiteFracciones": false,
     "categoria": "Bebidas",
     "metadatos": {
-      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/latte_art_coffee_1784098785089.jpg",
+      "imagenUrl": "__PRESET_IMG__/latte.jpg",
       "sabor": "Chocolate",
       "tipo": "Especial"
     },
@@ -1559,7 +1559,7 @@
     "permiteFracciones": false,
     "categoria": "Bebidas",
     "metadatos": {
-      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/latte_art_coffee_1784098785089.jpg",
+      "imagenUrl": "__PRESET_IMG__/latte.jpg",
       "sabor": "Amaretto",
       "tipo": "Especial"
     },
@@ -1575,7 +1575,7 @@
     "permiteFracciones": false,
     "categoria": "Bebidas",
     "metadatos": {
-      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/americano_coffee_1784098879285.jpg",
+      "imagenUrl": "__PRESET_IMG__/americano.jpg",
       "sabor": "Cajeta",
       "tipo": "Especial"
     },
@@ -1591,7 +1591,7 @@
     "permiteFracciones": false,
     "categoria": "Bebidas",
     "metadatos": {
-      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/latte_art_coffee_1784098785089.jpg",
+      "imagenUrl": "__PRESET_IMG__/latte.jpg",
       "sabor": "Canela",
       "tipo": "Especial"
     },
@@ -1607,7 +1607,7 @@
     "permiteFracciones": false,
     "categoria": "Alimentos",
     "metadatos": {
-      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/sweet_crepe_1784098831229.jpg",
+      "imagenUrl": "__PRESET_IMG__/crepe.jpg",
       "tipo": "Alimento Caliente"
     },
     "codigos": [
@@ -1622,7 +1622,7 @@
     "permiteFracciones": false,
     "categoria": "Alimentos",
     "metadatos": {
-      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/sweet_crepe_1784098831229.jpg",
+      "imagenUrl": "__PRESET_IMG__/crepe.jpg",
       "tipo": "Alimento Caliente"
     },
     "codigos": [
@@ -1637,7 +1637,7 @@
     "permiteFracciones": false,
     "categoria": "Alimentos",
     "metadatos": {
-      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/panini_sandwich_1784098932775.jpg",
+      "imagenUrl": "__PRESET_IMG__/panini.jpg",
       "tipo": "Alimento Caliente"
     },
     "codigos": [
@@ -1652,7 +1652,7 @@
     "permiteFracciones": false,
     "categoria": "Alimentos",
     "metadatos": {
-      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/panini_sandwich_1784098932775.jpg",
+      "imagenUrl": "__PRESET_IMG__/panini.jpg",
       "tipo": "Alimento Caliente"
     },
     "codigos": [
@@ -1667,7 +1667,7 @@
     "permiteFracciones": false,
     "categoria": "Alimentos",
     "metadatos": {
-      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/panini_sandwich_1784098932775.jpg",
+      "imagenUrl": "__PRESET_IMG__/panini.jpg",
       "tipo": "Alimento Caliente"
     },
     "codigos": [
@@ -1682,7 +1682,7 @@
     "permiteFracciones": false,
     "categoria": "Alimentos",
     "metadatos": {
-      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/panini_sandwich_1784098932775.jpg",
+      "imagenUrl": "__PRESET_IMG__/panini.jpg",
       "tipo": "Alimento Caliente"
     },
     "codigos": [
@@ -1697,7 +1697,7 @@
     "permiteFracciones": false,
     "categoria": "Alimentos",
     "metadatos": {
-      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/muffin_cupcake_1784098904704.jpg",
+      "imagenUrl": "__PRESET_IMG__/muffin.jpg",
       "tipo": "Alimento Caliente"
     },
     "codigos": [
@@ -1712,7 +1712,7 @@
     "permiteFracciones": false,
     "categoria": "Alimentos",
     "metadatos": {
-      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/panini_sandwich_1784098932775.jpg",
+      "imagenUrl": "__PRESET_IMG__/panini.jpg",
       "tipo": "Alimento Caliente"
     },
     "codigos": [
@@ -1727,7 +1727,7 @@
     "permiteFracciones": false,
     "categoria": "Alimentos",
     "metadatos": {
-      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/sweet_crepe_1784098831229.jpg",
+      "imagenUrl": "__PRESET_IMG__/crepe.jpg",
       "tipo": "Alimento Caliente"
     },
     "codigos": [
@@ -1742,7 +1742,7 @@
     "permiteFracciones": false,
     "categoria": "Alimentos",
     "metadatos": {
-      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/sweet_crepe_1784098831229.jpg",
+      "imagenUrl": "__PRESET_IMG__/crepe.jpg",
       "tipo": "Alimento Caliente"
     },
     "codigos": [
@@ -1757,7 +1757,7 @@
     "permiteFracciones": false,
     "categoria": "Alimentos",
     "metadatos": {
-      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/panini_sandwich_1784098932775.jpg",
+      "imagenUrl": "__PRESET_IMG__/panini.jpg",
       "tipo": "Alimento Caliente"
     },
     "codigos": [
@@ -1772,7 +1772,7 @@
     "permiteFracciones": false,
     "categoria": "Alimentos",
     "metadatos": {
-      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/panini_sandwich_1784098932775.jpg",
+      "imagenUrl": "__PRESET_IMG__/panini.jpg",
       "tipo": "Alimento Caliente"
     },
     "codigos": [
@@ -1787,7 +1787,7 @@
     "permiteFracciones": false,
     "categoria": "Alimentos",
     "metadatos": {
-      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/panini_sandwich_1784098932775.jpg",
+      "imagenUrl": "__PRESET_IMG__/panini.jpg",
       "tipo": "Alimento Caliente"
     },
     "codigos": [
@@ -1802,7 +1802,7 @@
     "permiteFracciones": false,
     "categoria": "Alimentos",
     "metadatos": {
-      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/panini_sandwich_1784098932775.jpg",
+      "imagenUrl": "__PRESET_IMG__/panini.jpg",
       "tipo": "Alimento Caliente"
     },
     "codigos": [
@@ -1817,7 +1817,7 @@
     "permiteFracciones": false,
     "categoria": "Alimentos",
     "metadatos": {
-      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/muffin_cupcake_1784098904704.jpg",
+      "imagenUrl": "__PRESET_IMG__/muffin.jpg",
       "tipo": "Alimento Caliente"
     },
     "codigos": [
@@ -1832,7 +1832,7 @@
     "permiteFracciones": false,
     "categoria": "Alimentos",
     "metadatos": {
-      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/panini_sandwich_1784098932775.jpg",
+      "imagenUrl": "__PRESET_IMG__/panini.jpg",
       "tipo": "Alimento Caliente"
     },
     "codigos": [
@@ -1847,7 +1847,7 @@
     "permiteFracciones": false,
     "categoria": "Alimentos",
     "metadatos": {
-      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/sweet_crepe_1784098831229.jpg",
+      "imagenUrl": "__PRESET_IMG__/crepe.jpg",
       "tipo": "Alimento Caliente"
     },
     "codigos": [
@@ -1862,7 +1862,7 @@
     "permiteFracciones": false,
     "categoria": "Alimentos",
     "metadatos": {
-      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/sweet_crepe_1784098831229.jpg",
+      "imagenUrl": "__PRESET_IMG__/crepe.jpg",
       "tipo": "Alimento Caliente"
     },
     "codigos": [
@@ -1877,7 +1877,7 @@
     "permiteFracciones": false,
     "categoria": "Alimentos",
     "metadatos": {
-      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/panini_sandwich_1784098932775.jpg",
+      "imagenUrl": "__PRESET_IMG__/panini.jpg",
       "tipo": "Alimento Caliente"
     },
     "codigos": [
@@ -1892,7 +1892,7 @@
     "permiteFracciones": false,
     "categoria": "Alimentos",
     "metadatos": {
-      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/panini_sandwich_1784098932775.jpg",
+      "imagenUrl": "__PRESET_IMG__/panini.jpg",
       "tipo": "Alimento Caliente"
     },
     "codigos": [
@@ -1907,7 +1907,7 @@
     "permiteFracciones": false,
     "categoria": "Alimentos",
     "metadatos": {
-      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/panini_sandwich_1784098932775.jpg",
+      "imagenUrl": "__PRESET_IMG__/panini.jpg",
       "tipo": "Alimento Caliente"
     },
     "codigos": [
@@ -1922,7 +1922,7 @@
     "permiteFracciones": false,
     "categoria": "Alimentos",
     "metadatos": {
-      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/panini_sandwich_1784098932775.jpg",
+      "imagenUrl": "__PRESET_IMG__/panini.jpg",
       "tipo": "Alimento Caliente"
     },
     "codigos": [
@@ -1937,7 +1937,7 @@
     "permiteFracciones": false,
     "categoria": "Alimentos",
     "metadatos": {
-      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/muffin_cupcake_1784098904704.jpg",
+      "imagenUrl": "__PRESET_IMG__/muffin.jpg",
       "tipo": "Alimento Caliente"
     },
     "codigos": [
@@ -1952,7 +1952,7 @@
     "permiteFracciones": false,
     "categoria": "Alimentos",
     "metadatos": {
-      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/panini_sandwich_1784098932775.jpg",
+      "imagenUrl": "__PRESET_IMG__/panini.jpg",
       "tipo": "Alimento Caliente"
     },
     "codigos": [
@@ -1967,7 +1967,7 @@
     "permiteFracciones": false,
     "categoria": "Alimentos",
     "metadatos": {
-      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/sweet_crepe_1784098831229.jpg",
+      "imagenUrl": "__PRESET_IMG__/crepe.jpg",
       "tipo": "Alimento Caliente"
     },
     "codigos": [
@@ -1982,7 +1982,7 @@
     "permiteFracciones": false,
     "categoria": "Alimentos",
     "metadatos": {
-      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/sweet_crepe_1784098831229.jpg",
+      "imagenUrl": "__PRESET_IMG__/crepe.jpg",
       "tipo": "Alimento Caliente"
     },
     "codigos": [
@@ -1997,7 +1997,7 @@
     "permiteFracciones": false,
     "categoria": "Alimentos",
     "metadatos": {
-      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/panini_sandwich_1784098932775.jpg",
+      "imagenUrl": "__PRESET_IMG__/panini.jpg",
       "tipo": "Alimento Caliente"
     },
     "codigos": [
@@ -2012,7 +2012,7 @@
     "permiteFracciones": false,
     "categoria": "Alimentos",
     "metadatos": {
-      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/panini_sandwich_1784098932775.jpg",
+      "imagenUrl": "__PRESET_IMG__/panini.jpg",
       "tipo": "Alimento Caliente"
     },
     "codigos": [
@@ -2027,7 +2027,7 @@
     "permiteFracciones": false,
     "categoria": "Alimentos",
     "metadatos": {
-      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/panini_sandwich_1784098932775.jpg",
+      "imagenUrl": "__PRESET_IMG__/panini.jpg",
       "tipo": "Alimento Caliente"
     },
     "codigos": [
@@ -2042,7 +2042,7 @@
     "permiteFracciones": false,
     "categoria": "Alimentos",
     "metadatos": {
-      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/panini_sandwich_1784098932775.jpg",
+      "imagenUrl": "__PRESET_IMG__/panini.jpg",
       "tipo": "Alimento Caliente"
     },
     "codigos": [
@@ -2057,7 +2057,7 @@
     "permiteFracciones": false,
     "categoria": "Alimentos",
     "metadatos": {
-      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/muffin_cupcake_1784098904704.jpg",
+      "imagenUrl": "__PRESET_IMG__/muffin.jpg",
       "tipo": "Alimento Caliente"
     },
     "codigos": [
@@ -2072,7 +2072,7 @@
     "permiteFracciones": false,
     "categoria": "Alimentos",
     "metadatos": {
-      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/panini_sandwich_1784098932775.jpg",
+      "imagenUrl": "__PRESET_IMG__/panini.jpg",
       "tipo": "Alimento Caliente"
     },
     "codigos": [
@@ -2087,7 +2087,7 @@
     "permiteFracciones": false,
     "categoria": "Alimentos",
     "metadatos": {
-      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/sweet_crepe_1784098831229.jpg",
+      "imagenUrl": "__PRESET_IMG__/crepe.jpg",
       "tipo": "Alimento Caliente"
     },
     "codigos": [
@@ -2102,7 +2102,7 @@
     "permiteFracciones": false,
     "categoria": "Alimentos",
     "metadatos": {
-      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/sweet_crepe_1784098831229.jpg",
+      "imagenUrl": "__PRESET_IMG__/crepe.jpg",
       "tipo": "Alimento Caliente"
     },
     "codigos": [
@@ -2117,7 +2117,7 @@
     "permiteFracciones": false,
     "categoria": "Alimentos",
     "metadatos": {
-      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/panini_sandwich_1784098932775.jpg",
+      "imagenUrl": "__PRESET_IMG__/panini.jpg",
       "tipo": "Alimento Caliente"
     },
     "codigos": [
@@ -2132,7 +2132,7 @@
     "permiteFracciones": false,
     "categoria": "Alimentos",
     "metadatos": {
-      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/panini_sandwich_1784098932775.jpg",
+      "imagenUrl": "__PRESET_IMG__/panini.jpg",
       "tipo": "Alimento Caliente"
     },
     "codigos": [
@@ -2147,7 +2147,7 @@
     "permiteFracciones": false,
     "categoria": "Alimentos",
     "metadatos": {
-      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/panini_sandwich_1784098932775.jpg",
+      "imagenUrl": "__PRESET_IMG__/panini.jpg",
       "tipo": "Alimento Caliente"
     },
     "codigos": [
@@ -2162,7 +2162,7 @@
     "permiteFracciones": false,
     "categoria": "Alimentos",
     "metadatos": {
-      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/panini_sandwich_1784098932775.jpg",
+      "imagenUrl": "__PRESET_IMG__/panini.jpg",
       "tipo": "Alimento Caliente"
     },
     "codigos": [
@@ -2177,7 +2177,7 @@
     "permiteFracciones": false,
     "categoria": "Alimentos",
     "metadatos": {
-      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/muffin_cupcake_1784098904704.jpg",
+      "imagenUrl": "__PRESET_IMG__/muffin.jpg",
       "tipo": "Alimento Caliente"
     },
     "codigos": [
@@ -2192,7 +2192,7 @@
     "permiteFracciones": false,
     "categoria": "Alimentos",
     "metadatos": {
-      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/panini_sandwich_1784098932775.jpg",
+      "imagenUrl": "__PRESET_IMG__/panini.jpg",
       "tipo": "Alimento Caliente"
     },
     "codigos": [
@@ -2207,7 +2207,7 @@
     "permiteFracciones": false,
     "categoria": "Alimentos",
     "metadatos": {
-      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/sweet_crepe_1784098831229.jpg",
+      "imagenUrl": "__PRESET_IMG__/crepe.jpg",
       "tipo": "Alimento Caliente"
     },
     "codigos": [
@@ -2222,7 +2222,7 @@
     "permiteFracciones": false,
     "categoria": "Alimentos",
     "metadatos": {
-      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/sweet_crepe_1784098831229.jpg",
+      "imagenUrl": "__PRESET_IMG__/crepe.jpg",
       "tipo": "Alimento Caliente"
     },
     "codigos": [
@@ -2237,7 +2237,7 @@
     "permiteFracciones": false,
     "categoria": "Alimentos",
     "metadatos": {
-      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/panini_sandwich_1784098932775.jpg",
+      "imagenUrl": "__PRESET_IMG__/panini.jpg",
       "tipo": "Alimento Caliente"
     },
     "codigos": [
@@ -2252,7 +2252,7 @@
     "permiteFracciones": false,
     "categoria": "Alimentos",
     "metadatos": {
-      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/panini_sandwich_1784098932775.jpg",
+      "imagenUrl": "__PRESET_IMG__/panini.jpg",
       "tipo": "Alimento Caliente"
     },
     "codigos": [
@@ -2267,7 +2267,7 @@
     "permiteFracciones": false,
     "categoria": "Alimentos",
     "metadatos": {
-      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/panini_sandwich_1784098932775.jpg",
+      "imagenUrl": "__PRESET_IMG__/panini.jpg",
       "tipo": "Alimento Caliente"
     },
     "codigos": [
@@ -2282,7 +2282,7 @@
     "permiteFracciones": false,
     "categoria": "Alimentos",
     "metadatos": {
-      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/panini_sandwich_1784098932775.jpg",
+      "imagenUrl": "__PRESET_IMG__/panini.jpg",
       "tipo": "Alimento Caliente"
     },
     "codigos": [
@@ -2297,7 +2297,7 @@
     "permiteFracciones": false,
     "categoria": "Alimentos",
     "metadatos": {
-      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/muffin_cupcake_1784098904704.jpg",
+      "imagenUrl": "__PRESET_IMG__/muffin.jpg",
       "tipo": "Alimento Caliente"
     },
     "codigos": [
@@ -2312,7 +2312,7 @@
     "permiteFracciones": false,
     "categoria": "Alimentos",
     "metadatos": {
-      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/panini_sandwich_1784098932775.jpg",
+      "imagenUrl": "__PRESET_IMG__/panini.jpg",
       "tipo": "Alimento Caliente"
     },
     "codigos": [
@@ -2327,7 +2327,7 @@
     "permiteFracciones": false,
     "categoria": "Alimentos",
     "metadatos": {
-      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/sweet_crepe_1784098831229.jpg",
+      "imagenUrl": "__PRESET_IMG__/crepe.jpg",
       "tipo": "Alimento Caliente"
     },
     "codigos": [
@@ -2342,7 +2342,7 @@
     "permiteFracciones": false,
     "categoria": "Alimentos",
     "metadatos": {
-      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/sweet_crepe_1784098831229.jpg",
+      "imagenUrl": "__PRESET_IMG__/crepe.jpg",
       "tipo": "Alimento Caliente"
     },
     "codigos": [
@@ -2357,7 +2357,7 @@
     "permiteFracciones": false,
     "categoria": "Postres",
     "metadatos": {
-      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/muffin_cupcake_1784098904704.jpg",
+      "imagenUrl": "__PRESET_IMG__/muffin.jpg",
       "tipo": "Repostería Dulce"
     },
     "codigos": [
@@ -2372,7 +2372,7 @@
     "permiteFracciones": false,
     "categoria": "Postres",
     "metadatos": {
-      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/muffin_cupcake_1784098904704.jpg",
+      "imagenUrl": "__PRESET_IMG__/muffin.jpg",
       "tipo": "Repostería Dulce"
     },
     "codigos": [
@@ -2387,7 +2387,7 @@
     "permiteFracciones": false,
     "categoria": "Postres",
     "metadatos": {
-      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/sweet_crepe_1784098831229.jpg",
+      "imagenUrl": "__PRESET_IMG__/crepe.jpg",
       "tipo": "Repostería Dulce"
     },
     "codigos": [
@@ -2402,7 +2402,7 @@
     "permiteFracciones": false,
     "categoria": "Postres",
     "metadatos": {
-      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/muffin_cupcake_1784098904704.jpg",
+      "imagenUrl": "__PRESET_IMG__/muffin.jpg",
       "tipo": "Repostería Dulce"
     },
     "codigos": [
@@ -2417,7 +2417,7 @@
     "permiteFracciones": false,
     "categoria": "Postres",
     "metadatos": {
-      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/sweet_crepe_1784098831229.jpg",
+      "imagenUrl": "__PRESET_IMG__/crepe.jpg",
       "tipo": "Repostería Dulce"
     },
     "codigos": [
@@ -2432,7 +2432,7 @@
     "permiteFracciones": false,
     "categoria": "Postres",
     "metadatos": {
-      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/sweet_crepe_1784098831229.jpg",
+      "imagenUrl": "__PRESET_IMG__/crepe.jpg",
       "tipo": "Repostería Dulce"
     },
     "codigos": [
@@ -2447,7 +2447,7 @@
     "permiteFracciones": false,
     "categoria": "Postres",
     "metadatos": {
-      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/muffin_cupcake_1784098904704.jpg",
+      "imagenUrl": "__PRESET_IMG__/muffin.jpg",
       "tipo": "Repostería Dulce"
     },
     "codigos": [
@@ -2462,7 +2462,7 @@
     "permiteFracciones": false,
     "categoria": "Postres",
     "metadatos": {
-      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/muffin_cupcake_1784098904704.jpg",
+      "imagenUrl": "__PRESET_IMG__/muffin.jpg",
       "tipo": "Repostería Dulce"
     },
     "codigos": [
@@ -2477,7 +2477,7 @@
     "permiteFracciones": false,
     "categoria": "Postres",
     "metadatos": {
-      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/muffin_cupcake_1784098904704.jpg",
+      "imagenUrl": "__PRESET_IMG__/muffin.jpg",
       "tipo": "Repostería Dulce"
     },
     "codigos": [
@@ -2492,7 +2492,7 @@
     "permiteFracciones": false,
     "categoria": "Postres",
     "metadatos": {
-      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/sweet_crepe_1784098831229.jpg",
+      "imagenUrl": "__PRESET_IMG__/crepe.jpg",
       "tipo": "Repostería Dulce"
     },
     "codigos": [
@@ -2507,7 +2507,7 @@
     "permiteFracciones": false,
     "categoria": "Postres",
     "metadatos": {
-      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/muffin_cupcake_1784098904704.jpg",
+      "imagenUrl": "__PRESET_IMG__/muffin.jpg",
       "tipo": "Repostería Dulce"
     },
     "codigos": [
@@ -2522,7 +2522,7 @@
     "permiteFracciones": false,
     "categoria": "Postres",
     "metadatos": {
-      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/sweet_crepe_1784098831229.jpg",
+      "imagenUrl": "__PRESET_IMG__/crepe.jpg",
       "tipo": "Repostería Dulce"
     },
     "codigos": [
@@ -2537,7 +2537,7 @@
     "permiteFracciones": false,
     "categoria": "Postres",
     "metadatos": {
-      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/sweet_crepe_1784098831229.jpg",
+      "imagenUrl": "__PRESET_IMG__/crepe.jpg",
       "tipo": "Repostería Dulce"
     },
     "codigos": [
@@ -2552,7 +2552,7 @@
     "permiteFracciones": false,
     "categoria": "Postres",
     "metadatos": {
-      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/muffin_cupcake_1784098904704.jpg",
+      "imagenUrl": "__PRESET_IMG__/muffin.jpg",
       "tipo": "Repostería Dulce"
     },
     "codigos": [
@@ -2567,7 +2567,7 @@
     "permiteFracciones": false,
     "categoria": "Postres",
     "metadatos": {
-      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/muffin_cupcake_1784098904704.jpg",
+      "imagenUrl": "__PRESET_IMG__/muffin.jpg",
       "tipo": "Repostería Dulce"
     },
     "codigos": [
@@ -2582,7 +2582,7 @@
     "permiteFracciones": false,
     "categoria": "Postres",
     "metadatos": {
-      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/muffin_cupcake_1784098904704.jpg",
+      "imagenUrl": "__PRESET_IMG__/muffin.jpg",
       "tipo": "Repostería Dulce"
     },
     "codigos": [
@@ -2597,7 +2597,7 @@
     "permiteFracciones": false,
     "categoria": "Postres",
     "metadatos": {
-      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/sweet_crepe_1784098831229.jpg",
+      "imagenUrl": "__PRESET_IMG__/crepe.jpg",
       "tipo": "Repostería Dulce"
     },
     "codigos": [
@@ -2612,7 +2612,7 @@
     "permiteFracciones": false,
     "categoria": "Postres",
     "metadatos": {
-      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/muffin_cupcake_1784098904704.jpg",
+      "imagenUrl": "__PRESET_IMG__/muffin.jpg",
       "tipo": "Repostería Dulce"
     },
     "codigos": [
@@ -2627,7 +2627,7 @@
     "permiteFracciones": false,
     "categoria": "Postres",
     "metadatos": {
-      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/sweet_crepe_1784098831229.jpg",
+      "imagenUrl": "__PRESET_IMG__/crepe.jpg",
       "tipo": "Repostería Dulce"
     },
     "codigos": [
@@ -2642,7 +2642,7 @@
     "permiteFracciones": false,
     "categoria": "Postres",
     "metadatos": {
-      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/sweet_crepe_1784098831229.jpg",
+      "imagenUrl": "__PRESET_IMG__/crepe.jpg",
       "tipo": "Repostería Dulce"
     },
     "codigos": [
@@ -2657,7 +2657,7 @@
     "permiteFracciones": false,
     "categoria": "Postres",
     "metadatos": {
-      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/muffin_cupcake_1784098904704.jpg",
+      "imagenUrl": "__PRESET_IMG__/muffin.jpg",
       "tipo": "Repostería Dulce"
     },
     "codigos": [
@@ -2672,7 +2672,7 @@
     "permiteFracciones": false,
     "categoria": "Postres",
     "metadatos": {
-      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/muffin_cupcake_1784098904704.jpg",
+      "imagenUrl": "__PRESET_IMG__/muffin.jpg",
       "tipo": "Repostería Dulce"
     },
     "codigos": [
@@ -2687,7 +2687,7 @@
     "permiteFracciones": false,
     "categoria": "Postres",
     "metadatos": {
-      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/muffin_cupcake_1784098904704.jpg",
+      "imagenUrl": "__PRESET_IMG__/muffin.jpg",
       "tipo": "Repostería Dulce"
     },
     "codigos": [
@@ -2702,7 +2702,7 @@
     "permiteFracciones": false,
     "categoria": "Postres",
     "metadatos": {
-      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/sweet_crepe_1784098831229.jpg",
+      "imagenUrl": "__PRESET_IMG__/crepe.jpg",
       "tipo": "Repostería Dulce"
     },
     "codigos": [
@@ -2717,7 +2717,7 @@
     "permiteFracciones": false,
     "categoria": "Postres",
     "metadatos": {
-      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/muffin_cupcake_1784098904704.jpg",
+      "imagenUrl": "__PRESET_IMG__/muffin.jpg",
       "tipo": "Repostería Dulce"
     },
     "codigos": [
@@ -2732,7 +2732,7 @@
     "permiteFracciones": false,
     "categoria": "Postres",
     "metadatos": {
-      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/sweet_crepe_1784098831229.jpg",
+      "imagenUrl": "__PRESET_IMG__/crepe.jpg",
       "tipo": "Repostería Dulce"
     },
     "codigos": [
@@ -2747,7 +2747,7 @@
     "permiteFracciones": false,
     "categoria": "Postres",
     "metadatos": {
-      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/sweet_crepe_1784098831229.jpg",
+      "imagenUrl": "__PRESET_IMG__/crepe.jpg",
       "tipo": "Repostería Dulce"
     },
     "codigos": [
@@ -2762,7 +2762,7 @@
     "permiteFracciones": false,
     "categoria": "Postres",
     "metadatos": {
-      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/muffin_cupcake_1784098904704.jpg",
+      "imagenUrl": "__PRESET_IMG__/muffin.jpg",
       "tipo": "Repostería Dulce"
     },
     "codigos": [
@@ -2777,7 +2777,7 @@
     "permiteFracciones": false,
     "categoria": "Postres",
     "metadatos": {
-      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/muffin_cupcake_1784098904704.jpg",
+      "imagenUrl": "__PRESET_IMG__/muffin.jpg",
       "tipo": "Repostería Dulce"
     },
     "codigos": [
@@ -2792,7 +2792,7 @@
     "permiteFracciones": false,
     "categoria": "Postres",
     "metadatos": {
-      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/muffin_cupcake_1784098904704.jpg",
+      "imagenUrl": "__PRESET_IMG__/muffin.jpg",
       "tipo": "Repostería Dulce"
     },
     "codigos": [
@@ -2807,7 +2807,7 @@
     "permiteFracciones": false,
     "categoria": "Postres",
     "metadatos": {
-      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/sweet_crepe_1784098831229.jpg",
+      "imagenUrl": "__PRESET_IMG__/crepe.jpg",
       "tipo": "Repostería Dulce"
     },
     "codigos": [
@@ -2822,7 +2822,7 @@
     "permiteFracciones": false,
     "categoria": "Postres",
     "metadatos": {
-      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/muffin_cupcake_1784098904704.jpg",
+      "imagenUrl": "__PRESET_IMG__/muffin.jpg",
       "tipo": "Repostería Dulce"
     },
     "codigos": [
@@ -2837,7 +2837,7 @@
     "permiteFracciones": false,
     "categoria": "Postres",
     "metadatos": {
-      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/sweet_crepe_1784098831229.jpg",
+      "imagenUrl": "__PRESET_IMG__/crepe.jpg",
       "tipo": "Repostería Dulce"
     },
     "codigos": [
@@ -2852,7 +2852,7 @@
     "permiteFracciones": false,
     "categoria": "Postres",
     "metadatos": {
-      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/sweet_crepe_1784098831229.jpg",
+      "imagenUrl": "__PRESET_IMG__/crepe.jpg",
       "tipo": "Repostería Dulce"
     },
     "codigos": [
@@ -2867,7 +2867,7 @@
     "permiteFracciones": false,
     "categoria": "Postres",
     "metadatos": {
-      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/muffin_cupcake_1784098904704.jpg",
+      "imagenUrl": "__PRESET_IMG__/muffin.jpg",
       "tipo": "Repostería Dulce"
     },
     "codigos": [
@@ -2882,7 +2882,7 @@
     "permiteFracciones": false,
     "categoria": "Postres",
     "metadatos": {
-      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/muffin_cupcake_1784098904704.jpg",
+      "imagenUrl": "__PRESET_IMG__/muffin.jpg",
       "tipo": "Repostería Dulce"
     },
     "codigos": [
@@ -2897,7 +2897,7 @@
     "permiteFracciones": false,
     "categoria": "Postres",
     "metadatos": {
-      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/muffin_cupcake_1784098904704.jpg",
+      "imagenUrl": "__PRESET_IMG__/muffin.jpg",
       "tipo": "Repostería Dulce"
     },
     "codigos": [
@@ -2912,7 +2912,7 @@
     "permiteFracciones": false,
     "categoria": "Postres",
     "metadatos": {
-      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/sweet_crepe_1784098831229.jpg",
+      "imagenUrl": "__PRESET_IMG__/crepe.jpg",
       "tipo": "Repostería Dulce"
     },
     "codigos": [
@@ -2927,7 +2927,7 @@
     "permiteFracciones": false,
     "categoria": "Postres",
     "metadatos": {
-      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/muffin_cupcake_1784098904704.jpg",
+      "imagenUrl": "__PRESET_IMG__/muffin.jpg",
       "tipo": "Repostería Dulce"
     },
     "codigos": [
@@ -2942,7 +2942,7 @@
     "permiteFracciones": false,
     "categoria": "Postres",
     "metadatos": {
-      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/sweet_crepe_1784098831229.jpg",
+      "imagenUrl": "__PRESET_IMG__/crepe.jpg",
       "tipo": "Repostería Dulce"
     },
     "codigos": [
@@ -2957,7 +2957,7 @@
     "permiteFracciones": false,
     "categoria": "Postres",
     "metadatos": {
-      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/sweet_crepe_1784098831229.jpg",
+      "imagenUrl": "__PRESET_IMG__/crepe.jpg",
       "tipo": "Repostería Dulce"
     },
     "codigos": [
@@ -2972,7 +2972,7 @@
     "permiteFracciones": false,
     "categoria": "Postres",
     "metadatos": {
-      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/muffin_cupcake_1784098904704.jpg",
+      "imagenUrl": "__PRESET_IMG__/muffin.jpg",
       "tipo": "Repostería Dulce"
     },
     "codigos": [
@@ -2987,7 +2987,7 @@
     "permiteFracciones": false,
     "categoria": "Postres",
     "metadatos": {
-      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/muffin_cupcake_1784098904704.jpg",
+      "imagenUrl": "__PRESET_IMG__/muffin.jpg",
       "tipo": "Repostería Dulce"
     },
     "codigos": [
@@ -3002,7 +3002,7 @@
     "permiteFracciones": false,
     "categoria": "Postres",
     "metadatos": {
-      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/muffin_cupcake_1784098904704.jpg",
+      "imagenUrl": "__PRESET_IMG__/muffin.jpg",
       "tipo": "Repostería Dulce"
     },
     "codigos": [
@@ -3017,7 +3017,7 @@
     "permiteFracciones": false,
     "categoria": "Postres",
     "metadatos": {
-      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/sweet_crepe_1784098831229.jpg",
+      "imagenUrl": "__PRESET_IMG__/crepe.jpg",
       "tipo": "Repostería Dulce"
     },
     "codigos": [
@@ -3032,7 +3032,7 @@
     "permiteFracciones": false,
     "categoria": "Postres",
     "metadatos": {
-      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/muffin_cupcake_1784098904704.jpg",
+      "imagenUrl": "__PRESET_IMG__/muffin.jpg",
       "tipo": "Repostería Dulce"
     },
     "codigos": [
@@ -3047,7 +3047,7 @@
     "permiteFracciones": false,
     "categoria": "Postres",
     "metadatos": {
-      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/sweet_crepe_1784098831229.jpg",
+      "imagenUrl": "__PRESET_IMG__/crepe.jpg",
       "tipo": "Repostería Dulce"
     },
     "codigos": [
@@ -3062,7 +3062,7 @@
     "permiteFracciones": false,
     "categoria": "Postres",
     "metadatos": {
-      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/sweet_crepe_1784098831229.jpg",
+      "imagenUrl": "__PRESET_IMG__/crepe.jpg",
       "tipo": "Repostería Dulce"
     },
     "codigos": [
@@ -3077,7 +3077,7 @@
     "permiteFracciones": false,
     "categoria": "Postres",
     "metadatos": {
-      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/muffin_cupcake_1784098904704.jpg",
+      "imagenUrl": "__PRESET_IMG__/muffin.jpg",
       "tipo": "Repostería Dulce"
     },
     "codigos": [
@@ -3092,7 +3092,7 @@
     "permiteFracciones": false,
     "categoria": "Postres",
     "metadatos": {
-      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/muffin_cupcake_1784098904704.jpg",
+      "imagenUrl": "__PRESET_IMG__/muffin.jpg",
       "tipo": "Repostería Dulce"
     },
     "codigos": [

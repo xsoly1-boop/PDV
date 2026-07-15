@@ -3132,6 +3132,25 @@ app.post('/api/v1/presets/load', async (req: any, res: any) => {
     const rawData = fs.readFileSync(presetPath, 'utf-8');
     const products = JSON.parse(rawData);
     
+    // Resolver el token __PRESET_IMG__ a la ruta absoluta real de las imágenes empaquetadas
+    const presetImagesDir = path.join(path.dirname(presetPath), 'images');
+    for (const p of products) {
+      const imgUrl: string = p?.metadatos?.imagenUrl || '';
+      if (imgUrl.startsWith('__PRESET_IMG__/')) {
+        const imgFile = imgUrl.replace('__PRESET_IMG__/', '');
+        const absPath = path.join(presetImagesDir, imgFile);
+        if (fs.existsSync(absPath)) {
+          // Convertir a data URL base64 para embeber directamente (funciona sin servidor de archivos)
+          const imgBuffer = fs.readFileSync(absPath);
+          const ext = path.extname(imgFile).replace('.', '');
+          const mimeType = ext === 'jpg' ? 'image/jpeg' : `image/${ext}`;
+          p.metadatos.imagenUrl = `data:${mimeType};base64,${imgBuffer.toString('base64')}`;
+        } else {
+          p.metadatos.imagenUrl = null;
+        }
+      }
+    }
+    
     // Opcional: Limpiar inventario y catálogo existente para evitar duplicaciones
     if (limpiarExistentes === true) {
       // Borrar registros asociados primero para evitar violación de llave foránea
