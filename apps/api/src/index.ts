@@ -76,6 +76,69 @@ app.get('/api/v1/productos/buscar', async (req, res) => {
   }
 });
 
+// POST /api/v1/productos/inicializar-codigos-sku
+app.post('/api/v1/productos/inicializar-codigos-sku', async (req, res) => {
+  try {
+    const products = await prisma.producto.findMany({
+      include: { codigos: true }
+    });
+
+    const withoutBarcode = products.filter(p => p.codigos.length === 0);
+    const dataToInsert = withoutBarcode.map(p => ({
+      codigo: p.sku,
+      productoId: p.id
+    }));
+
+    if (dataToInsert.length === 0) {
+      return res.json({ success: true, processed: 0, message: 'Todos los productos ya tienen códigos de barras.' });
+    }
+
+    let insertedCount = 0;
+    const chunkSize = 1000;
+    for (let i = 0; i < dataToInsert.length; i += chunkSize) {
+      const chunk = dataToInsert.slice(i, i + chunkSize);
+      const result = await prisma.codigoBarras.createMany({
+        data: chunk,
+        skipDuplicates: true
+      });
+      insertedCount += result.count;
+    }
+
+    res.json({
+      success: true,
+      processed: insertedCount,
+      message: `Se copiaron ${insertedCount} SKUs como códigos de barras con éxito.`
+    });
+  } catch (error: any) {
+    console.error('Error al inicializar códigos SKU:', error);
+    res.status(500).json({ error: error.message || 'Error interno al inicializar códigos SKU' });
+  }
+});
+
+// POST /api/v1/productos/revertir-codigos-sku
+app.post('/api/v1/productos/revertir-codigos-sku', async (req, res) => {
+  try {
+    const deletedCount = await prisma.$executeRawUnsafe(`
+      DELETE FROM "CodigoBarras" 
+      WHERE "id" IN (
+        SELECT c."id" 
+        FROM "CodigoBarras" c 
+        JOIN "Producto" p ON c."productoId" = p."id" 
+        WHERE c."codigo" = p."sku"
+      )
+    `);
+
+    res.json({
+      success: true,
+      processed: deletedCount,
+      message: `Se revirtió la migración. Se eliminaron ${deletedCount} códigos de barras que coincidían con el SKU del producto.`
+    });
+  } catch (error: any) {
+    console.error('Error al revertir códigos SKU:', error);
+    res.status(500).json({ error: error.message || 'Error interno al revertir códigos SKU' });
+  }
+});
+
 // GET /api/v1/productos/escanear/:codigo
 app.get('/api/v1/productos/escanear/:codigo', async (req, res) => {
   const { codigo } = req.params;
