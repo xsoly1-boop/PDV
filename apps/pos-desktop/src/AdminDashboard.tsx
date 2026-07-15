@@ -3568,6 +3568,116 @@ export default function AdminDashboard({
                 />
               </div>
 
+              {/* ── FOTO DEL PRODUCTO ── */}
+              <div>
+                <label className="block text-[10px] font-bold uppercase text-slate-500 mb-2">
+                  📷 Foto del Producto
+                </label>
+                <div className="flex gap-3 items-start">
+                  {/* Preview */}
+                  <div className={`w-20 h-20 rounded-xl border-2 flex-shrink-0 overflow-hidden flex items-center justify-center ${
+                    theme === 'dark' ? 'border-[#20222b] bg-[#0d0e12]' : 'border-slate-200 bg-slate-100'
+                  }`}>
+                    {(currentProduct as any).metadatos?.imagenUrl ? (
+                      <img
+                        src={(currentProduct as any).metadatos.imagenUrl}
+                        alt="preview"
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <span className="text-2xl opacity-30">🖼️</span>
+                    )}
+                  </div>
+                  <div className="flex flex-col gap-2 flex-1">
+                    {/* File picker → base64 local */}
+                    <label className={`flex items-center gap-2 px-3 py-2 rounded-xl border cursor-pointer text-xs font-bold transition-all ${
+                      theme === 'dark'
+                        ? 'border-[#20222b] bg-[#0d0e12] text-slate-300 hover:border-amber-500 hover:text-amber-400'
+                        : 'border-slate-200 bg-white text-slate-600 hover:border-amber-500'
+                    }`}>
+                      💾 Elegir del disco duro
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={async (e) => {
+                          const file = e.target.files?.[0];
+                          if (!file) return;
+                          // Guardar como base64 — funciona 100% offline
+                          const reader = new FileReader();
+                          reader.onload = () => {
+                            const b64 = reader.result as string;
+                            setCurrentProduct({
+                              ...currentProduct,
+                              metadatos: { ...(currentProduct as any).metadatos, imagenUrl: b64 }
+                            } as any);
+                          };
+                          reader.readAsDataURL(file);
+                        }}
+                      />
+                    </label>
+                    {/* URL manual (para nube: Cloudinary, Supabase Storage, etc.) */}
+                    <input
+                      type="url"
+                      placeholder="☁️ O pega URL de imagen (Cloudinary / Supabase)"
+                      className={`w-full rounded-xl p-2.5 border text-xs focus:outline-none focus:ring-1 focus:ring-amber-500 ${
+                        theme === 'dark' ? 'bg-[#0d0e12] border-[#20222b] text-slate-300 placeholder-slate-600' : 'bg-white border-slate-200 text-slate-700'
+                      }`}
+                      value={
+                        (() => {
+                          const url = (currentProduct as any).metadatos?.imagenUrl || '';
+                          return url.startsWith('data:') ? '' : url;
+                        })()
+                      }
+                      onChange={e => setCurrentProduct({
+                        ...currentProduct,
+                        metadatos: { ...(currentProduct as any).metadatos, imagenUrl: e.target.value }
+                      } as any)}
+                    />
+                    {(currentProduct as any).metadatos?.imagenUrl && (
+                      <button
+                        type="button"
+                        onClick={() => setCurrentProduct({
+                          ...currentProduct,
+                          metadatos: { ...(currentProduct as any).metadatos, imagenUrl: null }
+                        } as any)}
+                        className="text-[10px] text-rose-400 hover:text-rose-300 text-left bg-transparent border-0 cursor-pointer p-0"
+                      >
+                        🗑 Quitar foto
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* ── MENÚ RÁPIDO ── */}
+              <label className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-all ${
+                (currentProduct as any).metadatos?.enMenuRapido
+                  ? 'border-amber-500 bg-amber-500/10'
+                  : theme === 'dark' ? 'border-[#20222b] bg-[#0d0e12]' : 'border-slate-200 bg-slate-50'
+              }`}>
+                <div className={`w-10 h-6 rounded-full transition-all relative flex-shrink-0 ${
+                  (currentProduct as any).metadatos?.enMenuRapido ? 'bg-amber-500' : 'bg-slate-600'
+                }`}>
+                  <div className={`absolute top-1 w-4 h-4 rounded-full bg-white shadow transition-all ${
+                    (currentProduct as any).metadatos?.enMenuRapido ? 'left-5' : 'left-1'
+                  }`} />
+                </div>
+                <input
+                  type="checkbox"
+                  className="hidden"
+                  checked={(currentProduct as any).metadatos?.enMenuRapido || false}
+                  onChange={e => setCurrentProduct({
+                    ...currentProduct,
+                    metadatos: { ...(currentProduct as any).metadatos, enMenuRapido: e.target.checked }
+                  } as any)}
+                />
+                <div>
+                  <p className="text-xs font-bold text-slate-200">⚡ Mostrar en menú rápido del POS</p>
+                  <p className="text-[10px] text-slate-500 mt-0.5">El producto aparecerá en el grid de acceso directo de la caja</p>
+                </div>
+              </label>
+
               <div className="flex gap-4 pt-4">
                 <button
                   type="submit"

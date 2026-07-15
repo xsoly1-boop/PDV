@@ -3081,7 +3081,18 @@ ${articulosTexto}
                   {products
                     .filter((p: any) => {
                       const pCat = p.categoria?.nombre || p.categoria;
-                      return typeof pCat === 'string' && pCat.toLowerCase() === selectedVisualCategory.toLowerCase();
+                      const matchesCat = typeof pCat === 'string' && pCat.toLowerCase() === selectedVisualCategory.toLowerCase();
+                      if (!matchesCat) return false;
+                      // Si al menos 1 producto de esta categoría tiene enMenuRapido definido,
+                      // filtrar solo los marcados. Si ninguno tiene la flag, mostrar todos.
+                      const hayFlagEnCategoria = products.some((x: any) => {
+                        const xCat = x.categoria?.nombre || x.categoria;
+                        return typeof xCat === 'string' &&
+                          xCat.toLowerCase() === selectedVisualCategory.toLowerCase() &&
+                          x.metadatos?.enMenuRapido === true;
+                      });
+                      if (hayFlagEnCategoria) return p.metadatos?.enMenuRapido === true;
+                      return true; // sin flags configuradas → mostrar todos
                     })
                     .map((p: any) => {
                       const imageSrc = p.metadatos?.imagenUrl || p.metadata?.imagenUrl;
