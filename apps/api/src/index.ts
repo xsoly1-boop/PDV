@@ -3069,7 +3069,7 @@ app.post('/api/v1/presets/load', async (req: any, res: any) => {
       normalizedGiro = 'ABARROTES';
     }
     
-    const validGiros = ['ABARROTES', 'FARMACIA', 'FERRETERIA', 'REFACCIONARIA'];
+    const validGiros = ['ABARROTES', 'FARMACIA', 'FERRETERIA', 'REFACCIONARIA', 'CAFETERIA'];
     if (!validGiros.includes(normalizedGiro)) {
       return res.status(400).json({ error: `Giro no válido. Debe ser uno de: ${validGiros.join(', ')}` });
     }

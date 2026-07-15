@@ -1,0 +1,3102 @@
+[
+  {
+    "sku": "CAF-LAT-CHI",
+    "nombre": "Caffè Latte Chico",
+    "costo": 15,
+    "precio": 43,
+    "permiteFracciones": false,
+    "categoria": "Bebidas",
+    "metadatos": {
+      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/latte_art_coffee_1784098785089.jpg",
+      "tamanio": "Chico",
+      "tipo": "Preparada"
+    },
+    "codigos": [
+      "CAF-LAT-CHI"
+    ]
+  },
+  {
+    "sku": "CAF-LAT-MED",
+    "nombre": "Caffè Latte Mediano",
+    "costo": 17,
+    "precio": 48,
+    "permiteFracciones": false,
+    "categoria": "Bebidas",
+    "metadatos": {
+      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/latte_art_coffee_1784098785089.jpg",
+      "tamanio": "Mediano",
+      "tipo": "Preparada"
+    },
+    "codigos": [
+      "CAF-LAT-MED"
+    ]
+  },
+  {
+    "sku": "CAF-LAT-GRA",
+    "nombre": "Caffè Latte Grande",
+    "costo": 21,
+    "precio": 60,
+    "permiteFracciones": false,
+    "categoria": "Bebidas",
+    "metadatos": {
+      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/latte_art_coffee_1784098785089.jpg",
+      "tamanio": "Grande",
+      "tipo": "Preparada"
+    },
+    "codigos": [
+      "CAF-LAT-GRA"
+    ]
+  },
+  {
+    "sku": "CAF-CAP-CHI",
+    "nombre": "Capuchino Clásico Chico",
+    "costo": 14,
+    "precio": 41,
+    "permiteFracciones": false,
+    "categoria": "Bebidas",
+    "metadatos": {
+      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/cappuccino_coffee_1784098806019.jpg",
+      "tamanio": "Chico",
+      "tipo": "Preparada"
+    },
+    "codigos": [
+      "CAF-CAP-CHI"
+    ]
+  },
+  {
+    "sku": "CAF-CAP-MED",
+    "nombre": "Capuchino Clásico Mediano",
+    "costo": 16,
+    "precio": 45,
+    "permiteFracciones": false,
+    "categoria": "Bebidas",
+    "metadatos": {
+      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/cappuccino_coffee_1784098806019.jpg",
+      "tamanio": "Mediano",
+      "tipo": "Preparada"
+    },
+    "codigos": [
+      "CAF-CAP-MED"
+    ]
+  },
+  {
+    "sku": "CAF-CAP-GRA",
+    "nombre": "Capuchino Clásico Grande",
+    "costo": 20,
+    "precio": 56,
+    "permiteFracciones": false,
+    "categoria": "Bebidas",
+    "metadatos": {
+      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/cappuccino_coffee_1784098806019.jpg",
+      "tamanio": "Grande",
+      "tipo": "Preparada"
+    },
+    "codigos": [
+      "CAF-CAP-GRA"
+    ]
+  },
+  {
+    "sku": "CAF-AME-CHI",
+    "nombre": "Caffè Americano Chico",
+    "costo": 11,
+    "precio": 32,
+    "permiteFracciones": false,
+    "categoria": "Bebidas",
+    "metadatos": {
+      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/americano_coffee_1784098879285.jpg",
+      "tamanio": "Chico",
+      "tipo": "Preparada"
+    },
+    "codigos": [
+      "CAF-AME-CHI"
+    ]
+  },
+  {
+    "sku": "CAF-AME-MED",
+    "nombre": "Caffè Americano Mediano",
+    "costo": 12,
+    "precio": 35,
+    "permiteFracciones": false,
+    "categoria": "Bebidas",
+    "metadatos": {
+      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/americano_coffee_1784098879285.jpg",
+      "tamanio": "Mediano",
+      "tipo": "Preparada"
+    },
+    "codigos": [
+      "CAF-AME-MED"
+    ]
+  },
+  {
+    "sku": "CAF-AME-GRA",
+    "nombre": "Caffè Americano Grande",
+    "costo": 15,
+    "precio": 44,
+    "permiteFracciones": false,
+    "categoria": "Bebidas",
+    "metadatos": {
+      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/americano_coffee_1784098879285.jpg",
+      "tamanio": "Grande",
+      "tipo": "Preparada"
+    },
+    "codigos": [
+      "CAF-AME-GRA"
+    ]
+  },
+  {
+    "sku": "CAF-ESP-CHI",
+    "nombre": "Espresso Ristretto Chico",
+    "costo": 9,
+    "precio": 27,
+    "permiteFracciones": false,
+    "categoria": "Bebidas",
+    "metadatos": {
+      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/americano_coffee_1784098879285.jpg",
+      "tamanio": "Chico",
+      "tipo": "Preparada"
+    },
+    "codigos": [
+      "CAF-ESP-CHI"
+    ]
+  },
+  {
+    "sku": "CAF-ESP-MED",
+    "nombre": "Espresso Ristretto Mediano",
+    "costo": 11,
+    "precio": 30,
+    "permiteFracciones": false,
+    "categoria": "Bebidas",
+    "metadatos": {
+      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/americano_coffee_1784098879285.jpg",
+      "tamanio": "Mediano",
+      "tipo": "Preparada"
+    },
+    "codigos": [
+      "CAF-ESP-MED"
+    ]
+  },
+  {
+    "sku": "CAF-ESP-GRA",
+    "nombre": "Espresso Ristretto Grande",
+    "costo": 13,
+    "precio": 38,
+    "permiteFracciones": false,
+    "categoria": "Bebidas",
+    "metadatos": {
+      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/americano_coffee_1784098879285.jpg",
+      "tamanio": "Grande",
+      "tipo": "Preparada"
+    },
+    "codigos": [
+      "CAF-ESP-GRA"
+    ]
+  },
+  {
+    "sku": "CAF-MOC-CHI",
+    "nombre": "Café Mocha Blanco Chico",
+    "costo": 18,
+    "precio": 50,
+    "permiteFracciones": false,
+    "categoria": "Bebidas",
+    "metadatos": {
+      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/latte_art_coffee_1784098785089.jpg",
+      "tamanio": "Chico",
+      "tipo": "Preparada"
+    },
+    "codigos": [
+      "CAF-MOC-CHI"
+    ]
+  },
+  {
+    "sku": "CAF-MOC-MED",
+    "nombre": "Café Mocha Blanco Mediano",
+    "costo": 19,
+    "precio": 55,
+    "permiteFracciones": false,
+    "categoria": "Bebidas",
+    "metadatos": {
+      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/latte_art_coffee_1784098785089.jpg",
+      "tamanio": "Mediano",
+      "tipo": "Preparada"
+    },
+    "codigos": [
+      "CAF-MOC-MED"
+    ]
+  },
+  {
+    "sku": "CAF-MOC-GRA",
+    "nombre": "Café Mocha Blanco Grande",
+    "costo": 24,
+    "precio": 69,
+    "permiteFracciones": false,
+    "categoria": "Bebidas",
+    "metadatos": {
+      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/latte_art_coffee_1784098785089.jpg",
+      "tamanio": "Grande",
+      "tipo": "Preparada"
+    },
+    "codigos": [
+      "CAF-MOC-GRA"
+    ]
+  },
+  {
+    "sku": "CAF-FRA-CHI",
+    "nombre": "Frappé de Caramelo Chico",
+    "costo": 19,
+    "precio": 54,
+    "permiteFracciones": false,
+    "categoria": "Bebidas",
+    "metadatos": {
+      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/cappuccino_coffee_1784098806019.jpg",
+      "tamanio": "Chico",
+      "tipo": "Preparada"
+    },
+    "codigos": [
+      "CAF-FRA-CHI"
+    ]
+  },
+  {
+    "sku": "CAF-FRA-MED",
+    "nombre": "Frappé de Caramelo Mediano",
+    "costo": 21,
+    "precio": 60,
+    "permiteFracciones": false,
+    "categoria": "Bebidas",
+    "metadatos": {
+      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/cappuccino_coffee_1784098806019.jpg",
+      "tamanio": "Mediano",
+      "tipo": "Preparada"
+    },
+    "codigos": [
+      "CAF-FRA-MED"
+    ]
+  },
+  {
+    "sku": "CAF-FRA-GRA",
+    "nombre": "Frappé de Caramelo Grande",
+    "costo": 26,
+    "precio": 75,
+    "permiteFracciones": false,
+    "categoria": "Bebidas",
+    "metadatos": {
+      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/cappuccino_coffee_1784098806019.jpg",
+      "tamanio": "Grande",
+      "tipo": "Preparada"
+    },
+    "codigos": [
+      "CAF-FRA-GRA"
+    ]
+  },
+  {
+    "sku": "CAF-MAT-CHI",
+    "nombre": "Té Matcha Latte Chico",
+    "costo": 16,
+    "precio": 47,
+    "permiteFracciones": false,
+    "categoria": "Bebidas",
+    "metadatos": {
+      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/latte_art_coffee_1784098785089.jpg",
+      "tamanio": "Chico",
+      "tipo": "Preparada"
+    },
+    "codigos": [
+      "CAF-MAT-CHI"
+    ]
+  },
+  {
+    "sku": "CAF-MAT-MED",
+    "nombre": "Té Matcha Latte Mediano",
+    "costo": 18,
+    "precio": 52,
+    "permiteFracciones": false,
+    "categoria": "Bebidas",
+    "metadatos": {
+      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/latte_art_coffee_1784098785089.jpg",
+      "tamanio": "Mediano",
+      "tipo": "Preparada"
+    },
+    "codigos": [
+      "CAF-MAT-MED"
+    ]
+  },
+  {
+    "sku": "CAF-MAT-GRA",
+    "nombre": "Té Matcha Latte Grande",
+    "costo": 23,
+    "precio": 65,
+    "permiteFracciones": false,
+    "categoria": "Bebidas",
+    "metadatos": {
+      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/latte_art_coffee_1784098785089.jpg",
+      "tamanio": "Grande",
+      "tipo": "Preparada"
+    },
+    "codigos": [
+      "CAF-MAT-GRA"
+    ]
+  },
+  {
+    "sku": "CAF-CHA-CHI",
+    "nombre": "Té Negro Chai Chico",
+    "costo": 15,
+    "precio": 43,
+    "permiteFracciones": false,
+    "categoria": "Bebidas",
+    "metadatos": {
+      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/latte_art_coffee_1784098785089.jpg",
+      "tamanio": "Chico",
+      "tipo": "Preparada"
+    },
+    "codigos": [
+      "CAF-CHA-CHI"
+    ]
+  },
+  {
+    "sku": "CAF-CHA-MED",
+    "nombre": "Té Negro Chai Mediano",
+    "costo": 17,
+    "precio": 48,
+    "permiteFracciones": false,
+    "categoria": "Bebidas",
+    "metadatos": {
+      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/latte_art_coffee_1784098785089.jpg",
+      "tamanio": "Mediano",
+      "tipo": "Preparada"
+    },
+    "codigos": [
+      "CAF-CHA-MED"
+    ]
+  },
+  {
+    "sku": "CAF-CHA-GRA",
+    "nombre": "Té Negro Chai Grande",
+    "costo": 21,
+    "precio": 60,
+    "permiteFracciones": false,
+    "categoria": "Bebidas",
+    "metadatos": {
+      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/latte_art_coffee_1784098785089.jpg",
+      "tamanio": "Grande",
+      "tipo": "Preparada"
+    },
+    "codigos": [
+      "CAF-CHA-GRA"
+    ]
+  },
+  {
+    "sku": "CAF-INF-CHI",
+    "nombre": "Infusión Herbal Frutos Rojos Chico",
+    "costo": 13,
+    "precio": 38,
+    "permiteFracciones": false,
+    "categoria": "Bebidas",
+    "metadatos": {
+      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/americano_coffee_1784098879285.jpg",
+      "tamanio": "Chico",
+      "tipo": "Preparada"
+    },
+    "codigos": [
+      "CAF-INF-CHI"
+    ]
+  },
+  {
+    "sku": "CAF-INF-MED",
+    "nombre": "Infusión Herbal Frutos Rojos Mediano",
+    "costo": 15,
+    "precio": 42,
+    "permiteFracciones": false,
+    "categoria": "Bebidas",
+    "metadatos": {
+      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/americano_coffee_1784098879285.jpg",
+      "tamanio": "Mediano",
+      "tipo": "Preparada"
+    },
+    "codigos": [
+      "CAF-INF-MED"
+    ]
+  },
+  {
+    "sku": "CAF-INF-GRA",
+    "nombre": "Infusión Herbal Frutos Rojos Grande",
+    "costo": 19,
+    "precio": 53,
+    "permiteFracciones": false,
+    "categoria": "Bebidas",
+    "metadatos": {
+      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/americano_coffee_1784098879285.jpg",
+      "tamanio": "Grande",
+      "tipo": "Preparada"
+    },
+    "codigos": [
+      "CAF-INF-GRA"
+    ]
+  },
+  {
+    "sku": "CAF-COL-CHI",
+    "nombre": "Cold Brew Macchiato Chico",
+    "costo": 16,
+    "precio": 45,
+    "permiteFracciones": false,
+    "categoria": "Bebidas",
+    "metadatos": {
+      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/latte_art_coffee_1784098785089.jpg",
+      "tamanio": "Chico",
+      "tipo": "Preparada"
+    },
+    "codigos": [
+      "CAF-COL-CHI"
+    ]
+  },
+  {
+    "sku": "CAF-COL-MED",
+    "nombre": "Cold Brew Macchiato Mediano",
+    "costo": 18,
+    "precio": 50,
+    "permiteFracciones": false,
+    "categoria": "Bebidas",
+    "metadatos": {
+      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/latte_art_coffee_1784098785089.jpg",
+      "tamanio": "Mediano",
+      "tipo": "Preparada"
+    },
+    "codigos": [
+      "CAF-COL-MED"
+    ]
+  },
+  {
+    "sku": "CAF-COL-GRA",
+    "nombre": "Cold Brew Macchiato Grande",
+    "costo": 22,
+    "precio": 63,
+    "permiteFracciones": false,
+    "categoria": "Bebidas",
+    "metadatos": {
+      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/latte_art_coffee_1784098785089.jpg",
+      "tamanio": "Grande",
+      "tipo": "Preparada"
+    },
+    "codigos": [
+      "CAF-COL-GRA"
+    ]
+  },
+  {
+    "sku": "CAF-LAT-FLV-0",
+    "nombre": "Caffè Latte con Jarabe de Vainilla",
+    "costo": 17,
+    "precio": 58,
+    "permiteFracciones": false,
+    "categoria": "Bebidas",
+    "metadatos": {
+      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/latte_art_coffee_1784098785089.jpg",
+      "sabor": "Vainilla",
+      "tipo": "Especial"
+    },
+    "codigos": [
+      "CAF-LAT-FLV-0"
+    ]
+  },
+  {
+    "sku": "CAF-CAP-FLV-1",
+    "nombre": "Capuchino Clásico con Jarabe de Caramelo",
+    "costo": 17,
+    "precio": 55,
+    "permiteFracciones": false,
+    "categoria": "Bebidas",
+    "metadatos": {
+      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/cappuccino_coffee_1784098806019.jpg",
+      "sabor": "Caramelo",
+      "tipo": "Especial"
+    },
+    "codigos": [
+      "CAF-CAP-FLV-1"
+    ]
+  },
+  {
+    "sku": "CAF-AME-FLV-2",
+    "nombre": "Caffè Americano con Jarabe de Avellana",
+    "costo": 14,
+    "precio": 45,
+    "permiteFracciones": false,
+    "categoria": "Bebidas",
+    "metadatos": {
+      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/americano_coffee_1784098879285.jpg",
+      "sabor": "Avellana",
+      "tipo": "Especial"
+    },
+    "codigos": [
+      "CAF-AME-FLV-2"
+    ]
+  },
+  {
+    "sku": "CAF-ESP-FLV-3",
+    "nombre": "Espresso Ristretto con Jarabe de Menta",
+    "costo": 12,
+    "precio": 40,
+    "permiteFracciones": false,
+    "categoria": "Bebidas",
+    "metadatos": {
+      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/americano_coffee_1784098879285.jpg",
+      "sabor": "Menta",
+      "tipo": "Especial"
+    },
+    "codigos": [
+      "CAF-ESP-FLV-3"
+    ]
+  },
+  {
+    "sku": "CAF-MOC-FLV-4",
+    "nombre": "Café Mocha Blanco con Jarabe de Coco",
+    "costo": 20,
+    "precio": 65,
+    "permiteFracciones": false,
+    "categoria": "Bebidas",
+    "metadatos": {
+      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/latte_art_coffee_1784098785089.jpg",
+      "sabor": "Coco",
+      "tipo": "Especial"
+    },
+    "codigos": [
+      "CAF-MOC-FLV-4"
+    ]
+  },
+  {
+    "sku": "CAF-FRA-FLV-5",
+    "nombre": "Frappé de Caramelo con Jarabe de Irish Cream",
+    "costo": 21,
+    "precio": 70,
+    "permiteFracciones": false,
+    "categoria": "Bebidas",
+    "metadatos": {
+      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/cappuccino_coffee_1784098806019.jpg",
+      "sabor": "Irish Cream",
+      "tipo": "Especial"
+    },
+    "codigos": [
+      "CAF-FRA-FLV-5"
+    ]
+  },
+  {
+    "sku": "CAF-MAT-FLV-6",
+    "nombre": "Té Matcha Latte con Jarabe de Chocolate",
+    "costo": 19,
+    "precio": 62,
+    "permiteFracciones": false,
+    "categoria": "Bebidas",
+    "metadatos": {
+      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/latte_art_coffee_1784098785089.jpg",
+      "sabor": "Chocolate",
+      "tipo": "Especial"
+    },
+    "codigos": [
+      "CAF-MAT-FLV-6"
+    ]
+  },
+  {
+    "sku": "CAF-CHA-FLV-7",
+    "nombre": "Té Negro Chai con Jarabe de Amaretto",
+    "costo": 17,
+    "precio": 58,
+    "permiteFracciones": false,
+    "categoria": "Bebidas",
+    "metadatos": {
+      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/latte_art_coffee_1784098785089.jpg",
+      "sabor": "Amaretto",
+      "tipo": "Especial"
+    },
+    "codigos": [
+      "CAF-CHA-FLV-7"
+    ]
+  },
+  {
+    "sku": "CAF-INF-FLV-8",
+    "nombre": "Infusión Herbal Frutos Rojos con Jarabe de Cajeta",
+    "costo": 16,
+    "precio": 52,
+    "permiteFracciones": false,
+    "categoria": "Bebidas",
+    "metadatos": {
+      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/americano_coffee_1784098879285.jpg",
+      "sabor": "Cajeta",
+      "tipo": "Especial"
+    },
+    "codigos": [
+      "CAF-INF-FLV-8"
+    ]
+  },
+  {
+    "sku": "CAF-COL-FLV-9",
+    "nombre": "Cold Brew Macchiato con Jarabe de Canela",
+    "costo": 18,
+    "precio": 60,
+    "permiteFracciones": false,
+    "categoria": "Bebidas",
+    "metadatos": {
+      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/latte_art_coffee_1784098785089.jpg",
+      "sabor": "Canela",
+      "tipo": "Especial"
+    },
+    "codigos": [
+      "CAF-COL-FLV-9"
+    ]
+  },
+  {
+    "sku": "CAF-LAT-FLV-10",
+    "nombre": "Caffè Latte con Jarabe de Vainilla",
+    "costo": 17,
+    "precio": 58,
+    "permiteFracciones": false,
+    "categoria": "Bebidas",
+    "metadatos": {
+      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/latte_art_coffee_1784098785089.jpg",
+      "sabor": "Vainilla",
+      "tipo": "Especial"
+    },
+    "codigos": [
+      "CAF-LAT-FLV-10"
+    ]
+  },
+  {
+    "sku": "CAF-CAP-FLV-11",
+    "nombre": "Capuchino Clásico con Jarabe de Caramelo",
+    "costo": 17,
+    "precio": 55,
+    "permiteFracciones": false,
+    "categoria": "Bebidas",
+    "metadatos": {
+      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/cappuccino_coffee_1784098806019.jpg",
+      "sabor": "Caramelo",
+      "tipo": "Especial"
+    },
+    "codigos": [
+      "CAF-CAP-FLV-11"
+    ]
+  },
+  {
+    "sku": "CAF-AME-FLV-12",
+    "nombre": "Caffè Americano con Jarabe de Avellana",
+    "costo": 14,
+    "precio": 45,
+    "permiteFracciones": false,
+    "categoria": "Bebidas",
+    "metadatos": {
+      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/americano_coffee_1784098879285.jpg",
+      "sabor": "Avellana",
+      "tipo": "Especial"
+    },
+    "codigos": [
+      "CAF-AME-FLV-12"
+    ]
+  },
+  {
+    "sku": "CAF-ESP-FLV-13",
+    "nombre": "Espresso Ristretto con Jarabe de Menta",
+    "costo": 12,
+    "precio": 40,
+    "permiteFracciones": false,
+    "categoria": "Bebidas",
+    "metadatos": {
+      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/americano_coffee_1784098879285.jpg",
+      "sabor": "Menta",
+      "tipo": "Especial"
+    },
+    "codigos": [
+      "CAF-ESP-FLV-13"
+    ]
+  },
+  {
+    "sku": "CAF-MOC-FLV-14",
+    "nombre": "Café Mocha Blanco con Jarabe de Coco",
+    "costo": 20,
+    "precio": 65,
+    "permiteFracciones": false,
+    "categoria": "Bebidas",
+    "metadatos": {
+      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/latte_art_coffee_1784098785089.jpg",
+      "sabor": "Coco",
+      "tipo": "Especial"
+    },
+    "codigos": [
+      "CAF-MOC-FLV-14"
+    ]
+  },
+  {
+    "sku": "CAF-FRA-FLV-15",
+    "nombre": "Frappé de Caramelo con Jarabe de Irish Cream",
+    "costo": 21,
+    "precio": 70,
+    "permiteFracciones": false,
+    "categoria": "Bebidas",
+    "metadatos": {
+      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/cappuccino_coffee_1784098806019.jpg",
+      "sabor": "Irish Cream",
+      "tipo": "Especial"
+    },
+    "codigos": [
+      "CAF-FRA-FLV-15"
+    ]
+  },
+  {
+    "sku": "CAF-MAT-FLV-16",
+    "nombre": "Té Matcha Latte con Jarabe de Chocolate",
+    "costo": 19,
+    "precio": 62,
+    "permiteFracciones": false,
+    "categoria": "Bebidas",
+    "metadatos": {
+      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/latte_art_coffee_1784098785089.jpg",
+      "sabor": "Chocolate",
+      "tipo": "Especial"
+    },
+    "codigos": [
+      "CAF-MAT-FLV-16"
+    ]
+  },
+  {
+    "sku": "CAF-CHA-FLV-17",
+    "nombre": "Té Negro Chai con Jarabe de Amaretto",
+    "costo": 17,
+    "precio": 58,
+    "permiteFracciones": false,
+    "categoria": "Bebidas",
+    "metadatos": {
+      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/latte_art_coffee_1784098785089.jpg",
+      "sabor": "Amaretto",
+      "tipo": "Especial"
+    },
+    "codigos": [
+      "CAF-CHA-FLV-17"
+    ]
+  },
+  {
+    "sku": "CAF-INF-FLV-18",
+    "nombre": "Infusión Herbal Frutos Rojos con Jarabe de Cajeta",
+    "costo": 16,
+    "precio": 52,
+    "permiteFracciones": false,
+    "categoria": "Bebidas",
+    "metadatos": {
+      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/americano_coffee_1784098879285.jpg",
+      "sabor": "Cajeta",
+      "tipo": "Especial"
+    },
+    "codigos": [
+      "CAF-INF-FLV-18"
+    ]
+  },
+  {
+    "sku": "CAF-COL-FLV-19",
+    "nombre": "Cold Brew Macchiato con Jarabe de Canela",
+    "costo": 18,
+    "precio": 60,
+    "permiteFracciones": false,
+    "categoria": "Bebidas",
+    "metadatos": {
+      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/latte_art_coffee_1784098785089.jpg",
+      "sabor": "Canela",
+      "tipo": "Especial"
+    },
+    "codigos": [
+      "CAF-COL-FLV-19"
+    ]
+  },
+  {
+    "sku": "CAF-LAT-FLV-20",
+    "nombre": "Caffè Latte con Jarabe de Vainilla",
+    "costo": 17,
+    "precio": 58,
+    "permiteFracciones": false,
+    "categoria": "Bebidas",
+    "metadatos": {
+      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/latte_art_coffee_1784098785089.jpg",
+      "sabor": "Vainilla",
+      "tipo": "Especial"
+    },
+    "codigos": [
+      "CAF-LAT-FLV-20"
+    ]
+  },
+  {
+    "sku": "CAF-CAP-FLV-21",
+    "nombre": "Capuchino Clásico con Jarabe de Caramelo",
+    "costo": 17,
+    "precio": 55,
+    "permiteFracciones": false,
+    "categoria": "Bebidas",
+    "metadatos": {
+      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/cappuccino_coffee_1784098806019.jpg",
+      "sabor": "Caramelo",
+      "tipo": "Especial"
+    },
+    "codigos": [
+      "CAF-CAP-FLV-21"
+    ]
+  },
+  {
+    "sku": "CAF-AME-FLV-22",
+    "nombre": "Caffè Americano con Jarabe de Avellana",
+    "costo": 14,
+    "precio": 45,
+    "permiteFracciones": false,
+    "categoria": "Bebidas",
+    "metadatos": {
+      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/americano_coffee_1784098879285.jpg",
+      "sabor": "Avellana",
+      "tipo": "Especial"
+    },
+    "codigos": [
+      "CAF-AME-FLV-22"
+    ]
+  },
+  {
+    "sku": "CAF-ESP-FLV-23",
+    "nombre": "Espresso Ristretto con Jarabe de Menta",
+    "costo": 12,
+    "precio": 40,
+    "permiteFracciones": false,
+    "categoria": "Bebidas",
+    "metadatos": {
+      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/americano_coffee_1784098879285.jpg",
+      "sabor": "Menta",
+      "tipo": "Especial"
+    },
+    "codigos": [
+      "CAF-ESP-FLV-23"
+    ]
+  },
+  {
+    "sku": "CAF-MOC-FLV-24",
+    "nombre": "Café Mocha Blanco con Jarabe de Coco",
+    "costo": 20,
+    "precio": 65,
+    "permiteFracciones": false,
+    "categoria": "Bebidas",
+    "metadatos": {
+      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/latte_art_coffee_1784098785089.jpg",
+      "sabor": "Coco",
+      "tipo": "Especial"
+    },
+    "codigos": [
+      "CAF-MOC-FLV-24"
+    ]
+  },
+  {
+    "sku": "CAF-FRA-FLV-25",
+    "nombre": "Frappé de Caramelo con Jarabe de Irish Cream",
+    "costo": 21,
+    "precio": 70,
+    "permiteFracciones": false,
+    "categoria": "Bebidas",
+    "metadatos": {
+      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/cappuccino_coffee_1784098806019.jpg",
+      "sabor": "Irish Cream",
+      "tipo": "Especial"
+    },
+    "codigos": [
+      "CAF-FRA-FLV-25"
+    ]
+  },
+  {
+    "sku": "CAF-MAT-FLV-26",
+    "nombre": "Té Matcha Latte con Jarabe de Chocolate",
+    "costo": 19,
+    "precio": 62,
+    "permiteFracciones": false,
+    "categoria": "Bebidas",
+    "metadatos": {
+      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/latte_art_coffee_1784098785089.jpg",
+      "sabor": "Chocolate",
+      "tipo": "Especial"
+    },
+    "codigos": [
+      "CAF-MAT-FLV-26"
+    ]
+  },
+  {
+    "sku": "CAF-CHA-FLV-27",
+    "nombre": "Té Negro Chai con Jarabe de Amaretto",
+    "costo": 17,
+    "precio": 58,
+    "permiteFracciones": false,
+    "categoria": "Bebidas",
+    "metadatos": {
+      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/latte_art_coffee_1784098785089.jpg",
+      "sabor": "Amaretto",
+      "tipo": "Especial"
+    },
+    "codigos": [
+      "CAF-CHA-FLV-27"
+    ]
+  },
+  {
+    "sku": "CAF-INF-FLV-28",
+    "nombre": "Infusión Herbal Frutos Rojos con Jarabe de Cajeta",
+    "costo": 16,
+    "precio": 52,
+    "permiteFracciones": false,
+    "categoria": "Bebidas",
+    "metadatos": {
+      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/americano_coffee_1784098879285.jpg",
+      "sabor": "Cajeta",
+      "tipo": "Especial"
+    },
+    "codigos": [
+      "CAF-INF-FLV-28"
+    ]
+  },
+  {
+    "sku": "CAF-COL-FLV-29",
+    "nombre": "Cold Brew Macchiato con Jarabe de Canela",
+    "costo": 18,
+    "precio": 60,
+    "permiteFracciones": false,
+    "categoria": "Bebidas",
+    "metadatos": {
+      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/latte_art_coffee_1784098785089.jpg",
+      "sabor": "Canela",
+      "tipo": "Especial"
+    },
+    "codigos": [
+      "CAF-COL-FLV-29"
+    ]
+  },
+  {
+    "sku": "CAF-LAT-FLV-30",
+    "nombre": "Caffè Latte con Jarabe de Vainilla",
+    "costo": 17,
+    "precio": 58,
+    "permiteFracciones": false,
+    "categoria": "Bebidas",
+    "metadatos": {
+      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/latte_art_coffee_1784098785089.jpg",
+      "sabor": "Vainilla",
+      "tipo": "Especial"
+    },
+    "codigos": [
+      "CAF-LAT-FLV-30"
+    ]
+  },
+  {
+    "sku": "CAF-CAP-FLV-31",
+    "nombre": "Capuchino Clásico con Jarabe de Caramelo",
+    "costo": 17,
+    "precio": 55,
+    "permiteFracciones": false,
+    "categoria": "Bebidas",
+    "metadatos": {
+      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/cappuccino_coffee_1784098806019.jpg",
+      "sabor": "Caramelo",
+      "tipo": "Especial"
+    },
+    "codigos": [
+      "CAF-CAP-FLV-31"
+    ]
+  },
+  {
+    "sku": "CAF-AME-FLV-32",
+    "nombre": "Caffè Americano con Jarabe de Avellana",
+    "costo": 14,
+    "precio": 45,
+    "permiteFracciones": false,
+    "categoria": "Bebidas",
+    "metadatos": {
+      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/americano_coffee_1784098879285.jpg",
+      "sabor": "Avellana",
+      "tipo": "Especial"
+    },
+    "codigos": [
+      "CAF-AME-FLV-32"
+    ]
+  },
+  {
+    "sku": "CAF-ESP-FLV-33",
+    "nombre": "Espresso Ristretto con Jarabe de Menta",
+    "costo": 12,
+    "precio": 40,
+    "permiteFracciones": false,
+    "categoria": "Bebidas",
+    "metadatos": {
+      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/americano_coffee_1784098879285.jpg",
+      "sabor": "Menta",
+      "tipo": "Especial"
+    },
+    "codigos": [
+      "CAF-ESP-FLV-33"
+    ]
+  },
+  {
+    "sku": "CAF-MOC-FLV-34",
+    "nombre": "Café Mocha Blanco con Jarabe de Coco",
+    "costo": 20,
+    "precio": 65,
+    "permiteFracciones": false,
+    "categoria": "Bebidas",
+    "metadatos": {
+      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/latte_art_coffee_1784098785089.jpg",
+      "sabor": "Coco",
+      "tipo": "Especial"
+    },
+    "codigos": [
+      "CAF-MOC-FLV-34"
+    ]
+  },
+  {
+    "sku": "CAF-FRA-FLV-35",
+    "nombre": "Frappé de Caramelo con Jarabe de Irish Cream",
+    "costo": 21,
+    "precio": 70,
+    "permiteFracciones": false,
+    "categoria": "Bebidas",
+    "metadatos": {
+      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/cappuccino_coffee_1784098806019.jpg",
+      "sabor": "Irish Cream",
+      "tipo": "Especial"
+    },
+    "codigos": [
+      "CAF-FRA-FLV-35"
+    ]
+  },
+  {
+    "sku": "CAF-MAT-FLV-36",
+    "nombre": "Té Matcha Latte con Jarabe de Chocolate",
+    "costo": 19,
+    "precio": 62,
+    "permiteFracciones": false,
+    "categoria": "Bebidas",
+    "metadatos": {
+      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/latte_art_coffee_1784098785089.jpg",
+      "sabor": "Chocolate",
+      "tipo": "Especial"
+    },
+    "codigos": [
+      "CAF-MAT-FLV-36"
+    ]
+  },
+  {
+    "sku": "CAF-CHA-FLV-37",
+    "nombre": "Té Negro Chai con Jarabe de Amaretto",
+    "costo": 17,
+    "precio": 58,
+    "permiteFracciones": false,
+    "categoria": "Bebidas",
+    "metadatos": {
+      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/latte_art_coffee_1784098785089.jpg",
+      "sabor": "Amaretto",
+      "tipo": "Especial"
+    },
+    "codigos": [
+      "CAF-CHA-FLV-37"
+    ]
+  },
+  {
+    "sku": "CAF-INF-FLV-38",
+    "nombre": "Infusión Herbal Frutos Rojos con Jarabe de Cajeta",
+    "costo": 16,
+    "precio": 52,
+    "permiteFracciones": false,
+    "categoria": "Bebidas",
+    "metadatos": {
+      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/americano_coffee_1784098879285.jpg",
+      "sabor": "Cajeta",
+      "tipo": "Especial"
+    },
+    "codigos": [
+      "CAF-INF-FLV-38"
+    ]
+  },
+  {
+    "sku": "CAF-COL-FLV-39",
+    "nombre": "Cold Brew Macchiato con Jarabe de Canela",
+    "costo": 18,
+    "precio": 60,
+    "permiteFracciones": false,
+    "categoria": "Bebidas",
+    "metadatos": {
+      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/latte_art_coffee_1784098785089.jpg",
+      "sabor": "Canela",
+      "tipo": "Especial"
+    },
+    "codigos": [
+      "CAF-COL-FLV-39"
+    ]
+  },
+  {
+    "sku": "CAF-LAT-FLV-40",
+    "nombre": "Caffè Latte con Jarabe de Vainilla",
+    "costo": 17,
+    "precio": 58,
+    "permiteFracciones": false,
+    "categoria": "Bebidas",
+    "metadatos": {
+      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/latte_art_coffee_1784098785089.jpg",
+      "sabor": "Vainilla",
+      "tipo": "Especial"
+    },
+    "codigos": [
+      "CAF-LAT-FLV-40"
+    ]
+  },
+  {
+    "sku": "CAF-CAP-FLV-41",
+    "nombre": "Capuchino Clásico con Jarabe de Caramelo",
+    "costo": 17,
+    "precio": 55,
+    "permiteFracciones": false,
+    "categoria": "Bebidas",
+    "metadatos": {
+      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/cappuccino_coffee_1784098806019.jpg",
+      "sabor": "Caramelo",
+      "tipo": "Especial"
+    },
+    "codigos": [
+      "CAF-CAP-FLV-41"
+    ]
+  },
+  {
+    "sku": "CAF-AME-FLV-42",
+    "nombre": "Caffè Americano con Jarabe de Avellana",
+    "costo": 14,
+    "precio": 45,
+    "permiteFracciones": false,
+    "categoria": "Bebidas",
+    "metadatos": {
+      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/americano_coffee_1784098879285.jpg",
+      "sabor": "Avellana",
+      "tipo": "Especial"
+    },
+    "codigos": [
+      "CAF-AME-FLV-42"
+    ]
+  },
+  {
+    "sku": "CAF-ESP-FLV-43",
+    "nombre": "Espresso Ristretto con Jarabe de Menta",
+    "costo": 12,
+    "precio": 40,
+    "permiteFracciones": false,
+    "categoria": "Bebidas",
+    "metadatos": {
+      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/americano_coffee_1784098879285.jpg",
+      "sabor": "Menta",
+      "tipo": "Especial"
+    },
+    "codigos": [
+      "CAF-ESP-FLV-43"
+    ]
+  },
+  {
+    "sku": "CAF-MOC-FLV-44",
+    "nombre": "Café Mocha Blanco con Jarabe de Coco",
+    "costo": 20,
+    "precio": 65,
+    "permiteFracciones": false,
+    "categoria": "Bebidas",
+    "metadatos": {
+      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/latte_art_coffee_1784098785089.jpg",
+      "sabor": "Coco",
+      "tipo": "Especial"
+    },
+    "codigos": [
+      "CAF-MOC-FLV-44"
+    ]
+  },
+  {
+    "sku": "CAF-FRA-FLV-45",
+    "nombre": "Frappé de Caramelo con Jarabe de Irish Cream",
+    "costo": 21,
+    "precio": 70,
+    "permiteFracciones": false,
+    "categoria": "Bebidas",
+    "metadatos": {
+      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/cappuccino_coffee_1784098806019.jpg",
+      "sabor": "Irish Cream",
+      "tipo": "Especial"
+    },
+    "codigos": [
+      "CAF-FRA-FLV-45"
+    ]
+  },
+  {
+    "sku": "CAF-MAT-FLV-46",
+    "nombre": "Té Matcha Latte con Jarabe de Chocolate",
+    "costo": 19,
+    "precio": 62,
+    "permiteFracciones": false,
+    "categoria": "Bebidas",
+    "metadatos": {
+      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/latte_art_coffee_1784098785089.jpg",
+      "sabor": "Chocolate",
+      "tipo": "Especial"
+    },
+    "codigos": [
+      "CAF-MAT-FLV-46"
+    ]
+  },
+  {
+    "sku": "CAF-CHA-FLV-47",
+    "nombre": "Té Negro Chai con Jarabe de Amaretto",
+    "costo": 17,
+    "precio": 58,
+    "permiteFracciones": false,
+    "categoria": "Bebidas",
+    "metadatos": {
+      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/latte_art_coffee_1784098785089.jpg",
+      "sabor": "Amaretto",
+      "tipo": "Especial"
+    },
+    "codigos": [
+      "CAF-CHA-FLV-47"
+    ]
+  },
+  {
+    "sku": "CAF-INF-FLV-48",
+    "nombre": "Infusión Herbal Frutos Rojos con Jarabe de Cajeta",
+    "costo": 16,
+    "precio": 52,
+    "permiteFracciones": false,
+    "categoria": "Bebidas",
+    "metadatos": {
+      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/americano_coffee_1784098879285.jpg",
+      "sabor": "Cajeta",
+      "tipo": "Especial"
+    },
+    "codigos": [
+      "CAF-INF-FLV-48"
+    ]
+  },
+  {
+    "sku": "CAF-COL-FLV-49",
+    "nombre": "Cold Brew Macchiato con Jarabe de Canela",
+    "costo": 18,
+    "precio": 60,
+    "permiteFracciones": false,
+    "categoria": "Bebidas",
+    "metadatos": {
+      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/latte_art_coffee_1784098785089.jpg",
+      "sabor": "Canela",
+      "tipo": "Especial"
+    },
+    "codigos": [
+      "CAF-COL-FLV-49"
+    ]
+  },
+  {
+    "sku": "CAF-LAT-FLV-50",
+    "nombre": "Caffè Latte con Jarabe de Vainilla",
+    "costo": 17,
+    "precio": 58,
+    "permiteFracciones": false,
+    "categoria": "Bebidas",
+    "metadatos": {
+      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/latte_art_coffee_1784098785089.jpg",
+      "sabor": "Vainilla",
+      "tipo": "Especial"
+    },
+    "codigos": [
+      "CAF-LAT-FLV-50"
+    ]
+  },
+  {
+    "sku": "CAF-CAP-FLV-51",
+    "nombre": "Capuchino Clásico con Jarabe de Caramelo",
+    "costo": 17,
+    "precio": 55,
+    "permiteFracciones": false,
+    "categoria": "Bebidas",
+    "metadatos": {
+      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/cappuccino_coffee_1784098806019.jpg",
+      "sabor": "Caramelo",
+      "tipo": "Especial"
+    },
+    "codigos": [
+      "CAF-CAP-FLV-51"
+    ]
+  },
+  {
+    "sku": "CAF-AME-FLV-52",
+    "nombre": "Caffè Americano con Jarabe de Avellana",
+    "costo": 14,
+    "precio": 45,
+    "permiteFracciones": false,
+    "categoria": "Bebidas",
+    "metadatos": {
+      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/americano_coffee_1784098879285.jpg",
+      "sabor": "Avellana",
+      "tipo": "Especial"
+    },
+    "codigos": [
+      "CAF-AME-FLV-52"
+    ]
+  },
+  {
+    "sku": "CAF-ESP-FLV-53",
+    "nombre": "Espresso Ristretto con Jarabe de Menta",
+    "costo": 12,
+    "precio": 40,
+    "permiteFracciones": false,
+    "categoria": "Bebidas",
+    "metadatos": {
+      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/americano_coffee_1784098879285.jpg",
+      "sabor": "Menta",
+      "tipo": "Especial"
+    },
+    "codigos": [
+      "CAF-ESP-FLV-53"
+    ]
+  },
+  {
+    "sku": "CAF-MOC-FLV-54",
+    "nombre": "Café Mocha Blanco con Jarabe de Coco",
+    "costo": 20,
+    "precio": 65,
+    "permiteFracciones": false,
+    "categoria": "Bebidas",
+    "metadatos": {
+      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/latte_art_coffee_1784098785089.jpg",
+      "sabor": "Coco",
+      "tipo": "Especial"
+    },
+    "codigos": [
+      "CAF-MOC-FLV-54"
+    ]
+  },
+  {
+    "sku": "CAF-FRA-FLV-55",
+    "nombre": "Frappé de Caramelo con Jarabe de Irish Cream",
+    "costo": 21,
+    "precio": 70,
+    "permiteFracciones": false,
+    "categoria": "Bebidas",
+    "metadatos": {
+      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/cappuccino_coffee_1784098806019.jpg",
+      "sabor": "Irish Cream",
+      "tipo": "Especial"
+    },
+    "codigos": [
+      "CAF-FRA-FLV-55"
+    ]
+  },
+  {
+    "sku": "CAF-MAT-FLV-56",
+    "nombre": "Té Matcha Latte con Jarabe de Chocolate",
+    "costo": 19,
+    "precio": 62,
+    "permiteFracciones": false,
+    "categoria": "Bebidas",
+    "metadatos": {
+      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/latte_art_coffee_1784098785089.jpg",
+      "sabor": "Chocolate",
+      "tipo": "Especial"
+    },
+    "codigos": [
+      "CAF-MAT-FLV-56"
+    ]
+  },
+  {
+    "sku": "CAF-CHA-FLV-57",
+    "nombre": "Té Negro Chai con Jarabe de Amaretto",
+    "costo": 17,
+    "precio": 58,
+    "permiteFracciones": false,
+    "categoria": "Bebidas",
+    "metadatos": {
+      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/latte_art_coffee_1784098785089.jpg",
+      "sabor": "Amaretto",
+      "tipo": "Especial"
+    },
+    "codigos": [
+      "CAF-CHA-FLV-57"
+    ]
+  },
+  {
+    "sku": "CAF-INF-FLV-58",
+    "nombre": "Infusión Herbal Frutos Rojos con Jarabe de Cajeta",
+    "costo": 16,
+    "precio": 52,
+    "permiteFracciones": false,
+    "categoria": "Bebidas",
+    "metadatos": {
+      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/americano_coffee_1784098879285.jpg",
+      "sabor": "Cajeta",
+      "tipo": "Especial"
+    },
+    "codigos": [
+      "CAF-INF-FLV-58"
+    ]
+  },
+  {
+    "sku": "CAF-COL-FLV-59",
+    "nombre": "Cold Brew Macchiato con Jarabe de Canela",
+    "costo": 18,
+    "precio": 60,
+    "permiteFracciones": false,
+    "categoria": "Bebidas",
+    "metadatos": {
+      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/latte_art_coffee_1784098785089.jpg",
+      "sabor": "Canela",
+      "tipo": "Especial"
+    },
+    "codigos": [
+      "CAF-COL-FLV-59"
+    ]
+  },
+  {
+    "sku": "CAF-LAT-FLV-60",
+    "nombre": "Caffè Latte con Jarabe de Vainilla",
+    "costo": 17,
+    "precio": 58,
+    "permiteFracciones": false,
+    "categoria": "Bebidas",
+    "metadatos": {
+      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/latte_art_coffee_1784098785089.jpg",
+      "sabor": "Vainilla",
+      "tipo": "Especial"
+    },
+    "codigos": [
+      "CAF-LAT-FLV-60"
+    ]
+  },
+  {
+    "sku": "CAF-CAP-FLV-61",
+    "nombre": "Capuchino Clásico con Jarabe de Caramelo",
+    "costo": 17,
+    "precio": 55,
+    "permiteFracciones": false,
+    "categoria": "Bebidas",
+    "metadatos": {
+      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/cappuccino_coffee_1784098806019.jpg",
+      "sabor": "Caramelo",
+      "tipo": "Especial"
+    },
+    "codigos": [
+      "CAF-CAP-FLV-61"
+    ]
+  },
+  {
+    "sku": "CAF-AME-FLV-62",
+    "nombre": "Caffè Americano con Jarabe de Avellana",
+    "costo": 14,
+    "precio": 45,
+    "permiteFracciones": false,
+    "categoria": "Bebidas",
+    "metadatos": {
+      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/americano_coffee_1784098879285.jpg",
+      "sabor": "Avellana",
+      "tipo": "Especial"
+    },
+    "codigos": [
+      "CAF-AME-FLV-62"
+    ]
+  },
+  {
+    "sku": "CAF-ESP-FLV-63",
+    "nombre": "Espresso Ristretto con Jarabe de Menta",
+    "costo": 12,
+    "precio": 40,
+    "permiteFracciones": false,
+    "categoria": "Bebidas",
+    "metadatos": {
+      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/americano_coffee_1784098879285.jpg",
+      "sabor": "Menta",
+      "tipo": "Especial"
+    },
+    "codigos": [
+      "CAF-ESP-FLV-63"
+    ]
+  },
+  {
+    "sku": "CAF-MOC-FLV-64",
+    "nombre": "Café Mocha Blanco con Jarabe de Coco",
+    "costo": 20,
+    "precio": 65,
+    "permiteFracciones": false,
+    "categoria": "Bebidas",
+    "metadatos": {
+      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/latte_art_coffee_1784098785089.jpg",
+      "sabor": "Coco",
+      "tipo": "Especial"
+    },
+    "codigos": [
+      "CAF-MOC-FLV-64"
+    ]
+  },
+  {
+    "sku": "CAF-FRA-FLV-65",
+    "nombre": "Frappé de Caramelo con Jarabe de Irish Cream",
+    "costo": 21,
+    "precio": 70,
+    "permiteFracciones": false,
+    "categoria": "Bebidas",
+    "metadatos": {
+      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/cappuccino_coffee_1784098806019.jpg",
+      "sabor": "Irish Cream",
+      "tipo": "Especial"
+    },
+    "codigos": [
+      "CAF-FRA-FLV-65"
+    ]
+  },
+  {
+    "sku": "CAF-MAT-FLV-66",
+    "nombre": "Té Matcha Latte con Jarabe de Chocolate",
+    "costo": 19,
+    "precio": 62,
+    "permiteFracciones": false,
+    "categoria": "Bebidas",
+    "metadatos": {
+      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/latte_art_coffee_1784098785089.jpg",
+      "sabor": "Chocolate",
+      "tipo": "Especial"
+    },
+    "codigos": [
+      "CAF-MAT-FLV-66"
+    ]
+  },
+  {
+    "sku": "CAF-CHA-FLV-67",
+    "nombre": "Té Negro Chai con Jarabe de Amaretto",
+    "costo": 17,
+    "precio": 58,
+    "permiteFracciones": false,
+    "categoria": "Bebidas",
+    "metadatos": {
+      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/latte_art_coffee_1784098785089.jpg",
+      "sabor": "Amaretto",
+      "tipo": "Especial"
+    },
+    "codigos": [
+      "CAF-CHA-FLV-67"
+    ]
+  },
+  {
+    "sku": "CAF-INF-FLV-68",
+    "nombre": "Infusión Herbal Frutos Rojos con Jarabe de Cajeta",
+    "costo": 16,
+    "precio": 52,
+    "permiteFracciones": false,
+    "categoria": "Bebidas",
+    "metadatos": {
+      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/americano_coffee_1784098879285.jpg",
+      "sabor": "Cajeta",
+      "tipo": "Especial"
+    },
+    "codigos": [
+      "CAF-INF-FLV-68"
+    ]
+  },
+  {
+    "sku": "CAF-COL-FLV-69",
+    "nombre": "Cold Brew Macchiato con Jarabe de Canela",
+    "costo": 18,
+    "precio": 60,
+    "permiteFracciones": false,
+    "categoria": "Bebidas",
+    "metadatos": {
+      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/latte_art_coffee_1784098785089.jpg",
+      "sabor": "Canela",
+      "tipo": "Especial"
+    },
+    "codigos": [
+      "CAF-COL-FLV-69"
+    ]
+  },
+  {
+    "sku": "ALM-CRE-FRE-1",
+    "nombre": "Crepa de Fresa y Nutella",
+    "costo": 27,
+    "precio": 67,
+    "permiteFracciones": false,
+    "categoria": "Alimentos",
+    "metadatos": {
+      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/sweet_crepe_1784098831229.jpg",
+      "tipo": "Alimento Caliente"
+    },
+    "codigos": [
+      "ALM-CRE-FRE-1"
+    ]
+  },
+  {
+    "sku": "ALM-CRE-PLA-1",
+    "nombre": "Crepa de Plátano y Cajeta",
+    "costo": 27,
+    "precio": 67,
+    "permiteFracciones": false,
+    "categoria": "Alimentos",
+    "metadatos": {
+      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/sweet_crepe_1784098831229.jpg",
+      "tipo": "Alimento Caliente"
+    },
+    "codigos": [
+      "ALM-CRE-PLA-1"
+    ]
+  },
+  {
+    "sku": "ALM-PAN-QUE-1",
+    "nombre": "Panini Tres Quesos",
+    "costo": 31,
+    "precio": 77,
+    "permiteFracciones": false,
+    "categoria": "Alimentos",
+    "metadatos": {
+      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/panini_sandwich_1784098932775.jpg",
+      "tipo": "Alimento Caliente"
+    },
+    "codigos": [
+      "ALM-PAN-QUE-1"
+    ]
+  },
+  {
+    "sku": "ALM-PAN-PAV-1",
+    "nombre": "Panini Pavo y Pesto",
+    "costo": 35,
+    "precio": 87,
+    "permiteFracciones": false,
+    "categoria": "Alimentos",
+    "metadatos": {
+      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/panini_sandwich_1784098932775.jpg",
+      "tipo": "Alimento Caliente"
+    },
+    "codigos": [
+      "ALM-PAN-PAV-1"
+    ]
+  },
+  {
+    "sku": "ALM-CRO-JAM-1",
+    "nombre": "Croissant Jamón y Queso",
+    "costo": 20,
+    "precio": 50,
+    "permiteFracciones": false,
+    "categoria": "Alimentos",
+    "metadatos": {
+      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/panini_sandwich_1784098932775.jpg",
+      "tipo": "Alimento Caliente"
+    },
+    "codigos": [
+      "ALM-CRO-JAM-1"
+    ]
+  },
+  {
+    "sku": "ALM-SAN-CLU-1",
+    "nombre": "Sándwich Club Clásico",
+    "costo": 32,
+    "precio": 81,
+    "permiteFracciones": false,
+    "categoria": "Alimentos",
+    "metadatos": {
+      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/panini_sandwich_1784098932775.jpg",
+      "tipo": "Alimento Caliente"
+    },
+    "codigos": [
+      "ALM-SAN-CLU-1"
+    ]
+  },
+  {
+    "sku": "ALM-ENS-CES-1",
+    "nombre": "Ensalada César con Pollo",
+    "costo": 36,
+    "precio": 91,
+    "permiteFracciones": false,
+    "categoria": "Alimentos",
+    "metadatos": {
+      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/muffin_cupcake_1784098904704.jpg",
+      "tipo": "Alimento Caliente"
+    },
+    "codigos": [
+      "ALM-ENS-CES-1"
+    ]
+  },
+  {
+    "sku": "ALM-BAG-LOX-1",
+    "nombre": "Bagel de Lox y Filadelfia",
+    "costo": 39,
+    "precio": 97,
+    "permiteFracciones": false,
+    "categoria": "Alimentos",
+    "metadatos": {
+      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/panini_sandwich_1784098932775.jpg",
+      "tipo": "Alimento Caliente"
+    },
+    "codigos": [
+      "ALM-BAG-LOX-1"
+    ]
+  },
+  {
+    "sku": "ALM-CRE-FRE-2",
+    "nombre": "Crepa de Fresa y Nutella Var. 2",
+    "costo": 28,
+    "precio": 69,
+    "permiteFracciones": false,
+    "categoria": "Alimentos",
+    "metadatos": {
+      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/sweet_crepe_1784098831229.jpg",
+      "tipo": "Alimento Caliente"
+    },
+    "codigos": [
+      "ALM-CRE-FRE-2"
+    ]
+  },
+  {
+    "sku": "ALM-CRE-PLA-2",
+    "nombre": "Crepa de Plátano y Cajeta Var. 2",
+    "costo": 28,
+    "precio": 69,
+    "permiteFracciones": false,
+    "categoria": "Alimentos",
+    "metadatos": {
+      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/sweet_crepe_1784098831229.jpg",
+      "tipo": "Alimento Caliente"
+    },
+    "codigos": [
+      "ALM-CRE-PLA-2"
+    ]
+  },
+  {
+    "sku": "ALM-PAN-QUE-2",
+    "nombre": "Panini Tres Quesos Var. 2",
+    "costo": 32,
+    "precio": 79,
+    "permiteFracciones": false,
+    "categoria": "Alimentos",
+    "metadatos": {
+      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/panini_sandwich_1784098932775.jpg",
+      "tipo": "Alimento Caliente"
+    },
+    "codigos": [
+      "ALM-PAN-QUE-2"
+    ]
+  },
+  {
+    "sku": "ALM-PAN-PAV-2",
+    "nombre": "Panini Pavo y Pesto Var. 2",
+    "costo": 36,
+    "precio": 89,
+    "permiteFracciones": false,
+    "categoria": "Alimentos",
+    "metadatos": {
+      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/panini_sandwich_1784098932775.jpg",
+      "tipo": "Alimento Caliente"
+    },
+    "codigos": [
+      "ALM-PAN-PAV-2"
+    ]
+  },
+  {
+    "sku": "ALM-CRO-JAM-2",
+    "nombre": "Croissant Jamón y Queso Var. 2",
+    "costo": 21,
+    "precio": 52,
+    "permiteFracciones": false,
+    "categoria": "Alimentos",
+    "metadatos": {
+      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/panini_sandwich_1784098932775.jpg",
+      "tipo": "Alimento Caliente"
+    },
+    "codigos": [
+      "ALM-CRO-JAM-2"
+    ]
+  },
+  {
+    "sku": "ALM-SAN-CLU-2",
+    "nombre": "Sándwich Club Clásico Var. 2",
+    "costo": 33,
+    "precio": 83,
+    "permiteFracciones": false,
+    "categoria": "Alimentos",
+    "metadatos": {
+      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/panini_sandwich_1784098932775.jpg",
+      "tipo": "Alimento Caliente"
+    },
+    "codigos": [
+      "ALM-SAN-CLU-2"
+    ]
+  },
+  {
+    "sku": "ALM-ENS-CES-2",
+    "nombre": "Ensalada César con Pollo Var. 2",
+    "costo": 37,
+    "precio": 93,
+    "permiteFracciones": false,
+    "categoria": "Alimentos",
+    "metadatos": {
+      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/muffin_cupcake_1784098904704.jpg",
+      "tipo": "Alimento Caliente"
+    },
+    "codigos": [
+      "ALM-ENS-CES-2"
+    ]
+  },
+  {
+    "sku": "ALM-BAG-LOX-2",
+    "nombre": "Bagel de Lox y Filadelfia Var. 2",
+    "costo": 40,
+    "precio": 99,
+    "permiteFracciones": false,
+    "categoria": "Alimentos",
+    "metadatos": {
+      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/panini_sandwich_1784098932775.jpg",
+      "tipo": "Alimento Caliente"
+    },
+    "codigos": [
+      "ALM-BAG-LOX-2"
+    ]
+  },
+  {
+    "sku": "ALM-CRE-FRE-3",
+    "nombre": "Crepa de Fresa y Nutella Var. 3",
+    "costo": 28,
+    "precio": 71,
+    "permiteFracciones": false,
+    "categoria": "Alimentos",
+    "metadatos": {
+      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/sweet_crepe_1784098831229.jpg",
+      "tipo": "Alimento Caliente"
+    },
+    "codigos": [
+      "ALM-CRE-FRE-3"
+    ]
+  },
+  {
+    "sku": "ALM-CRE-PLA-3",
+    "nombre": "Crepa de Plátano y Cajeta Var. 3",
+    "costo": 28,
+    "precio": 71,
+    "permiteFracciones": false,
+    "categoria": "Alimentos",
+    "metadatos": {
+      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/sweet_crepe_1784098831229.jpg",
+      "tipo": "Alimento Caliente"
+    },
+    "codigos": [
+      "ALM-CRE-PLA-3"
+    ]
+  },
+  {
+    "sku": "ALM-PAN-QUE-3",
+    "nombre": "Panini Tres Quesos Var. 3",
+    "costo": 32,
+    "precio": 81,
+    "permiteFracciones": false,
+    "categoria": "Alimentos",
+    "metadatos": {
+      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/panini_sandwich_1784098932775.jpg",
+      "tipo": "Alimento Caliente"
+    },
+    "codigos": [
+      "ALM-PAN-QUE-3"
+    ]
+  },
+  {
+    "sku": "ALM-PAN-PAV-3",
+    "nombre": "Panini Pavo y Pesto Var. 3",
+    "costo": 36,
+    "precio": 91,
+    "permiteFracciones": false,
+    "categoria": "Alimentos",
+    "metadatos": {
+      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/panini_sandwich_1784098932775.jpg",
+      "tipo": "Alimento Caliente"
+    },
+    "codigos": [
+      "ALM-PAN-PAV-3"
+    ]
+  },
+  {
+    "sku": "ALM-CRO-JAM-3",
+    "nombre": "Croissant Jamón y Queso Var. 3",
+    "costo": 22,
+    "precio": 54,
+    "permiteFracciones": false,
+    "categoria": "Alimentos",
+    "metadatos": {
+      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/panini_sandwich_1784098932775.jpg",
+      "tipo": "Alimento Caliente"
+    },
+    "codigos": [
+      "ALM-CRO-JAM-3"
+    ]
+  },
+  {
+    "sku": "ALM-SAN-CLU-3",
+    "nombre": "Sándwich Club Clásico Var. 3",
+    "costo": 34,
+    "precio": 85,
+    "permiteFracciones": false,
+    "categoria": "Alimentos",
+    "metadatos": {
+      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/panini_sandwich_1784098932775.jpg",
+      "tipo": "Alimento Caliente"
+    },
+    "codigos": [
+      "ALM-SAN-CLU-3"
+    ]
+  },
+  {
+    "sku": "ALM-ENS-CES-3",
+    "nombre": "Ensalada César con Pollo Var. 3",
+    "costo": 38,
+    "precio": 95,
+    "permiteFracciones": false,
+    "categoria": "Alimentos",
+    "metadatos": {
+      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/muffin_cupcake_1784098904704.jpg",
+      "tipo": "Alimento Caliente"
+    },
+    "codigos": [
+      "ALM-ENS-CES-3"
+    ]
+  },
+  {
+    "sku": "ALM-BAG-LOX-3",
+    "nombre": "Bagel de Lox y Filadelfia Var. 3",
+    "costo": 40,
+    "precio": 101,
+    "permiteFracciones": false,
+    "categoria": "Alimentos",
+    "metadatos": {
+      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/panini_sandwich_1784098932775.jpg",
+      "tipo": "Alimento Caliente"
+    },
+    "codigos": [
+      "ALM-BAG-LOX-3"
+    ]
+  },
+  {
+    "sku": "ALM-CRE-FRE-4",
+    "nombre": "Crepa de Fresa y Nutella Var. 4",
+    "costo": 29,
+    "precio": 73,
+    "permiteFracciones": false,
+    "categoria": "Alimentos",
+    "metadatos": {
+      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/sweet_crepe_1784098831229.jpg",
+      "tipo": "Alimento Caliente"
+    },
+    "codigos": [
+      "ALM-CRE-FRE-4"
+    ]
+  },
+  {
+    "sku": "ALM-CRE-PLA-4",
+    "nombre": "Crepa de Plátano y Cajeta Var. 4",
+    "costo": 29,
+    "precio": 73,
+    "permiteFracciones": false,
+    "categoria": "Alimentos",
+    "metadatos": {
+      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/sweet_crepe_1784098831229.jpg",
+      "tipo": "Alimento Caliente"
+    },
+    "codigos": [
+      "ALM-CRE-PLA-4"
+    ]
+  },
+  {
+    "sku": "ALM-PAN-QUE-4",
+    "nombre": "Panini Tres Quesos Var. 4",
+    "costo": 33,
+    "precio": 83,
+    "permiteFracciones": false,
+    "categoria": "Alimentos",
+    "metadatos": {
+      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/panini_sandwich_1784098932775.jpg",
+      "tipo": "Alimento Caliente"
+    },
+    "codigos": [
+      "ALM-PAN-QUE-4"
+    ]
+  },
+  {
+    "sku": "ALM-PAN-PAV-4",
+    "nombre": "Panini Pavo y Pesto Var. 4",
+    "costo": 37,
+    "precio": 93,
+    "permiteFracciones": false,
+    "categoria": "Alimentos",
+    "metadatos": {
+      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/panini_sandwich_1784098932775.jpg",
+      "tipo": "Alimento Caliente"
+    },
+    "codigos": [
+      "ALM-PAN-PAV-4"
+    ]
+  },
+  {
+    "sku": "ALM-CRO-JAM-4",
+    "nombre": "Croissant Jamón y Queso Var. 4",
+    "costo": 22,
+    "precio": 56,
+    "permiteFracciones": false,
+    "categoria": "Alimentos",
+    "metadatos": {
+      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/panini_sandwich_1784098932775.jpg",
+      "tipo": "Alimento Caliente"
+    },
+    "codigos": [
+      "ALM-CRO-JAM-4"
+    ]
+  },
+  {
+    "sku": "ALM-SAN-CLU-4",
+    "nombre": "Sándwich Club Clásico Var. 4",
+    "costo": 35,
+    "precio": 87,
+    "permiteFracciones": false,
+    "categoria": "Alimentos",
+    "metadatos": {
+      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/panini_sandwich_1784098932775.jpg",
+      "tipo": "Alimento Caliente"
+    },
+    "codigos": [
+      "ALM-SAN-CLU-4"
+    ]
+  },
+  {
+    "sku": "ALM-ENS-CES-4",
+    "nombre": "Ensalada César con Pollo Var. 4",
+    "costo": 39,
+    "precio": 97,
+    "permiteFracciones": false,
+    "categoria": "Alimentos",
+    "metadatos": {
+      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/muffin_cupcake_1784098904704.jpg",
+      "tipo": "Alimento Caliente"
+    },
+    "codigos": [
+      "ALM-ENS-CES-4"
+    ]
+  },
+  {
+    "sku": "ALM-BAG-LOX-4",
+    "nombre": "Bagel de Lox y Filadelfia Var. 4",
+    "costo": 41,
+    "precio": 103,
+    "permiteFracciones": false,
+    "categoria": "Alimentos",
+    "metadatos": {
+      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/panini_sandwich_1784098932775.jpg",
+      "tipo": "Alimento Caliente"
+    },
+    "codigos": [
+      "ALM-BAG-LOX-4"
+    ]
+  },
+  {
+    "sku": "ALM-CRE-FRE-5",
+    "nombre": "Crepa de Fresa y Nutella Var. 5",
+    "costo": 30,
+    "precio": 75,
+    "permiteFracciones": false,
+    "categoria": "Alimentos",
+    "metadatos": {
+      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/sweet_crepe_1784098831229.jpg",
+      "tipo": "Alimento Caliente"
+    },
+    "codigos": [
+      "ALM-CRE-FRE-5"
+    ]
+  },
+  {
+    "sku": "ALM-CRE-PLA-5",
+    "nombre": "Crepa de Plátano y Cajeta Var. 5",
+    "costo": 30,
+    "precio": 75,
+    "permiteFracciones": false,
+    "categoria": "Alimentos",
+    "metadatos": {
+      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/sweet_crepe_1784098831229.jpg",
+      "tipo": "Alimento Caliente"
+    },
+    "codigos": [
+      "ALM-CRE-PLA-5"
+    ]
+  },
+  {
+    "sku": "ALM-PAN-QUE-5",
+    "nombre": "Panini Tres Quesos Var. 5",
+    "costo": 34,
+    "precio": 85,
+    "permiteFracciones": false,
+    "categoria": "Alimentos",
+    "metadatos": {
+      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/panini_sandwich_1784098932775.jpg",
+      "tipo": "Alimento Caliente"
+    },
+    "codigos": [
+      "ALM-PAN-QUE-5"
+    ]
+  },
+  {
+    "sku": "ALM-PAN-PAV-5",
+    "nombre": "Panini Pavo y Pesto Var. 5",
+    "costo": 38,
+    "precio": 95,
+    "permiteFracciones": false,
+    "categoria": "Alimentos",
+    "metadatos": {
+      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/panini_sandwich_1784098932775.jpg",
+      "tipo": "Alimento Caliente"
+    },
+    "codigos": [
+      "ALM-PAN-PAV-5"
+    ]
+  },
+  {
+    "sku": "ALM-CRO-JAM-5",
+    "nombre": "Croissant Jamón y Queso Var. 5",
+    "costo": 23,
+    "precio": 58,
+    "permiteFracciones": false,
+    "categoria": "Alimentos",
+    "metadatos": {
+      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/panini_sandwich_1784098932775.jpg",
+      "tipo": "Alimento Caliente"
+    },
+    "codigos": [
+      "ALM-CRO-JAM-5"
+    ]
+  },
+  {
+    "sku": "ALM-SAN-CLU-5",
+    "nombre": "Sándwich Club Clásico Var. 5",
+    "costo": 36,
+    "precio": 89,
+    "permiteFracciones": false,
+    "categoria": "Alimentos",
+    "metadatos": {
+      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/panini_sandwich_1784098932775.jpg",
+      "tipo": "Alimento Caliente"
+    },
+    "codigos": [
+      "ALM-SAN-CLU-5"
+    ]
+  },
+  {
+    "sku": "ALM-ENS-CES-5",
+    "nombre": "Ensalada César con Pollo Var. 5",
+    "costo": 40,
+    "precio": 99,
+    "permiteFracciones": false,
+    "categoria": "Alimentos",
+    "metadatos": {
+      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/muffin_cupcake_1784098904704.jpg",
+      "tipo": "Alimento Caliente"
+    },
+    "codigos": [
+      "ALM-ENS-CES-5"
+    ]
+  },
+  {
+    "sku": "ALM-BAG-LOX-5",
+    "nombre": "Bagel de Lox y Filadelfia Var. 5",
+    "costo": 42,
+    "precio": 105,
+    "permiteFracciones": false,
+    "categoria": "Alimentos",
+    "metadatos": {
+      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/panini_sandwich_1784098932775.jpg",
+      "tipo": "Alimento Caliente"
+    },
+    "codigos": [
+      "ALM-BAG-LOX-5"
+    ]
+  },
+  {
+    "sku": "ALM-CRE-FRE-6",
+    "nombre": "Crepa de Fresa y Nutella Var. 6",
+    "costo": 31,
+    "precio": 77,
+    "permiteFracciones": false,
+    "categoria": "Alimentos",
+    "metadatos": {
+      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/sweet_crepe_1784098831229.jpg",
+      "tipo": "Alimento Caliente"
+    },
+    "codigos": [
+      "ALM-CRE-FRE-6"
+    ]
+  },
+  {
+    "sku": "ALM-CRE-PLA-6",
+    "nombre": "Crepa de Plátano y Cajeta Var. 6",
+    "costo": 31,
+    "precio": 77,
+    "permiteFracciones": false,
+    "categoria": "Alimentos",
+    "metadatos": {
+      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/sweet_crepe_1784098831229.jpg",
+      "tipo": "Alimento Caliente"
+    },
+    "codigos": [
+      "ALM-CRE-PLA-6"
+    ]
+  },
+  {
+    "sku": "ALM-PAN-QUE-6",
+    "nombre": "Panini Tres Quesos Var. 6",
+    "costo": 35,
+    "precio": 87,
+    "permiteFracciones": false,
+    "categoria": "Alimentos",
+    "metadatos": {
+      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/panini_sandwich_1784098932775.jpg",
+      "tipo": "Alimento Caliente"
+    },
+    "codigos": [
+      "ALM-PAN-QUE-6"
+    ]
+  },
+  {
+    "sku": "ALM-PAN-PAV-6",
+    "nombre": "Panini Pavo y Pesto Var. 6",
+    "costo": 39,
+    "precio": 97,
+    "permiteFracciones": false,
+    "categoria": "Alimentos",
+    "metadatos": {
+      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/panini_sandwich_1784098932775.jpg",
+      "tipo": "Alimento Caliente"
+    },
+    "codigos": [
+      "ALM-PAN-PAV-6"
+    ]
+  },
+  {
+    "sku": "ALM-CRO-JAM-6",
+    "nombre": "Croissant Jamón y Queso Var. 6",
+    "costo": 24,
+    "precio": 60,
+    "permiteFracciones": false,
+    "categoria": "Alimentos",
+    "metadatos": {
+      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/panini_sandwich_1784098932775.jpg",
+      "tipo": "Alimento Caliente"
+    },
+    "codigos": [
+      "ALM-CRO-JAM-6"
+    ]
+  },
+  {
+    "sku": "ALM-SAN-CLU-6",
+    "nombre": "Sándwich Club Clásico Var. 6",
+    "costo": 36,
+    "precio": 91,
+    "permiteFracciones": false,
+    "categoria": "Alimentos",
+    "metadatos": {
+      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/panini_sandwich_1784098932775.jpg",
+      "tipo": "Alimento Caliente"
+    },
+    "codigos": [
+      "ALM-SAN-CLU-6"
+    ]
+  },
+  {
+    "sku": "ALM-ENS-CES-6",
+    "nombre": "Ensalada César con Pollo Var. 6",
+    "costo": 40,
+    "precio": 101,
+    "permiteFracciones": false,
+    "categoria": "Alimentos",
+    "metadatos": {
+      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/muffin_cupcake_1784098904704.jpg",
+      "tipo": "Alimento Caliente"
+    },
+    "codigos": [
+      "ALM-ENS-CES-6"
+    ]
+  },
+  {
+    "sku": "ALM-BAG-LOX-6",
+    "nombre": "Bagel de Lox y Filadelfia Var. 6",
+    "costo": 43,
+    "precio": 107,
+    "permiteFracciones": false,
+    "categoria": "Alimentos",
+    "metadatos": {
+      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/panini_sandwich_1784098932775.jpg",
+      "tipo": "Alimento Caliente"
+    },
+    "codigos": [
+      "ALM-BAG-LOX-6"
+    ]
+  },
+  {
+    "sku": "ALM-CRE-FRE-7",
+    "nombre": "Crepa de Fresa y Nutella Var. 7",
+    "costo": 32,
+    "precio": 79,
+    "permiteFracciones": false,
+    "categoria": "Alimentos",
+    "metadatos": {
+      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/sweet_crepe_1784098831229.jpg",
+      "tipo": "Alimento Caliente"
+    },
+    "codigos": [
+      "ALM-CRE-FRE-7"
+    ]
+  },
+  {
+    "sku": "ALM-CRE-PLA-7",
+    "nombre": "Crepa de Plátano y Cajeta Var. 7",
+    "costo": 32,
+    "precio": 79,
+    "permiteFracciones": false,
+    "categoria": "Alimentos",
+    "metadatos": {
+      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/sweet_crepe_1784098831229.jpg",
+      "tipo": "Alimento Caliente"
+    },
+    "codigos": [
+      "ALM-CRE-PLA-7"
+    ]
+  },
+  {
+    "sku": "POS-MUF-ARA-1",
+    "nombre": "Muffin de Arándanos",
+    "costo": 11,
+    "precio": 37,
+    "permiteFracciones": false,
+    "categoria": "Postres",
+    "metadatos": {
+      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/muffin_cupcake_1784098904704.jpg",
+      "tipo": "Repostería Dulce"
+    },
+    "codigos": [
+      "POS-MUF-ARA-1"
+    ]
+  },
+  {
+    "sku": "POS-MUF-CHO-1",
+    "nombre": "Muffin de Chocolate Doble",
+    "costo": 12,
+    "precio": 40,
+    "permiteFracciones": false,
+    "categoria": "Postres",
+    "metadatos": {
+      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/muffin_cupcake_1784098904704.jpg",
+      "tipo": "Repostería Dulce"
+    },
+    "codigos": [
+      "POS-MUF-CHO-1"
+    ]
+  },
+  {
+    "sku": "POS-CHE-FRE-1",
+    "nombre": "Rebanada de Cheesecake",
+    "costo": 16,
+    "precio": 52,
+    "permiteFracciones": false,
+    "categoria": "Postres",
+    "metadatos": {
+      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/sweet_crepe_1784098831229.jpg",
+      "tipo": "Repostería Dulce"
+    },
+    "codigos": [
+      "POS-CHE-FRE-1"
+    ]
+  },
+  {
+    "sku": "POS-BRO-CHO-1",
+    "nombre": "Brownie de Fudge",
+    "costo": 11,
+    "precio": 37,
+    "permiteFracciones": false,
+    "categoria": "Postres",
+    "metadatos": {
+      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/muffin_cupcake_1784098904704.jpg",
+      "tipo": "Repostería Dulce"
+    },
+    "codigos": [
+      "POS-BRO-CHO-1"
+    ]
+  },
+  {
+    "sku": "POS-PAS-IMP-1",
+    "nombre": "Rebanada de Pastel Imposible",
+    "costo": 14,
+    "precio": 47,
+    "permiteFracciones": false,
+    "categoria": "Postres",
+    "metadatos": {
+      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/sweet_crepe_1784098831229.jpg",
+      "tipo": "Repostería Dulce"
+    },
+    "codigos": [
+      "POS-PAS-IMP-1"
+    ]
+  },
+  {
+    "sku": "POS-TAR-MAN-1",
+    "nombre": "Tarta de Manzana y Canela",
+    "costo": 15,
+    "precio": 50,
+    "permiteFracciones": false,
+    "categoria": "Postres",
+    "metadatos": {
+      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/sweet_crepe_1784098831229.jpg",
+      "tipo": "Repostería Dulce"
+    },
+    "codigos": [
+      "POS-TAR-MAN-1"
+    ]
+  },
+  {
+    "sku": "POS-GAL-CHI-1",
+    "nombre": "Galleta con Chispas Gigante",
+    "costo": 8,
+    "precio": 27,
+    "permiteFracciones": false,
+    "categoria": "Postres",
+    "metadatos": {
+      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/muffin_cupcake_1784098904704.jpg",
+      "tipo": "Repostería Dulce"
+    },
+    "codigos": [
+      "POS-GAL-CHI-1"
+    ]
+  },
+  {
+    "sku": "POS-MUF-ARA-2",
+    "nombre": "Muffin de Arándanos Var. 2",
+    "costo": 12,
+    "precio": 39,
+    "permiteFracciones": false,
+    "categoria": "Postres",
+    "metadatos": {
+      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/muffin_cupcake_1784098904704.jpg",
+      "tipo": "Repostería Dulce"
+    },
+    "codigos": [
+      "POS-MUF-ARA-2"
+    ]
+  },
+  {
+    "sku": "POS-MUF-CHO-2",
+    "nombre": "Muffin de Chocolate Doble Var. 2",
+    "costo": 13,
+    "precio": 42,
+    "permiteFracciones": false,
+    "categoria": "Postres",
+    "metadatos": {
+      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/muffin_cupcake_1784098904704.jpg",
+      "tipo": "Repostería Dulce"
+    },
+    "codigos": [
+      "POS-MUF-CHO-2"
+    ]
+  },
+  {
+    "sku": "POS-CHE-FRE-2",
+    "nombre": "Rebanada de Cheesecake Var. 2",
+    "costo": 16,
+    "precio": 54,
+    "permiteFracciones": false,
+    "categoria": "Postres",
+    "metadatos": {
+      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/sweet_crepe_1784098831229.jpg",
+      "tipo": "Repostería Dulce"
+    },
+    "codigos": [
+      "POS-CHE-FRE-2"
+    ]
+  },
+  {
+    "sku": "POS-BRO-CHO-2",
+    "nombre": "Brownie de Fudge Var. 2",
+    "costo": 12,
+    "precio": 39,
+    "permiteFracciones": false,
+    "categoria": "Postres",
+    "metadatos": {
+      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/muffin_cupcake_1784098904704.jpg",
+      "tipo": "Repostería Dulce"
+    },
+    "codigos": [
+      "POS-BRO-CHO-2"
+    ]
+  },
+  {
+    "sku": "POS-PAS-IMP-2",
+    "nombre": "Rebanada de Pastel Imposible Var. 2",
+    "costo": 15,
+    "precio": 49,
+    "permiteFracciones": false,
+    "categoria": "Postres",
+    "metadatos": {
+      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/sweet_crepe_1784098831229.jpg",
+      "tipo": "Repostería Dulce"
+    },
+    "codigos": [
+      "POS-PAS-IMP-2"
+    ]
+  },
+  {
+    "sku": "POS-TAR-MAN-2",
+    "nombre": "Tarta de Manzana y Canela Var. 2",
+    "costo": 16,
+    "precio": 52,
+    "permiteFracciones": false,
+    "categoria": "Postres",
+    "metadatos": {
+      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/sweet_crepe_1784098831229.jpg",
+      "tipo": "Repostería Dulce"
+    },
+    "codigos": [
+      "POS-TAR-MAN-2"
+    ]
+  },
+  {
+    "sku": "POS-GAL-CHI-2",
+    "nombre": "Galleta con Chispas Gigante Var. 2",
+    "costo": 9,
+    "precio": 29,
+    "permiteFracciones": false,
+    "categoria": "Postres",
+    "metadatos": {
+      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/muffin_cupcake_1784098904704.jpg",
+      "tipo": "Repostería Dulce"
+    },
+    "codigos": [
+      "POS-GAL-CHI-2"
+    ]
+  },
+  {
+    "sku": "POS-MUF-ARA-3",
+    "nombre": "Muffin de Arándanos Var. 3",
+    "costo": 12,
+    "precio": 41,
+    "permiteFracciones": false,
+    "categoria": "Postres",
+    "metadatos": {
+      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/muffin_cupcake_1784098904704.jpg",
+      "tipo": "Repostería Dulce"
+    },
+    "codigos": [
+      "POS-MUF-ARA-3"
+    ]
+  },
+  {
+    "sku": "POS-MUF-CHO-3",
+    "nombre": "Muffin de Chocolate Doble Var. 3",
+    "costo": 13,
+    "precio": 44,
+    "permiteFracciones": false,
+    "categoria": "Postres",
+    "metadatos": {
+      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/muffin_cupcake_1784098904704.jpg",
+      "tipo": "Repostería Dulce"
+    },
+    "codigos": [
+      "POS-MUF-CHO-3"
+    ]
+  },
+  {
+    "sku": "POS-CHE-FRE-3",
+    "nombre": "Rebanada de Cheesecake Var. 3",
+    "costo": 17,
+    "precio": 56,
+    "permiteFracciones": false,
+    "categoria": "Postres",
+    "metadatos": {
+      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/sweet_crepe_1784098831229.jpg",
+      "tipo": "Repostería Dulce"
+    },
+    "codigos": [
+      "POS-CHE-FRE-3"
+    ]
+  },
+  {
+    "sku": "POS-BRO-CHO-3",
+    "nombre": "Brownie de Fudge Var. 3",
+    "costo": 12,
+    "precio": 41,
+    "permiteFracciones": false,
+    "categoria": "Postres",
+    "metadatos": {
+      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/muffin_cupcake_1784098904704.jpg",
+      "tipo": "Repostería Dulce"
+    },
+    "codigos": [
+      "POS-BRO-CHO-3"
+    ]
+  },
+  {
+    "sku": "POS-PAS-IMP-3",
+    "nombre": "Rebanada de Pastel Imposible Var. 3",
+    "costo": 15,
+    "precio": 51,
+    "permiteFracciones": false,
+    "categoria": "Postres",
+    "metadatos": {
+      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/sweet_crepe_1784098831229.jpg",
+      "tipo": "Repostería Dulce"
+    },
+    "codigos": [
+      "POS-PAS-IMP-3"
+    ]
+  },
+  {
+    "sku": "POS-TAR-MAN-3",
+    "nombre": "Tarta de Manzana y Canela Var. 3",
+    "costo": 16,
+    "precio": 54,
+    "permiteFracciones": false,
+    "categoria": "Postres",
+    "metadatos": {
+      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/sweet_crepe_1784098831229.jpg",
+      "tipo": "Repostería Dulce"
+    },
+    "codigos": [
+      "POS-TAR-MAN-3"
+    ]
+  },
+  {
+    "sku": "POS-GAL-CHI-3",
+    "nombre": "Galleta con Chispas Gigante Var. 3",
+    "costo": 9,
+    "precio": 31,
+    "permiteFracciones": false,
+    "categoria": "Postres",
+    "metadatos": {
+      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/muffin_cupcake_1784098904704.jpg",
+      "tipo": "Repostería Dulce"
+    },
+    "codigos": [
+      "POS-GAL-CHI-3"
+    ]
+  },
+  {
+    "sku": "POS-MUF-ARA-4",
+    "nombre": "Muffin de Arándanos Var. 4",
+    "costo": 13,
+    "precio": 43,
+    "permiteFracciones": false,
+    "categoria": "Postres",
+    "metadatos": {
+      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/muffin_cupcake_1784098904704.jpg",
+      "tipo": "Repostería Dulce"
+    },
+    "codigos": [
+      "POS-MUF-ARA-4"
+    ]
+  },
+  {
+    "sku": "POS-MUF-CHO-4",
+    "nombre": "Muffin de Chocolate Doble Var. 4",
+    "costo": 14,
+    "precio": 46,
+    "permiteFracciones": false,
+    "categoria": "Postres",
+    "metadatos": {
+      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/muffin_cupcake_1784098904704.jpg",
+      "tipo": "Repostería Dulce"
+    },
+    "codigos": [
+      "POS-MUF-CHO-4"
+    ]
+  },
+  {
+    "sku": "POS-CHE-FRE-4",
+    "nombre": "Rebanada de Cheesecake Var. 4",
+    "costo": 17,
+    "precio": 58,
+    "permiteFracciones": false,
+    "categoria": "Postres",
+    "metadatos": {
+      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/sweet_crepe_1784098831229.jpg",
+      "tipo": "Repostería Dulce"
+    },
+    "codigos": [
+      "POS-CHE-FRE-4"
+    ]
+  },
+  {
+    "sku": "POS-BRO-CHO-4",
+    "nombre": "Brownie de Fudge Var. 4",
+    "costo": 13,
+    "precio": 43,
+    "permiteFracciones": false,
+    "categoria": "Postres",
+    "metadatos": {
+      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/muffin_cupcake_1784098904704.jpg",
+      "tipo": "Repostería Dulce"
+    },
+    "codigos": [
+      "POS-BRO-CHO-4"
+    ]
+  },
+  {
+    "sku": "POS-PAS-IMP-4",
+    "nombre": "Rebanada de Pastel Imposible Var. 4",
+    "costo": 16,
+    "precio": 53,
+    "permiteFracciones": false,
+    "categoria": "Postres",
+    "metadatos": {
+      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/sweet_crepe_1784098831229.jpg",
+      "tipo": "Repostería Dulce"
+    },
+    "codigos": [
+      "POS-PAS-IMP-4"
+    ]
+  },
+  {
+    "sku": "POS-TAR-MAN-4",
+    "nombre": "Tarta de Manzana y Canela Var. 4",
+    "costo": 17,
+    "precio": 56,
+    "permiteFracciones": false,
+    "categoria": "Postres",
+    "metadatos": {
+      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/sweet_crepe_1784098831229.jpg",
+      "tipo": "Repostería Dulce"
+    },
+    "codigos": [
+      "POS-TAR-MAN-4"
+    ]
+  },
+  {
+    "sku": "POS-GAL-CHI-4",
+    "nombre": "Galleta con Chispas Gigante Var. 4",
+    "costo": 10,
+    "precio": 33,
+    "permiteFracciones": false,
+    "categoria": "Postres",
+    "metadatos": {
+      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/muffin_cupcake_1784098904704.jpg",
+      "tipo": "Repostería Dulce"
+    },
+    "codigos": [
+      "POS-GAL-CHI-4"
+    ]
+  },
+  {
+    "sku": "POS-MUF-ARA-5",
+    "nombre": "Muffin de Arándanos Var. 5",
+    "costo": 14,
+    "precio": 45,
+    "permiteFracciones": false,
+    "categoria": "Postres",
+    "metadatos": {
+      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/muffin_cupcake_1784098904704.jpg",
+      "tipo": "Repostería Dulce"
+    },
+    "codigos": [
+      "POS-MUF-ARA-5"
+    ]
+  },
+  {
+    "sku": "POS-MUF-CHO-5",
+    "nombre": "Muffin de Chocolate Doble Var. 5",
+    "costo": 14,
+    "precio": 48,
+    "permiteFracciones": false,
+    "categoria": "Postres",
+    "metadatos": {
+      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/muffin_cupcake_1784098904704.jpg",
+      "tipo": "Repostería Dulce"
+    },
+    "codigos": [
+      "POS-MUF-CHO-5"
+    ]
+  },
+  {
+    "sku": "POS-CHE-FRE-5",
+    "nombre": "Rebanada de Cheesecake Var. 5",
+    "costo": 18,
+    "precio": 60,
+    "permiteFracciones": false,
+    "categoria": "Postres",
+    "metadatos": {
+      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/sweet_crepe_1784098831229.jpg",
+      "tipo": "Repostería Dulce"
+    },
+    "codigos": [
+      "POS-CHE-FRE-5"
+    ]
+  },
+  {
+    "sku": "POS-BRO-CHO-5",
+    "nombre": "Brownie de Fudge Var. 5",
+    "costo": 14,
+    "precio": 45,
+    "permiteFracciones": false,
+    "categoria": "Postres",
+    "metadatos": {
+      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/muffin_cupcake_1784098904704.jpg",
+      "tipo": "Repostería Dulce"
+    },
+    "codigos": [
+      "POS-BRO-CHO-5"
+    ]
+  },
+  {
+    "sku": "POS-PAS-IMP-5",
+    "nombre": "Rebanada de Pastel Imposible Var. 5",
+    "costo": 17,
+    "precio": 55,
+    "permiteFracciones": false,
+    "categoria": "Postres",
+    "metadatos": {
+      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/sweet_crepe_1784098831229.jpg",
+      "tipo": "Repostería Dulce"
+    },
+    "codigos": [
+      "POS-PAS-IMP-5"
+    ]
+  },
+  {
+    "sku": "POS-TAR-MAN-5",
+    "nombre": "Tarta de Manzana y Canela Var. 5",
+    "costo": 17,
+    "precio": 58,
+    "permiteFracciones": false,
+    "categoria": "Postres",
+    "metadatos": {
+      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/sweet_crepe_1784098831229.jpg",
+      "tipo": "Repostería Dulce"
+    },
+    "codigos": [
+      "POS-TAR-MAN-5"
+    ]
+  },
+  {
+    "sku": "POS-GAL-CHI-5",
+    "nombre": "Galleta con Chispas Gigante Var. 5",
+    "costo": 11,
+    "precio": 35,
+    "permiteFracciones": false,
+    "categoria": "Postres",
+    "metadatos": {
+      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/muffin_cupcake_1784098904704.jpg",
+      "tipo": "Repostería Dulce"
+    },
+    "codigos": [
+      "POS-GAL-CHI-5"
+    ]
+  },
+  {
+    "sku": "POS-MUF-ARA-6",
+    "nombre": "Muffin de Arándanos Var. 6",
+    "costo": 14,
+    "precio": 47,
+    "permiteFracciones": false,
+    "categoria": "Postres",
+    "metadatos": {
+      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/muffin_cupcake_1784098904704.jpg",
+      "tipo": "Repostería Dulce"
+    },
+    "codigos": [
+      "POS-MUF-ARA-6"
+    ]
+  },
+  {
+    "sku": "POS-MUF-CHO-6",
+    "nombre": "Muffin de Chocolate Doble Var. 6",
+    "costo": 15,
+    "precio": 50,
+    "permiteFracciones": false,
+    "categoria": "Postres",
+    "metadatos": {
+      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/muffin_cupcake_1784098904704.jpg",
+      "tipo": "Repostería Dulce"
+    },
+    "codigos": [
+      "POS-MUF-CHO-6"
+    ]
+  },
+  {
+    "sku": "POS-CHE-FRE-6",
+    "nombre": "Rebanada de Cheesecake Var. 6",
+    "costo": 19,
+    "precio": 62,
+    "permiteFracciones": false,
+    "categoria": "Postres",
+    "metadatos": {
+      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/sweet_crepe_1784098831229.jpg",
+      "tipo": "Repostería Dulce"
+    },
+    "codigos": [
+      "POS-CHE-FRE-6"
+    ]
+  },
+  {
+    "sku": "POS-BRO-CHO-6",
+    "nombre": "Brownie de Fudge Var. 6",
+    "costo": 14,
+    "precio": 47,
+    "permiteFracciones": false,
+    "categoria": "Postres",
+    "metadatos": {
+      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/muffin_cupcake_1784098904704.jpg",
+      "tipo": "Repostería Dulce"
+    },
+    "codigos": [
+      "POS-BRO-CHO-6"
+    ]
+  },
+  {
+    "sku": "POS-PAS-IMP-6",
+    "nombre": "Rebanada de Pastel Imposible Var. 6",
+    "costo": 17,
+    "precio": 57,
+    "permiteFracciones": false,
+    "categoria": "Postres",
+    "metadatos": {
+      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/sweet_crepe_1784098831229.jpg",
+      "tipo": "Repostería Dulce"
+    },
+    "codigos": [
+      "POS-PAS-IMP-6"
+    ]
+  },
+  {
+    "sku": "POS-TAR-MAN-6",
+    "nombre": "Tarta de Manzana y Canela Var. 6",
+    "costo": 18,
+    "precio": 60,
+    "permiteFracciones": false,
+    "categoria": "Postres",
+    "metadatos": {
+      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/sweet_crepe_1784098831229.jpg",
+      "tipo": "Repostería Dulce"
+    },
+    "codigos": [
+      "POS-TAR-MAN-6"
+    ]
+  },
+  {
+    "sku": "POS-GAL-CHI-6",
+    "nombre": "Galleta con Chispas Gigante Var. 6",
+    "costo": 11,
+    "precio": 37,
+    "permiteFracciones": false,
+    "categoria": "Postres",
+    "metadatos": {
+      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/muffin_cupcake_1784098904704.jpg",
+      "tipo": "Repostería Dulce"
+    },
+    "codigos": [
+      "POS-GAL-CHI-6"
+    ]
+  },
+  {
+    "sku": "POS-MUF-ARA-7",
+    "nombre": "Muffin de Arándanos Var. 7",
+    "costo": 15,
+    "precio": 49,
+    "permiteFracciones": false,
+    "categoria": "Postres",
+    "metadatos": {
+      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/muffin_cupcake_1784098904704.jpg",
+      "tipo": "Repostería Dulce"
+    },
+    "codigos": [
+      "POS-MUF-ARA-7"
+    ]
+  },
+  {
+    "sku": "POS-MUF-CHO-7",
+    "nombre": "Muffin de Chocolate Doble Var. 7",
+    "costo": 16,
+    "precio": 52,
+    "permiteFracciones": false,
+    "categoria": "Postres",
+    "metadatos": {
+      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/muffin_cupcake_1784098904704.jpg",
+      "tipo": "Repostería Dulce"
+    },
+    "codigos": [
+      "POS-MUF-CHO-7"
+    ]
+  },
+  {
+    "sku": "POS-CHE-FRE-7",
+    "nombre": "Rebanada de Cheesecake Var. 7",
+    "costo": 19,
+    "precio": 64,
+    "permiteFracciones": false,
+    "categoria": "Postres",
+    "metadatos": {
+      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/sweet_crepe_1784098831229.jpg",
+      "tipo": "Repostería Dulce"
+    },
+    "codigos": [
+      "POS-CHE-FRE-7"
+    ]
+  },
+  {
+    "sku": "POS-BRO-CHO-7",
+    "nombre": "Brownie de Fudge Var. 7",
+    "costo": 15,
+    "precio": 49,
+    "permiteFracciones": false,
+    "categoria": "Postres",
+    "metadatos": {
+      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/muffin_cupcake_1784098904704.jpg",
+      "tipo": "Repostería Dulce"
+    },
+    "codigos": [
+      "POS-BRO-CHO-7"
+    ]
+  },
+  {
+    "sku": "POS-PAS-IMP-7",
+    "nombre": "Rebanada de Pastel Imposible Var. 7",
+    "costo": 18,
+    "precio": 59,
+    "permiteFracciones": false,
+    "categoria": "Postres",
+    "metadatos": {
+      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/sweet_crepe_1784098831229.jpg",
+      "tipo": "Repostería Dulce"
+    },
+    "codigos": [
+      "POS-PAS-IMP-7"
+    ]
+  },
+  {
+    "sku": "POS-TAR-MAN-7",
+    "nombre": "Tarta de Manzana y Canela Var. 7",
+    "costo": 19,
+    "precio": 62,
+    "permiteFracciones": false,
+    "categoria": "Postres",
+    "metadatos": {
+      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/sweet_crepe_1784098831229.jpg",
+      "tipo": "Repostería Dulce"
+    },
+    "codigos": [
+      "POS-TAR-MAN-7"
+    ]
+  },
+  {
+    "sku": "POS-GAL-CHI-7",
+    "nombre": "Galleta con Chispas Gigante Var. 7",
+    "costo": 12,
+    "precio": 39,
+    "permiteFracciones": false,
+    "categoria": "Postres",
+    "metadatos": {
+      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/muffin_cupcake_1784098904704.jpg",
+      "tipo": "Repostería Dulce"
+    },
+    "codigos": [
+      "POS-GAL-CHI-7"
+    ]
+  },
+  {
+    "sku": "POS-MUF-ARA-8",
+    "nombre": "Muffin de Arándanos Var. 8",
+    "costo": 15,
+    "precio": 51,
+    "permiteFracciones": false,
+    "categoria": "Postres",
+    "metadatos": {
+      "imagenUrl": "/Users/dorian/.gemini/antigravity/brain/8acdc4a0-18f8-4ea9-94ea-58bab16336d8/muffin_cupcake_1784098904704.jpg",
+      "tipo": "Repostería Dulce"
+    },
+    "codigos": [
+      "POS-MUF-ARA-8"
+    ]
+  }
+]

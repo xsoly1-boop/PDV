@@ -97,6 +97,7 @@ export default function POSInterface() {
   const [selectedMilk, setSelectedMilk] = useState('Entera');
   const [selectedTemp, setSelectedTemp] = useState('Caliente');
   const [selectedExtras, setSelectedExtras] = useState<string[]>([]);
+  const [selectedVisualCategory, setSelectedVisualCategory] = useState('Bebidas');
 
   const [currentScreen, setCurrentScreen] = useState<'pos' | 'tables' | 'kds'>('pos');
   const [selectedTable, setSelectedTable] = useState<string | null>(null);
@@ -3322,7 +3323,64 @@ ${articulosTexto}
                   </button>
                 </div>
               </div>
-            ) : null}
+            ) : (
+              <div className="space-y-4">
+                <div className="flex justify-between items-center pb-2 border-b border-[#20222b]">
+                  <h3 className="text-sm font-black text-white">📋 Menú Rápido</h3>
+                  <div className="flex gap-1.5">
+                    {['Bebidas', 'Alimentos', 'Postres'].map(cat => (
+                      <button
+                        key={cat}
+                        onClick={() => setSelectedVisualCategory(cat)}
+                        className={`px-2.5 py-1 rounded-lg text-[10px] font-bold border cursor-pointer transition-colors ${
+                          selectedVisualCategory === cat
+                            ? 'bg-amber-500 border-transparent text-slate-950 font-black'
+                            : 'bg-transparent border-[#20222b] text-slate-400 hover:text-slate-200'
+                        }`}
+                      >
+                        {cat === 'Bebidas' ? '☕ Bebidas' : cat === 'Alimentos' ? '🥪 Alimentos' : '🍰 Postres'}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3.5">
+                  {products
+                    .filter((p: any) => {
+                      const pCat = p.categoria?.nombre || p.categoria;
+                      return typeof pCat === 'string' && pCat.toLowerCase() === selectedVisualCategory.toLowerCase();
+                    })
+                    .slice(0, 12)
+                    .map((p: any) => {
+                      const imageSrc = p.metadatos?.imagenUrl || p.metadata?.imagenUrl;
+                      return (
+                        <div
+                          key={p.id}
+                          onClick={() => handleAddToCart(p)}
+                          className="group bg-[#13151b] border border-[#20222b] hover:border-amber-500/50 rounded-xl overflow-hidden cursor-pointer transition-all shadow-md select-none flex flex-col justify-between min-h-[140px]"
+                        >
+                          {imageSrc ? (
+                            <img src={imageSrc} alt={p.nombre} className="w-full h-20 object-cover group-hover:scale-105 transition-transform" />
+                          ) : (
+                            <div className="w-full h-20 bg-[#090a0d] flex items-center justify-center text-xl">
+                              {selectedVisualCategory === 'Bebidas' ? '☕' : selectedVisualCategory === 'Alimentos' ? '🥪' : '🍰'}
+                            </div>
+                          )}
+                          <div className="p-2.5 flex-1 flex flex-col justify-between">
+                            <span className="text-[11px] font-bold text-slate-200 line-clamp-2 leading-snug group-hover:text-amber-400 transition-colors">{p.nombre}</span>
+                            <div className="flex justify-between items-center mt-2.5">
+                              <span className="text-xs font-black text-white">${Number(p.precio).toFixed(2)}</span>
+                              <span className="text-[9px] bg-slate-900 border border-[#20222b] text-slate-400 px-1.5 py-0.5 rounded font-black">
+                                +
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* COLA DE PEDIDOS MÓVILES */}

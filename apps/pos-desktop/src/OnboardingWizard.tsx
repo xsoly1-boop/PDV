@@ -46,6 +46,16 @@ const GIROS = [
     accent: '#8b5cf6',
     bgHover: 'hover:border-violet-400',
   },
+  {
+    id: 'cafeteria',
+    nombre: 'Cafetería',
+    icon: '☕',
+    descripcion: 'Cafetería, postres, alimentos preparados y bebidas',
+    color: 'from-amber-700/20 to-yellow-600/10',
+    border: 'border-amber-600/40',
+    accent: '#d97706',
+    bgHover: 'hover:border-amber-500',
+  },
 ];
 
 export default function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
