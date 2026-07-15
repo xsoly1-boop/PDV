@@ -11,7 +11,9 @@ let mainWindow;
 let apiProcess = null;
 
 function startLocalAPI() {
-  const isServer = app.name.toLowerCase().includes('server') || app.getName().toLowerCase().includes('server');
+  const isServer = app.name.toLowerCase().includes('server') || 
+                   app.getName().toLowerCase().includes('server') ||
+                   app.getPath('exe').toLowerCase().includes('server');
   if (!isServer) return;
 
   const apiPath = app.isPackaged
