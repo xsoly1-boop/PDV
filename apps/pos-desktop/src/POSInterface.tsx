@@ -4,7 +4,7 @@ import {
   Trash2, Plus, Minus, AlertCircle, 
   CarFront, PackageOpen, Printer, Zap,
   Sun, Moon, LayoutDashboard, Bookmark, RotateCw, MessageCircle, CheckCircle2, X, DollarSign,
-  ClipboardList, Check, TrendingUp, Lock, ShieldCheck
+  ClipboardList, Check, TrendingUp, Lock, ShieldCheck, List, MoreVertical, CreditCard, QrCode, Coins
 } from 'lucide-react';
 import { LocalDb } from './db/localDb';
 import { SyncService } from './services/SyncService';
@@ -3012,11 +3012,246 @@ ${articulosTexto}
         )}
 
         {currentScreen === 'pos' && (
-          <>
-            {/* COLUMNA IZQUIERDA: EL TICKET (Al 60%) */}
-        <section className={`w-[60%] flex flex-col border-r z-0 shadow-2xl transition-colors ${
-          theme === 'dark' ? 'bg-[#13151b] border-[#20222b]' : 'bg-white border-slate-200'
-        }`}>
+          config.giro?.toUpperCase() === 'CAFETERIA' ? (
+            <div className="flex flex-1 overflow-hidden bg-[#0d0e12] text-slate-100 font-sans select-none w-full h-full">
+              {/* Column 1: Catalog (55% width) */}
+              <section className="w-[55%] flex flex-col border-r border-[#20222b] h-full p-4 overflow-y-auto">
+                <div className="flex justify-between items-center pb-3 border-b border-[#20222b] mb-4">
+                  {/* Category tabs matching design */}
+                  <div className="flex gap-4">
+                    {[
+                      { id: 'Bebidas', label: 'BEVERAGES', icon: '🥛' },
+                      { id: 'Alimentos', label: 'FOOD', icon: '🥐' },
+                      { id: 'Postres', label: 'DESSERTS', icon: '🍰' }
+                    ].map(tab => (
+                      <button
+                        key={tab.id}
+                        onClick={() => setSelectedVisualCategory(tab.id)}
+                        className={`px-4 py-2 text-xs font-extrabold tracking-wider border-b-2 cursor-pointer transition-all flex items-center gap-2 border-0 bg-transparent ${
+                          selectedVisualCategory === tab.id
+                            ? 'text-white border-purple-500 shadow-[0_2px_10px_rgba(168,85,247,0.15)]'
+                            : 'text-slate-500 hover:text-slate-300 border-transparent'
+                        }`}
+                      >
+                        <span>{tab.icon}</span>
+                        <span>{tab.label}</span>
+                      </button>
+                    ))}
+                  </div>
+                  <MoreVertical className="w-5 h-5 text-slate-500 cursor-pointer hover:text-white" />
+                </div>
+
+                <h3 className="text-[10px] font-black text-slate-500 tracking-widest uppercase mb-4">
+                  {selectedVisualCategory === 'Bebidas' ? 'BEVERAGES' : selectedVisualCategory === 'Alimentos' ? 'FOOD' : 'DESSERTS'}
+                </h3>
+
+                {/* Grid of Product Cards */}
+                <div className="grid grid-cols-3 gap-4 overflow-y-auto pr-1">
+                  {products
+                    .filter((p: any) => {
+                      const pCat = p.categoria?.nombre || p.categoria;
+                      return typeof pCat === 'string' && pCat.toLowerCase() === selectedVisualCategory.toLowerCase();
+                    })
+                    .map((p: any) => {
+                      const imageSrc = p.metadatos?.imagenUrl || p.metadata?.imagenUrl;
+                      const cartItem = cart.find((item: any) => item.productoId === p.id || item.sku === p.sku);
+                      const qtyInCart = cartItem ? cartItem.cantidad : 0;
+                      return (
+                        <div
+                          key={p.id}
+                          onClick={() => handleAddToCart(p)}
+                          className={`group bg-[#13151b] border-2 rounded-2xl overflow-hidden cursor-pointer transition-all shadow-lg flex flex-col justify-between min-h-[190px] relative select-none ${
+                            qtyInCart > 0 ? 'border-amber-500 shadow-[0_0_15px_rgba(245,158,11,0.2)]' : 'border-[#20222b] hover:border-amber-500/50'
+                          }`}
+                        >
+                          {qtyInCart > 0 && (
+                            <div className="absolute top-2.5 right-2.5 bg-slate-800 border border-[#20222b] text-white text-[10px] font-black w-5 h-5 rounded-full flex items-center justify-center shadow-md z-10">
+                              {qtyInCart}
+                            </div>
+                          )}
+                          {imageSrc ? (
+                            <div className="w-full h-24 overflow-hidden relative">
+                              <img src={imageSrc} alt={p.nombre} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                            </div>
+                          ) : (
+                            <div className="w-full h-24 bg-[#090a0d] flex items-center justify-center text-3xl">
+                              {selectedVisualCategory === 'Bebidas' ? '☕' : selectedVisualCategory === 'Alimentos' ? '🥪' : '🍰'}
+                            </div>
+                          )}
+                          <div className="p-3 flex-1 flex flex-col justify-between">
+                            <div>
+                              <span className="text-xs font-black text-slate-100 line-clamp-1 group-hover:text-amber-400 transition-colors leading-snug">{p.nombre}</span>
+                              <span className="text-[10px] text-slate-500 line-clamp-2 mt-1 leading-normal">
+                                {p.descripcion || `${p.nombre} premium de nuestra barra preparado al momento.`}
+                              </span>
+                            </div>
+                            <div className="flex justify-between items-center mt-3 pt-2 border-t border-[#20222b]/50">
+                              <span className="text-xs font-extrabold text-[#f59e0b]">${Number(p.precio).toFixed(2)}</span>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                </div>
+              </section>
+
+              {/* Column 2: Current Order (22% width) */}
+              <section className="w-[22%] flex flex-col border-r border-[#20222b] h-full p-4 overflow-y-auto bg-[#090a0d]">
+                <div className="bg-gradient-to-r from-amber-500 to-yellow-400 text-slate-950 font-black p-3.5 rounded-t-2xl flex justify-between items-center select-none shadow-md shrink-0">
+                  <span className="text-xs uppercase tracking-wider font-extrabold flex items-center gap-1.5">
+                    <List className="w-4 h-4" /> Current Order
+                  </span>
+                  <MoreVertical className="w-4 h-4 cursor-pointer" />
+                </div>
+                
+                <div className="flex-1 bg-[#13151b] border-x border-b border-[#20222b] rounded-b-2xl p-3 overflow-y-auto space-y-3.5 animate-fadeIn">
+                  {cart.map((item: any) => {
+                    const imageSrc = item.metadata?.imagenUrl || item.metadatos?.imagenUrl;
+                    return (
+                      <div
+                        key={item.id}
+                        className="bg-[#1a1c24] border border-amber-500/70 rounded-xl p-3 flex items-center justify-between shadow-md relative group transition-all"
+                      >
+                        <div className="flex items-center gap-2.5">
+                          {imageSrc ? (
+                            <img src={imageSrc} alt={item.nombre} className="w-10 h-10 rounded-full object-cover border border-[#20222b]" />
+                          ) : (
+                            <div className="w-10 h-10 rounded-full bg-[#090a0d] flex items-center justify-center text-sm border border-[#20222b]">
+                              ☕
+                            </div>
+                          )}
+                          <div className="flex flex-col">
+                            <span className="text-xs font-bold text-slate-100 line-clamp-1">{item.nombre}</span>
+                            <span className="text-[10px] text-slate-500 font-extrabold mt-0.5">({item.cantidad})</span>
+                          </div>
+                        </div>
+                        <span className="text-xs font-extrabold text-[#f59e0b]">-${Number(item.precio * item.cantidad).toFixed(2)}</span>
+                        
+                        {/* Control buttons overlay on hover */}
+                        <div className="absolute inset-0 bg-[#13151b]/90 rounded-xl opacity-0 group-hover:opacity-100 flex items-center justify-center gap-3 transition-opacity duration-150">
+                          <button
+                            onClick={() => handleDecrement(item.id)}
+                            className="w-7 h-7 rounded-full bg-slate-800 hover:bg-slate-700 text-white flex items-center justify-center font-bold border-0 cursor-pointer text-sm"
+                          >
+                            -
+                          </button>
+                          <span className="text-xs font-black text-white">{item.cantidad}</span>
+                          <button
+                            onClick={() => handleIncrement(item.id)}
+                            className="w-7 h-7 rounded-full bg-slate-800 hover:bg-slate-700 text-white flex items-center justify-center font-bold border-0 cursor-pointer text-sm"
+                          >
+                            +
+                          </button>
+                          <button
+                            onClick={() => handleRemove(item.id)}
+                            className="w-7 h-7 rounded-full bg-rose-500/20 hover:bg-rose-500/40 text-rose-400 flex items-center justify-center border-0 cursor-pointer ml-1"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                  {cart.length === 0 && (
+                    <div className="h-full flex flex-col items-center justify-center text-center p-6 text-slate-500 italic text-xs">
+                      <span>No hay artículos en la comanda actual.</span>
+                    </div>
+                  )}
+                </div>
+              </section>
+
+              {/* Column 3: Summary & Payments (23% width) */}
+              <section className="w-[23%] flex flex-col justify-between h-full p-4 bg-[#13151b] border-l border-[#20222b]">
+                {/* Header Summary */}
+                <div className="flex justify-between items-center pb-3 border-b border-[#20222b]">
+                  <h3 className="text-sm font-black text-white flex items-center gap-1.5">
+                    Order
+                  </h3>
+                  <MoreVertical className="w-4 h-4 text-slate-500 cursor-pointer" />
+                </div>
+                
+                {/* Totals Section */}
+                <div className="py-4 space-y-2 border-b border-[#20222b]">
+                  <div className="flex justify-between text-xs text-slate-400">
+                    <span>Subtotal</span>
+                    <span className="font-mono">${subtotal.toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between text-xs text-slate-400">
+                    <span>Tax (16%)</span>
+                    <span className="font-mono">${(subtotal * 0.16).toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between text-base font-black text-white pt-2 border-t border-[#20222b]/50 mt-2">
+                    <span>Total</span>
+                    <span className="font-mono text-[#f59e0b]">${total.toFixed(2)}</span>
+                  </div>
+                </div>
+                
+                {/* Quick Payment Buttons */}
+                <div className="flex-1 flex flex-col justify-end space-y-3.5 pt-4">
+                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest block mb-1">Quick Payment</span>
+                  
+                  {/* CASH BUTTON */}
+                  <button
+                    disabled={cart.length === 0}
+                    onClick={() => handleCheckout('EFECTIVO')}
+                    className="w-full bg-[#1b2c24] hover:bg-[#233a2f] disabled:bg-slate-900 border border-emerald-500/30 hover:border-emerald-500/80 rounded-2xl p-4 flex items-center justify-between text-left cursor-pointer transition-all active:scale-[0.98] group disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 group-hover:scale-105 transition-transform">
+                        <Coins className="w-5 h-5" />
+                      </div>
+                      <div className="flex flex-col">
+                        <span className="text-xs font-black text-white tracking-wide">CASH</span>
+                        <span className="text-[9px] text-slate-400 mt-0.5">Pagar con Efectivo</span>
+                      </div>
+                    </div>
+                    <span className="text-sm font-extrabold text-[#f59e0b]">${total.toFixed(2)}</span>
+                  </button>
+
+                  {/* CARD BUTTON */}
+                  <button
+                    disabled={cart.length === 0}
+                    onClick={() => handleCheckout('TARJETA')}
+                    className="w-full bg-[#1c243a] hover:bg-[#243152] disabled:bg-slate-900 border border-blue-500/30 hover:border-blue-500/80 rounded-2xl p-4 flex items-center justify-between text-left cursor-pointer transition-all active:scale-[0.98] group disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400 group-hover:scale-105 transition-transform">
+                        <CreditCard className="w-5 h-5" />
+                      </div>
+                      <div className="flex flex-col">
+                        <span className="text-xs font-black text-white tracking-wide">CARD</span>
+                        <span className="text-[9px] text-slate-400 mt-0.5">Swipe / Tap</span>
+                      </div>
+                    </div>
+                    <span className="text-sm font-extrabold text-[#f59e0b]">${total.toFixed(2)}</span>
+                  </button>
+
+                  {/* CoDi BUTTON */}
+                  <button
+                    disabled={cart.length === 0}
+                    onClick={() => handleCheckout('TRANSFERENCIA')}
+                    className="w-full bg-[#291b35] hover:bg-[#382449] disabled:bg-slate-900 border border-purple-500/30 hover:border-purple-500/80 rounded-2xl p-4 flex items-center justify-between text-left cursor-pointer transition-all active:scale-[0.98] group disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-400 group-hover:scale-105 transition-transform">
+                        <QrCode className="w-5 h-5" />
+                      </div>
+                      <div className="flex flex-col">
+                        <span className="text-xs font-black text-white tracking-wide">CoDi</span>
+                        <span className="text-[9px] text-slate-400 mt-0.5">Transferencia QR</span>
+                      </div>
+                    </div>
+                    <span className="text-sm font-extrabold text-[#f59e0b]">${total.toFixed(2)}</span>
+                  </button>
+                </div>
+              </section>
+            </div>
+          ) : (
+            <>
+              {/* COLUMNA IZQUIERDA: EL TICKET (Al 60%) */}
+              <section className={`w-[60%] flex flex-col border-r z-0 shadow-2xl transition-colors ${
+                theme === 'dark' ? 'bg-[#13151b] border-[#20222b]' : 'bg-white border-slate-200'
+              }`}>
           
           {/* Barra de Tickets (Multi-Pestañas locales) */}
           <div className={`px-4 pt-3 border-b flex flex-col gap-2 ${
@@ -3461,7 +3696,8 @@ ${articulosTexto}
           </div>
 
         </section>
-          </>
+            </>
+          )
         )}
       </main>
 
