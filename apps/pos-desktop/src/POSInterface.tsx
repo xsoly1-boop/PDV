@@ -91,6 +91,32 @@ export default function POSInterface() {
   const [updateInfo, setUpdateInfo] = useState<any>(null);
   const [downloadPercent, setDownloadPercent] = useState(0);
 
+  // Estados de Cafetería (Modifiers, Tables Layout, KDS)
+  const [modifierProduct, setModifierProduct] = useState<any>(null);
+  const [showModifierModal, setShowModifierModal] = useState(false);
+  const [selectedMilk, setSelectedMilk] = useState('Entera');
+  const [selectedTemp, setSelectedTemp] = useState('Caliente');
+  const [selectedExtras, setSelectedExtras] = useState<string[]>([]);
+
+  const [currentScreen, setCurrentScreen] = useState<'pos' | 'tables' | 'kds'>('pos');
+  const [selectedTable, setSelectedTable] = useState<string | null>(null);
+  const [tablesData, setTablesData] = useState<any>({
+    T1: { status: 'Free', order: [] },
+    T2: { status: 'Free', order: [] },
+    T3: { status: 'Free', order: [] },
+    T4: { status: 'Free', order: [] },
+    T5: { status: 'Free', order: [] },
+    T7: { status: 'Occupied', order: [{ name: 'Capuchino Grande (Almendra)', price: 77, qty: 1 }], subtotal: 77 },
+    T12: { status: 'Occupied', order: [{ name: 'Espresso Doble', price: 45, qty: 2 }], subtotal: 90 },
+    T15: { status: 'BillReq', order: [{ name: 'Mocha Frio', price: 70, qty: 1 }], subtotal: 70 },
+  });
+
+  const [kdsOrders, setKdsOrders] = useState<any[]>([
+    { id: '#101', customer: 'Sofía M.', time: '02:18', items: ['1x Capuchino Grande (Leche Almendra)', '1x Pan Au Chocolat'], status: 'green' },
+    { id: '#102', customer: 'Mesa 4', time: '04:55', items: ['2x Espresso Doble', '1x Avocado Toast'], status: 'orange' },
+    { id: '#103', customer: 'Mesa 7', time: '07:30', items: ['1x Mocha Frio', '1x Croissant'], status: 'red' },
+  ]);
+
   useEffect(() => {
     const api = (window as any).electronAPI;
     if (!api) return;
@@ -900,6 +926,22 @@ export default function POSInterface() {
 
   const handleAddToCart = (product: any, customQty?: number) => {
     const qtyToAdd = customQty !== undefined ? customQty : 1;
+
+    const isDrink = product.isCustomized !== true && (
+      (typeof product.categoria === 'string' && product.categoria.toLowerCase() === 'bebidas') ||
+      (product.categoria && typeof product.categoria === 'object' && product.categoria.nombre?.toLowerCase() === 'bebidas') ||
+      ['café', 'cappuccino', 'capuchino', 'latte', 'té', 'espresso', 'frappé', 'mocha'].some(keyword => product.nombre?.toLowerCase().includes(keyword))
+    );
+
+    if (isDrink) {
+      setModifierProduct({ ...product, qty: qtyToAdd });
+      setSelectedMilk('Entera');
+      setSelectedTemp('Caliente');
+      setSelectedExtras([]);
+      setShowModifierModal(true);
+      return;
+    }
+
     setCart((prev: any[]) => {
       const existing = prev.find((item: any) => item.sku === product.sku);
       if (existing) {
@@ -917,6 +959,58 @@ export default function POSInterface() {
         unidad: product.unidad
       }];
     });
+  };
+
+  const handleConfirmModifiers = () => {
+    if (!modifierProduct) return;
+    
+    let extraPrice = 0;
+    const details: string[] = [];
+    
+    if (selectedMilk !== 'Entera') {
+      details.push(`Leche ${selectedMilk}`);
+      if (selectedMilk === 'Almendra' || selectedMilk === 'Avena') extraPrice += 12;
+    }
+    if (selectedTemp !== 'Caliente') {
+      details.push(selectedTemp);
+    }
+    selectedExtras.forEach(ex => {
+      details.push(ex);
+      if (ex === 'Doble Shot') extraPrice += 15;
+      if (ex === 'Crema Batida') extraPrice += 10;
+    });
+    
+    const detailsStr = details.length > 0 ? ` (${details.join(', ')})` : '';
+    const basePrice = parseFloat(String(modifierProduct.precio));
+    
+    const customizedProduct = {
+      ...modifierProduct,
+      isCustomized: true,
+      sku: `${modifierProduct.sku}-${selectedMilk}-${selectedTemp}-${selectedExtras.join('-')}`,
+      nombre: `${modifierProduct.nombre}${detailsStr}`,
+      precio: basePrice + extraPrice
+    };
+    
+    setCart((prev: any[]) => {
+      const existing = prev.find((item: any) => item.sku === customizedProduct.sku);
+      if (existing) {
+        return prev.map((item: any) => item.sku === customizedProduct.sku ? { ...item, cantidad: parseFloat((item.cantidad + modifierProduct.qty).toFixed(3)) } : item);
+      }
+      return [...prev, {
+        id: prev.length + 1,
+        productoId: customizedProduct.id,
+        sku: customizedProduct.sku,
+        nombre: customizedProduct.nombre,
+        tipo: (customizedProduct.categoria?.nombre || customizedProduct.categoria || 'bebida').toLowerCase(),
+        metadata: customizedProduct.metadata || { marca: 'Cafetería', ubicacion: 'Barra' },
+        precio: customizedProduct.precio,
+        cantidad: modifierProduct.qty,
+        unidad: customizedProduct.unidad
+      }];
+    });
+    
+    setShowModifierModal(false);
+    setModifierProduct(null);
   };
 
   const handleSearchKeyDown = async (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -1628,6 +1722,14 @@ ${articulosTexto}
     
     setShowCheckoutModal(false);
     setPendingCount(LocalDb.getUnsynced().length);
+
+    if (selectedTable) {
+      setTablesData((prev: any) => ({
+        ...prev,
+        [selectedTable]: { status: 'Free', order: [], subtotal: 0 }
+      }));
+      setSelectedTable(null);
+    }
   };
 
   // Manejador del Teclado Numérico para el PIN
@@ -2591,6 +2693,42 @@ ${articulosTexto}
             </button>
           )}
 
+          {/* Botones de Navegación de Pantalla (POS / Mesas / KDS) */}
+          {currentUser && (
+            <div className="flex items-center gap-1 border-r pr-2 border-[#20222b]">
+              <button 
+                onClick={() => { setCurrentScreen('pos'); setCurrentView('pos'); }}
+                className={`font-bold px-2.5 py-1.5 rounded-lg flex items-center gap-1.5 transition-all text-xs border-0 cursor-pointer ${
+                  currentScreen === 'pos' && currentView === 'pos'
+                    ? 'bg-amber-500 text-slate-950 shadow-md font-black'
+                    : 'bg-transparent text-slate-400 hover:text-slate-200'
+                }`}
+              >
+                ☕ Caja
+              </button>
+              <button 
+                onClick={() => { setCurrentScreen('tables'); setCurrentView('pos'); }}
+                className={`font-bold px-2.5 py-1.5 rounded-lg flex items-center gap-1.5 transition-all text-xs border-0 cursor-pointer ${
+                  currentScreen === 'tables' && currentView === 'pos'
+                    ? 'bg-amber-500 text-slate-950 shadow-md font-black'
+                    : 'bg-transparent text-slate-400 hover:text-slate-200'
+                }`}
+              >
+                🪑 Mesas
+              </button>
+              <button 
+                onClick={() => { setCurrentScreen('kds'); setCurrentView('pos'); }}
+                className={`font-bold px-2.5 py-1.5 rounded-lg flex items-center gap-1.5 transition-all text-xs border-0 cursor-pointer ${
+                  currentScreen === 'kds' && currentView === 'pos'
+                    ? 'bg-amber-500 text-slate-950 shadow-md font-black'
+                    : 'bg-transparent text-slate-400 hover:text-slate-200'
+                }`}
+              >
+                📋 KDS Barra
+              </button>
+            </div>
+          )}
+
           {/* Botón de Administración */}
           {currentUser && currentUser.rol === 'Administrador' && (
             <button 
@@ -2663,7 +2801,7 @@ ${articulosTexto}
               theme === 'dark' ? 'text-slate-300 border-[#20222b]' : 'text-slate-600 border-slate-200'
             }`}>
               <User className="w-4 h-4 text-amber-500" /> 
-              <span>{currentUser.nombre} <span className="text-[10px] text-slate-400">({currentUser.rol})</span></span>
+              <span>{currentUser.nombre} <span className="text-[10px] text-slate-400">({currentUser.rol})</span>{selectedTable ? <span className="ml-2 bg-amber-500/20 text-amber-500 px-2 py-0.5 rounded text-[10px] font-bold">Mesa {selectedTable.replace('T', '')}</span> : ''}</span>
             </div>
             <button 
               onClick={() => { 
@@ -2689,8 +2827,174 @@ ${articulosTexto}
 
       {/* 2. ESPACIO DE TRABAJO */}
       <main className="flex flex-1 overflow-hidden">
-        
-        {/* COLUMNA IZQUIERDA: EL TICKET (Al 60%) */}
+
+        {currentScreen === 'tables' && (
+          <div className="flex-1 flex flex-col p-6 overflow-y-auto bg-[#0d0e12]">
+            <div className="flex justify-between items-center mb-6">
+              <div>
+                <h2 className="text-xl font-black text-white">🪑 Layout de Mesas - Cafetería</h2>
+                <p className="text-xs text-slate-400">Selecciona una mesa ocupada para cargar su cuenta en caja o liberar mesa.</p>
+              </div>
+              <div className="flex gap-4 text-xs font-bold">
+                <span className="flex items-center gap-1.5 text-emerald-400">
+                  <span className="w-3 h-3 rounded-full bg-emerald-500" /> Libre
+                </span>
+                <span className="flex items-center gap-1.5 text-rose-400">
+                  <span className="w-3 h-3 rounded-full bg-rose-500" /> Ocupada
+                </span>
+                <span className="flex items-center gap-1.5 text-amber-400">
+                  <span className="w-3 h-3 rounded-full bg-amber-500" /> Cuenta Pedida
+                </span>
+              </div>
+            </div>
+
+            {/* Grid de Mesas */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-6 max-w-4xl">
+              {Object.entries(tablesData).map(([id, t]: [string, any]) => (
+                <div
+                  key={id}
+                  onClick={() => {
+                    if (t.status === 'Free') {
+                      setSelectedTable(id);
+                      setCart([]);
+                      setCurrentScreen('pos');
+                    } else {
+                      setSelectedTable(id);
+                      const mockCart = t.order.map((item: any, idx: number) => ({
+                        id: idx + 1,
+                        productoId: `MOCK-${id}-${idx}`,
+                        sku: `MOCK-${id}-${idx}`,
+                        nombre: item.name,
+                        tipo: 'bebida',
+                        metadata: { marca: 'Barra', ubicacion: 'Cafetería' },
+                        precio: item.price,
+                        cantidad: item.qty,
+                        unidad: 'pzas'
+                      }));
+                      setCart(mockCart);
+                      setCurrentScreen('pos');
+                    }
+                  }}
+                  className={`border-2 rounded-2xl p-6 flex flex-col items-center justify-between cursor-pointer transition-all active:scale-95 shadow-lg select-none min-h-[160px] ${
+                    t.status === 'Free'
+                      ? 'bg-[#13151b] border-emerald-500/30 hover:border-emerald-500/80 text-emerald-400 shadow-[0_4px_20px_rgba(16,185,129,0.05)]'
+                      : t.status === 'Occupied'
+                      ? 'bg-[#13151b] border-rose-500/30 hover:border-rose-500/80 text-rose-400 shadow-[0_4px_20px_rgba(239,68,68,0.05)]'
+                      : 'bg-[#13151b] border-amber-500/30 hover:border-amber-500/80 text-amber-400 shadow-[0_4px_20px_rgba(245,158,11,0.05)]'
+                  }`}
+                >
+                  <span className="text-3xl">
+                    {t.status === 'Free' ? '🟢' : t.status === 'Occupied' ? '🔴' : '🔔'}
+                  </span>
+                  <div className="text-center mt-2">
+                    <span className="text-lg font-black tracking-tight text-white">{id.replace('T', 'Mesa ')}</span>
+                    <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider mt-0.5">
+                      {t.status === 'Free' ? 'Disponible' : t.status === 'Occupied' ? 'Consumiendo' : 'Pide Cuenta'}
+                    </p>
+                  </div>
+                  {t.subtotal > 0 ? (
+                    <span className="mt-4 px-3 py-1 bg-slate-900 border border-[#20222b] text-white text-xs font-black rounded-lg">
+                      ${t.subtotal.toFixed(2)}
+                    </span>
+                  ) : (
+                    <span className="mt-4 px-3 py-1 text-slate-600 text-xs font-bold">
+                      Vacía
+                    </span>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {currentScreen === 'kds' && (
+          <div className="flex-1 flex flex-col p-6 overflow-y-auto bg-[#0d0e12]">
+            <div className="flex justify-between items-center mb-6">
+              <div>
+                <h2 className="text-xl font-black text-white">📋 Pantalla KDS - Estación Barista</h2>
+                <p className="text-xs text-slate-400">Órdenes de bebidas en cola de preparación. Haz clic en "Listo" para archivar.</p>
+              </div>
+              <span className="px-3 py-1 bg-amber-500/10 border border-amber-500/30 text-amber-500 text-xs font-bold rounded-lg">
+                Órdenes Activas: {kdsOrders.length}
+              </span>
+            </div>
+
+            {/* Grid de Comandas */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-6xl">
+              {kdsOrders.map((order) => (
+                <div
+                  key={order.id}
+                  className={`bg-[#13151b] border rounded-2xl overflow-hidden flex flex-col shadow-xl min-h-[220px] ${
+                    order.status === 'green'
+                      ? 'border-emerald-500/20'
+                      : order.status === 'orange'
+                      ? 'border-amber-500/20'
+                      : 'border-rose-500/20'
+                  }`}
+                >
+                  <div className={`px-4 py-3 flex justify-between items-center ${
+                    order.status === 'green'
+                      ? 'bg-emerald-500/10'
+                      : order.status === 'orange'
+                      ? 'bg-amber-500/10'
+                      : 'bg-rose-500/10'
+                  }`}>
+                    <div>
+                      <span className="text-xs font-bold text-slate-400">Orden {order.id}</span>
+                      <h4 className="text-white font-black text-sm mt-0.5">{order.customer}</h4>
+                    </div>
+                    <span className={`text-xs font-mono font-black ${
+                      order.status === 'green'
+                        ? 'text-emerald-400'
+                        : order.status === 'orange'
+                        ? 'text-amber-400'
+                        : 'text-rose-400 animate-pulse'
+                    }`}>
+                      ⏱️ {order.time}
+                    </span>
+                  </div>
+
+                  <div className="p-4 flex-1">
+                    <ul className="space-y-2.5">
+                      {order.items.map((item: string, idx: number) => (
+                        <li key={idx} className="text-slate-200 text-xs font-medium flex items-start gap-2">
+                          <span className="text-amber-500 font-bold">•</span>
+                          <span>{item}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+
+                  <div className="p-3 border-t border-[#20222b] bg-[#090a0d]/40 flex gap-2">
+                    <button
+                      onClick={() => setKdsOrders(prev => prev.filter(x => x.id !== order.id))}
+                      className="flex-1 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-slate-950 font-black text-xs rounded-xl border-0 cursor-pointer shadow-md active:scale-95 transition-all"
+                    >
+                      Listo
+                    </button>
+                    <button
+                      onClick={() => alert(`Detalles de Orden ${order.id}: Mesero: Carlos, Mesa: 4, Notas: Sin azúcar.`)}
+                      className="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs rounded-xl border border-[#2b2d3d] cursor-pointer transition-colors"
+                    >
+                      Ver
+                    </button>
+                  </div>
+                </div>
+              ))}
+              {kdsOrders.length === 0 && (
+                <div className="col-span-full py-16 flex flex-col items-center justify-center border border-dashed border-[#20222b] rounded-2xl bg-[#090a0d]/10">
+                  <span className="text-4xl mb-3">☕</span>
+                  <p className="text-sm font-bold text-slate-400">¡Barra limpia!</p>
+                  <p className="text-xs text-slate-500 mt-1">No hay bebidas pendientes por preparar.</p>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {currentScreen === 'pos' && (
+          <>
+            {/* COLUMNA IZQUIERDA: EL TICKET (Al 60%) */}
         <section className={`w-[60%] flex flex-col border-r z-0 shadow-2xl transition-colors ${
           theme === 'dark' ? 'bg-[#13151b] border-[#20222b]' : 'bg-white border-slate-200'
         }`}>
@@ -3081,6 +3385,8 @@ ${articulosTexto}
           </div>
 
         </section>
+          </>
+        )}
       </main>
 
       {/* Barra de Atajos y Estado en Pie de Página */}
@@ -4253,6 +4559,119 @@ ${articulosTexto}
           </div>
         </div>
       )}
+
+      {/* MODAL DE PERSONALIZACIÓN DE BEBIDAS (MODIFICADORES) */}
+      {showModifierModal && modifierProduct && (
+        <div className="fixed inset-0 bg-[#000000]/70 backdrop-blur-sm z-[9999] flex items-center justify-center p-4">
+          <div className="bg-[#11131c] border border-violet-500/20 rounded-3xl p-8 w-full max-w-md shadow-[0_20px_50px_rgba(139,92,246,0.15)] relative">
+            <button 
+              onClick={() => setShowModifierModal(false)}
+              className="absolute top-4 right-4 text-slate-400 hover:text-white bg-transparent border-0 cursor-pointer"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <div className="text-center mb-6">
+              <span className="text-[10px] font-bold text-violet-400 uppercase tracking-widest">Personalizar Bebida</span>
+              <h3 className="text-lg font-black text-white mt-1">
+                {modifierProduct.nombre}
+              </h3>
+            </div>
+
+            <div className="space-y-6">
+              {/* Leche */}
+              <div>
+                <label className="block text-xs font-bold uppercase text-slate-400 mb-3 tracking-wider">Tipo de Leche</label>
+                <div className="grid grid-cols-2 gap-2">
+                  {['Entera', 'Deslactosada', 'Almendra', 'Avena'].map(milk => (
+                    <button
+                      key={milk}
+                      type="button"
+                      onClick={() => setSelectedMilk(milk)}
+                      className={`py-2 px-3 rounded-xl border text-xs font-bold transition-all cursor-pointer ${
+                        selectedMilk === milk
+                          ? 'bg-violet-600/20 border-violet-500 text-white shadow-[0_0_15px_rgba(139,92,246,0.3)]'
+                          : 'bg-slate-900 border-[#20222b] text-slate-400 hover:text-white'
+                      }`}
+                    >
+                      {milk === 'Almendra' || milk === 'Avena' ? `${milk} (+$12)` : milk}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Temperatura */}
+              <div>
+                <label className="block text-xs font-bold uppercase text-slate-400 mb-3 tracking-wider">Temperatura</label>
+                <div className="grid grid-cols-3 gap-2">
+                  {['Caliente', 'Tibio', 'Frío'].map(temp => (
+                    <button
+                      key={temp}
+                      type="button"
+                      onClick={() => setSelectedTemp(temp)}
+                      className={`py-2 px-3 rounded-xl border text-xs font-bold transition-all cursor-pointer ${
+                        selectedTemp === temp
+                          ? 'bg-amber-500/20 border-amber-500 text-white shadow-[0_0_15px_rgba(245,158,11,0.2)]'
+                          : 'bg-slate-900 border-[#20222b] text-slate-400 hover:text-white'
+                      }`}
+                    >
+                      {temp === 'Caliente' ? '🔥 Caliente' : temp === 'Tibio' ? '🌡️ Tibio' : '❄️ Frío'}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Extras */}
+              <div>
+                <label className="block text-xs font-bold uppercase text-slate-400 mb-3 tracking-wider">Extras</label>
+                <div className="grid grid-cols-2 gap-2">
+                  {['Doble Shot', 'Crema Batida'].map(extra => {
+                    const isSelected = selectedExtras.includes(extra);
+                    return (
+                      <button
+                        key={extra}
+                        type="button"
+                        onClick={() => {
+                          if (isSelected) {
+                            setSelectedExtras(prev => prev.filter(x => x !== extra));
+                          } else {
+                            setSelectedExtras(prev => [...prev, extra]);
+                          }
+                        }}
+                        className={`py-2 px-3 rounded-xl border text-xs font-bold transition-all cursor-pointer ${
+                          isSelected
+                            ? 'bg-amber-500/20 border-amber-500 text-white shadow-[0_0_15px_rgba(245,158,11,0.2)]'
+                            : 'bg-slate-900 border-[#20222b] text-slate-400 hover:text-white'
+                        }`}
+                      >
+                        {extra === 'Doble Shot' ? '☕ Doble Shot (+$15)' : '🧁 Crema Batida (+$10)'}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+
+            <div className="flex gap-3 pt-8">
+              <button
+                type="button"
+                onClick={() => setShowModifierModal(false)}
+                className="flex-1 py-3 bg-slate-900 hover:bg-slate-800 text-slate-400 border border-[#20222b] font-bold text-xs rounded-xl cursor-pointer transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmModifiers}
+                className="flex-1 py-3 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white font-black text-xs rounded-xl border-0 cursor-pointer shadow-md active:scale-95 transition-all"
+              >
+                Confirmar Selección
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* MODAL: AUTENTICACIÓN SUPER ADMIN */}
       {showSuperAdminAuthModal && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[150] flex items-center justify-center p-4">
