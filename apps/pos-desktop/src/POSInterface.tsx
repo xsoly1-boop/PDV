@@ -3020,9 +3020,9 @@ ${articulosTexto}
                   {/* Category tabs matching design */}
                   <div className="flex gap-4">
                     {[
-                      { id: 'Bebidas', label: 'BEVERAGES', icon: '🥛' },
-                      { id: 'Alimentos', label: 'FOOD', icon: '🥐' },
-                      { id: 'Postres', label: 'DESSERTS', icon: '🍰' }
+                      { id: 'Bebidas', label: 'BEBIDAS', icon: '🥛' },
+                      { id: 'Alimentos', label: 'ALIMENTOS', icon: '🥐' },
+                      { id: 'Postres', label: 'POSTRES', icon: '🍰' }
                     ].map(tab => (
                       <button
                         key={tab.id}
@@ -3042,7 +3042,7 @@ ${articulosTexto}
                 </div>
 
                 <h3 className="text-[10px] font-black text-slate-500 tracking-widest uppercase mb-4">
-                  {selectedVisualCategory === 'Bebidas' ? 'BEVERAGES' : selectedVisualCategory === 'Alimentos' ? 'FOOD' : 'DESSERTS'}
+                  {selectedVisualCategory === 'Bebidas' ? 'BEBIDAS' : selectedVisualCategory === 'Alimentos' ? 'ALIMENTOS' : 'POSTRES'}
                 </h3>
 
                 {/* Grid of Product Cards */}
@@ -3099,7 +3099,7 @@ ${articulosTexto}
               <section className="w-[22%] flex flex-col border-r border-[#20222b] h-full p-4 overflow-y-auto bg-[#090a0d]">
                 <div className="bg-gradient-to-r from-amber-500 to-yellow-400 text-slate-950 font-black p-3.5 rounded-t-2xl flex justify-between items-center select-none shadow-md shrink-0">
                   <span className="text-xs uppercase tracking-wider font-extrabold flex items-center gap-1.5">
-                    <List className="w-4 h-4" /> Current Order
+                    <List className="w-4 h-4" /> Comanda Actual
                   </span>
                   <MoreVertical className="w-4 h-4 cursor-pointer" />
                 </div>
@@ -3165,7 +3165,7 @@ ${articulosTexto}
                 {/* Header Summary */}
                 <div className="flex justify-between items-center pb-3 border-b border-[#20222b]">
                   <h3 className="text-sm font-black text-white flex items-center gap-1.5">
-                    Order
+                    Comanda
                   </h3>
                   <MoreVertical className="w-4 h-4 text-slate-500 cursor-pointer" />
                 </div>
@@ -3177,7 +3177,7 @@ ${articulosTexto}
                     <span className="font-mono">${subtotal.toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between text-xs text-slate-400">
-                    <span>Tax (16%)</span>
+                    <span>Impuestos (16%)</span>
                     <span className="font-mono">${(subtotal * 0.16).toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between text-base font-black text-white pt-2 border-t border-[#20222b]/50 mt-2">
@@ -3188,7 +3188,7 @@ ${articulosTexto}
                 
                 {/* Quick Payment Buttons */}
                 <div className="flex-1 flex flex-col justify-end space-y-3.5 pt-4">
-                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest block mb-1">Quick Payment</span>
+                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest block mb-1">Pago Rápido</span>
                   
                   {/* CASH BUTTON */}
                   <button
@@ -3201,8 +3201,8 @@ ${articulosTexto}
                         <Coins className="w-5 h-5" />
                       </div>
                       <div className="flex flex-col">
-                        <span className="text-xs font-black text-white tracking-wide">CASH</span>
-                        <span className="text-[9px] text-slate-400 mt-0.5">Pagar con Efectivo</span>
+                        <span className="text-xs font-black text-white tracking-wide">EFECTIVO</span>
+                        <span className="text-[9px] text-slate-400 mt-0.5">Cobrar con Efectivo</span>
                       </div>
                     </div>
                     <span className="text-sm font-extrabold text-[#f59e0b]">${total.toFixed(2)}</span>
@@ -3219,8 +3219,8 @@ ${articulosTexto}
                         <CreditCard className="w-5 h-5" />
                       </div>
                       <div className="flex flex-col">
-                        <span className="text-xs font-black text-white tracking-wide">CARD</span>
-                        <span className="text-[9px] text-slate-400 mt-0.5">Swipe / Tap</span>
+                        <span className="text-xs font-black text-white tracking-wide">TARJETA</span>
+                        <span className="text-[9px] text-slate-400 mt-0.5">Tarjeta Débito/Crédito</span>
                       </div>
                     </div>
                     <span className="text-sm font-extrabold text-[#f59e0b]">${total.toFixed(2)}</span>
@@ -3238,7 +3238,7 @@ ${articulosTexto}
                       </div>
                       <div className="flex flex-col">
                         <span className="text-xs font-black text-white tracking-wide">CoDi</span>
-                        <span className="text-[9px] text-slate-400 mt-0.5">Transferencia QR</span>
+                        <span className="text-[9px] text-slate-400 mt-0.5">Transferencia / CoDi</span>
                       </div>
                     </div>
                     <span className="text-sm font-extrabold text-[#f59e0b]">${total.toFixed(2)}</span>

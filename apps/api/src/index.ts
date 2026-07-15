@@ -3065,6 +3065,8 @@ app.post('/api/v1/system/reset', async (req: any, res: any) => {
     await prisma.traspasoMercancia.deleteMany({});
     await prisma.turnoCaja.deleteMany({});
     await prisma.bitacoraAuditoria.deleteMany({});
+    await prisma.cliente.deleteMany({});
+    await prisma.proveedor.deleteMany({});
     await prisma.usuario.deleteMany({});
     await prisma.configuracionEmpresa.deleteMany({});
     await prisma.sucursal.deleteMany({});

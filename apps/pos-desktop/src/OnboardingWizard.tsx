@@ -290,7 +290,7 @@ export default function OnboardingWizard({ onComplete }: OnboardingWizardProps) 
                   Guardando...
                 </>
               ) : (
-                'Guardar y abrir el POS →'
+                'Guardar y Continuar →'
               )}
             </button>
           </div>
@@ -354,7 +354,9 @@ export default function OnboardingWizard({ onComplete }: OnboardingWizardProps) 
                   Precargar catálogo de demostración
                 </label>
                 <span className="text-slate-500 text-xs block mt-0.5">
-                  Importa automáticamente 1,000+ artículos con precios, códigos de barra y categorías.
+                  {selectedGiro === 'cafeteria' 
+                    ? 'Importa automáticamente 200+ bebidas, postres y alimentos con imágenes fotorrealistas.' 
+                    : 'Importa automáticamente 1,000+ artículos con precios, códigos de barra y categorías.'}
                 </span>
               </div>
             </div>
