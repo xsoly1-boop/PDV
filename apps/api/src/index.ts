@@ -2098,23 +2098,28 @@ app.post('/api/v1/configuracion-empresa', async (req, res) => {
     const rfc2 = data.rfc || null;
 
     if (existing) {
-      // Usar SQL raw para evitar validación de enum del Prisma client compilado
-      await prisma.$executeRawUnsafe(
-        `UPDATE "ConfiguracionEmpresa" SET "nombreEmpresa" = ?, "giro" = ?, "rfc" = ?, "formatoTicket" = ?, "updatedAt" = datetime('now') WHERE "id" = ?`,
-        nombreEmpresa, mappedGiro, rfc2, formatoTicketJson, existing.id
-      );
-      const updated = await prisma.configuracionEmpresa.findFirst({ where: { id: existing.id } });
+      const updated = await prisma.configuracionEmpresa.update({
+        where: { id: existing.id },
+        data: {
+          nombreEmpresa,
+          giro: mappedGiro,
+          rfc: rfc2,
+          formatoTicket: data.formatoTicket
+        }
+      });
       res.json(updated);
     } else {
-      const newId = require('crypto').randomUUID();
       // Obtener la sucursal raíz
       const sucursal = await prisma.sucursal.findFirst();
       if (!sucursal) return res.status(500).json({ error: 'No existe sucursal raíz. Reinicia la app.' });
-      await prisma.$executeRawUnsafe(
-        `INSERT INTO "ConfiguracionEmpresa" ("id","nombreEmpresa","giro","rfc","formatoTicket","moneda","sucursalId","createdAt","updatedAt") VALUES (?,?,?,?,?,?,?,datetime('now'),datetime('now'))`,
-        newId, nombreEmpresa, mappedGiro, rfc2, formatoTicketJson, 'MXN', sucursal.id
-      );
-      const created = await prisma.configuracionEmpresa.findFirst({ where: { id: newId } });
+      const created = await prisma.configuracionEmpresa.create({
+        data: {
+          nombreEmpresa,
+          giro: mappedGiro,
+          rfc: rfc2,
+          formatoTicket: data.formatoTicket
+        }
+      });
       res.json(created);
     }
   } catch (error: any) {
