@@ -3201,40 +3201,27 @@ app.post('/api/v1/presets/load', async (req: any, res: any) => {
       categoriesMap.set(catName, cat.id);
     }
     
-    // 2. Preparar el bulk insert de productos y códigos de barra
-    const productsToInsert: any[] = [];
-    const barcodesToInsert: any[] = [];
-    
+    // 2. Insertar los productos secuencialmente uno por uno con sus códigos de barra relacionados
+    // Esto evita sobrecargar la conexión con un payload gigante de imágenes en Base64
     for (const p of products) {
-      const productId = crypto.randomUUID();
+      const catId = categoriesMap.get(p.categoria) || null;
+      const barcodes = Array.isArray(p.codigos) ? p.codigos.map((code: string) => ({ codigo: code })) : [];
       
-      productsToInsert.push({
-        id: productId,
-        sku: p.sku,
-        nombre: p.nombre,
-        costo: p.costo,
-        precio: p.precio,
-        permiteFracciones: p.permiteFracciones || false,
-        categoriaId: categoriesMap.get(p.categoria) || null,
-        metadatos: p.metadatos || {}
-      });
-      
-      if (Array.isArray(p.codigos)) {
-        for (const code of p.codigos) {
-          barcodesToInsert.push({
-            id: crypto.randomUUID(),
-            codigo: code,
-            productoId: productId
-          });
+      await prisma.producto.create({
+        data: {
+          sku: p.sku,
+          nombre: p.nombre,
+          costo: Number(p.costo) || 0,
+          precio: Number(p.precio) || 0,
+          permiteFracciones: p.permiteFracciones || false,
+          categoriaId: catId,
+          metadatos: p.metadatos || {},
+          codigos: {
+            create: barcodes
+          }
         }
-      }
+      });
     }
-    
-    // 3. Insertar masivamente dentro de una transacción única
-    await prisma.$transaction([
-      prisma.producto.createMany({ data: productsToInsert }),
-      prisma.codigoBarras.createMany({ data: barcodesToInsert })
-    ]);
 
     // Garantizar que exista una sucursal raíz y el usuario administrador con PIN 8888
     let rootSucursal = await prisma.sucursal.findFirst();
@@ -3277,7 +3264,7 @@ app.post('/api/v1/presets/load', async (req: any, res: any) => {
     
     res.json({
       success: true,
-      message: `Catálogo de ${giro} precargado con éxito. Se insertaron ${productsToInsert.length} productos y ${barcodesToInsert.length} códigos de barras.`
+      message: `Catálogo de ${giro} precargado con éxito. Se insertaron ${products.length} productos.`
     });
   } catch (error: any) {
     console.error('Error al precargar catálogo:', error);

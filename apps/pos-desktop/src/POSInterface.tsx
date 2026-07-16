@@ -3083,12 +3083,19 @@ ${articulosTexto}
                       const pCat = p.categoria?.nombre || p.categoria;
                       const matchesCat = typeof pCat === 'string' && pCat.toLowerCase() === selectedVisualCategory.toLowerCase();
                       if (!matchesCat) return false;
-                      // Si al menos 1 producto de esta categoría tiene enMenuRapido definido,
-                      // filtrar solo los marcados. Si ninguno tiene la flag, mostrar todos.
+                      
+                      // Solo los artículos con imagen aparecen en el front
+                      const imageSrc = p.metadatos?.imagenUrl || p.metadata?.imagenUrl;
+                      if (!imageSrc) return false;
+
+                      // Si al menos 1 producto con imagen de esta categoría tiene enMenuRapido definido,
+                      // filtrar solo los marcados. Si ninguno tiene la flag, mostrar todos los que tengan foto.
                       const hayFlagEnCategoria = products.some((x: any) => {
                         const xCat = x.categoria?.nombre || x.categoria;
+                        const xImg = x.metadatos?.imagenUrl || x.metadata?.imagenUrl;
                         return typeof xCat === 'string' &&
                           xCat.toLowerCase() === selectedVisualCategory.toLowerCase() &&
+                          xImg &&
                           x.metadatos?.enMenuRapido === true;
                       });
                       if (hayFlagEnCategoria) return p.metadatos?.enMenuRapido === true;
@@ -3643,7 +3650,10 @@ ${articulosTexto}
                   {products
                     .filter((p: any) => {
                       const pCat = p.categoria?.nombre || p.categoria;
-                      return typeof pCat === 'string' && pCat.toLowerCase() === selectedVisualCategory.toLowerCase();
+                      const matchesCat = typeof pCat === 'string' && pCat.toLowerCase() === selectedVisualCategory.toLowerCase();
+                      if (!matchesCat) return false;
+                      const imageSrc = p.metadatos?.imagenUrl || p.metadata?.imagenUrl;
+                      return !!imageSrc;
                     })
                     .slice(0, 12)
                     .map((p: any) => {
