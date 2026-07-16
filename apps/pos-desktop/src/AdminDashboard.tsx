@@ -1786,7 +1786,7 @@ export default function AdminDashboard({
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
                     <div>
                       <label className="block text-xs font-bold uppercase text-slate-500 mb-2">Moneda por defecto</label>
                       <input
@@ -1809,6 +1809,23 @@ export default function AdminDashboard({
                         value={config.taxRate}
                         onChange={e => setConfig({ ...config, taxRate: parseInt(e.target.value) || 0 })}
                       />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold uppercase text-slate-500 mb-2">Giro del Negocio</label>
+                      <select
+                        className={`w-full rounded-xl p-3 border focus:outline-none focus:ring-2 focus:ring-amber-500 ${
+                          theme === 'dark' ? 'bg-[#1a1c24] border-[#262836] text-white' : 'bg-slate-50 border-slate-200 text-slate-800'
+                        }`}
+                        value={config.giro || 'tienda'}
+                        onChange={e => setConfig({ ...config, giro: e.target.value })}
+                      >
+                        <option value="tienda">🏪 Tienda / Abarrotes</option>
+                        <option value="cafeteria">☕ Cafetería</option>
+                        <option value="farmacia">💊 Farmacia</option>
+                        <option value="ferreteria">🔧 Ferretería</option>
+                        <option value="refaccionaria">🚗 Refaccionaria</option>
+                      </select>
                     </div>
                   </div>
 
