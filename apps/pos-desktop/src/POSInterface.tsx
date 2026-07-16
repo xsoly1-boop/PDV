@@ -2704,43 +2704,48 @@ ${articulosTexto}
         <div className="flex items-center justify-end gap-4 w-fit">
           
           {/* Badge de Red (Movido del Footer) */}
-          <div 
-            onClick={() => {
-              const nextOnline = !isOnline;
-              setIsOnline(nextOnline);
-              if (nextOnline) {
-                procesarColaVentasOffline();
-                sincronizarCatalogoLocal();
-              }
-            }}
-            className={`flex items-center gap-1.5 cursor-pointer text-xs font-semibold px-2.5 py-1 rounded-lg border transition-colors ${
-              isOnline ? 'text-emerald-500 border-emerald-500/20 bg-emerald-500/5' : 'text-rose-500 border-rose-500/20 bg-rose-500/5'
-            }`}
-            title="Clic para alternar modo red"
-          >
-            <Wifi className={`w-3.5 h-3.5 ${isOnline ? 'animate-pulse' : ''}`} /> 
-            <span>{isOnline ? 'Sincronizado' : 'Offline'}</span>
-          </div>
+           {/* Badge de Red y sincronizadores (Solo visibles si la nube está activada) */}
+          {config.enableCloudBackups === true && (
+            <>
+              <div 
+                onClick={() => {
+                  const nextOnline = !isOnline;
+                  setIsOnline(nextOnline);
+                  if (nextOnline) {
+                    procesarColaVentasOffline();
+                    sincronizarCatalogoLocal();
+                  }
+                }}
+                className={`flex items-center gap-1.5 cursor-pointer text-xs font-semibold px-2.5 py-1 rounded-lg border transition-colors ${
+                  isOnline ? 'text-emerald-500 border-emerald-500/20 bg-emerald-500/5' : 'text-rose-500 border-rose-500/20 bg-rose-500/5'
+                }`}
+                title="Clic para alternar modo red"
+              >
+                <Wifi className={`w-3.5 h-3.5 ${isOnline ? 'animate-pulse' : ''}`} /> 
+                <span>{isOnline ? 'Sincronizado' : 'Offline'}</span>
+              </div>
 
-          {pendingCount > 0 && (
-            <button 
-              onClick={forceSync}
-              className="text-[10px] text-amber-500 bg-amber-500/10 border border-amber-500/30 px-2 py-1 rounded font-bold hover:bg-amber-500 hover:text-slate-950 transition-colors uppercase animate-pulse"
-              title="Sincronizar movimientos pendientes central"
-            >
-              🔄 {pendingCount} Sync
-            </button>
-          )}
+              {pendingCount > 0 && (
+                <button 
+                  onClick={forceSync}
+                  className="text-[10px] text-amber-500 bg-amber-500/10 border border-amber-500/30 px-2 py-1 rounded font-bold hover:bg-amber-500 hover:text-slate-950 transition-colors uppercase animate-pulse"
+                  title="Sincronizar movimientos pendientes central"
+                >
+                  🔄 {pendingCount} Sync
+                </button>
+              )}
 
-          {offlineQueueSize > 0 && (
-            <button 
-              onClick={procesarColaVentasOffline}
-              disabled={syncingVentas}
-              className="text-[10px] text-rose-500 bg-rose-500/10 border border-rose-500/30 px-2 py-1 rounded font-bold hover:bg-rose-500 hover:text-slate-950 transition-colors uppercase animate-pulse"
-              title="Ventas guardadas offline pendientes por subir"
-            >
-              📥 {offlineQueueSize} Ventas Offline {syncingVentas ? '(Subiendo...)' : ''}
-            </button>
+              {offlineQueueSize > 0 && (
+                <button 
+                  onClick={procesarColaVentasOffline}
+                  disabled={syncingVentas}
+                  className="text-[10px] text-rose-500 bg-rose-500/10 border border-rose-500/30 px-2 py-1 rounded font-bold hover:bg-rose-500 hover:text-slate-950 transition-colors uppercase animate-pulse"
+                  title="Ventas guardadas offline pendientes por subir"
+                >
+                  📥 {offlineQueueSize} Ventas Offline {syncingVentas ? '(Subiendo...)' : ''}
+                </button>
+              )}
+            </>
           )}
 
           {/* Botones de Navegación de Pantalla (POS / Mesas / KDS) */}
