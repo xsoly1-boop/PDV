@@ -46,7 +46,8 @@ export const prisma = prismaClient.$extends({
 
         // 2. After query: Parse stored strings back to JSON objects
         const parseItem = (item: any) => {
-          if (!item) return;
+          // Guard: skip primitives (e.g., numbers from count() queries)
+          if (!item || typeof item !== 'object') return;
           if (model === 'ConfiguracionEmpresa' && 'formatoTicket' in item) {
             item.formatoTicket = parseJson(item.formatoTicket);
           }
