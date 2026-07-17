@@ -2816,11 +2816,8 @@ export default function AdminDashboard({
                         disabled={!config.habilitarIA}
                         className="w-full bg-[#0d0e12] border border-[#20222b] rounded-xl py-3 px-4 text-xs text-white outline-none focus:border-violet-500 transition-colors cursor-pointer disabled:opacity-50"
                       >
-                        <option value="llama3.2:1b">Llama 3.2 1B — Ultra-Ligero (1.2 GB)</option>
-                        <option value="llama3.2:3b">Llama 3.2 3B — Ligerísimo (2.0 GB)</option>
-                        <option value="gemma2:2b">Gemma 2 2B — Recomendado CPU (1.6 GB)</option>
-                        <option value="llama3:8b">Llama 3 8B — Completo (4.7 GB)</option>
-                        <option value="gemma2:9b">Gemma 2 9B — Alto Rendimiento GPU (5.5 GB)</option>
+                        <option value="gemma2:2b">Gemma 2 2B — Económico (2 GB RAM mínimo · descarga 1.6 GB)</option>
+                        <option value="llama3:8b">Llama 3 8B — Completo (8 GB RAM recomendado · descarga 4.7 GB)</option>
                       </select>
                     </div>
 

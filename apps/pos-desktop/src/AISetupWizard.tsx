@@ -1,19 +1,13 @@
 import { useEffect, useRef, useState } from 'react';
 
 const MODEL_SIZES: Record<string, string> = {
-  'llama3.2:1b': '1.2 GB',
-  'llama3.2:3b': '2.0 GB',
-  'gemma2:2b':   '1.6 GB',
-  'llama3:8b':   '4.7 GB',
-  'gemma2:9b':   '5.5 GB',
+  'gemma2:2b': '1.6 GB',
+  'llama3:8b': '4.7 GB',
 };
 
 const MODEL_LABELS: Record<string, string> = {
-  'llama3.2:1b': 'Llama 3.2 1B — Ultra-Ligero',
-  'llama3.2:3b': 'Llama 3.2 3B — Ligerísimo',
-  'gemma2:2b':   'Gemma 2 2B — Recomendado',
-  'llama3:8b':   'Llama 3 8B — Completo',
-  'gemma2:9b':   'Gemma 2 9B — Alto Rendimiento',
+  'gemma2:2b': 'Gemma 2 2B — Económico (2 GB RAM mínimo)',
+  'llama3:8b': 'Llama 3 8B — Completo (8 GB RAM)',
 };
 
 interface AISetupWizardProps {
