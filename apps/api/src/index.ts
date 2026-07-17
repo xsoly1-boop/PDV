@@ -53,11 +53,11 @@ app.get('/api/v1/productos/buscar', async (req, res) => {
     const productos = await prisma.producto.findMany({
       where: term ? {
         OR: [
-          { nombre: { contains: term, mode: 'insensitive' } },
-          { sku: { contains: term, mode: 'insensitive' } },
+          { nombre: { contains: term } },
+          { sku: { contains: term } },
           {
             codigos: {
-              some: { codigo: { contains: term, mode: 'insensitive' } }
+              some: { codigo: { contains: term } }
             }
           }
         ]
@@ -97,7 +97,7 @@ app.post('/api/v1/productos/inicializar-codigos-sku', async (req, res) => {
     const chunkSize = 1000;
     for (let i = 0; i < dataToInsert.length; i += chunkSize) {
       const chunk = dataToInsert.slice(i, i + chunkSize);
-      const result = await prisma.codigoBarras.createMany({
+      const result = await (prisma.codigoBarras as any).createMany({
         data: chunk,
         skipDuplicates: true
       });
@@ -200,8 +200,13 @@ app.get('/api/v1/productos', async (req, res) => {
 
 // POST /api/v1/productos (crear)
 app.post('/api/v1/productos', async (req, res) => {
-  const { sku, nombre, descripcion, costo, precio, categoriaId, proveedorId, codigoBarras, stock, unidad, permiteFracciones } = req.body;
+  const { sku, nombre, descripcion, costo, precio, categoriaId, proveedorId, codigoBarras, stock, unidad, permiteFracciones, metadatos } = req.body;
   try {
+    const finalMetadata = {
+      ...(metadatos || {}),
+      unidad: unidad || metadatos?.unidad || 'pieza'
+    };
+    
     const producto = await prisma.producto.create({
       data: {
         sku: sku || `SKU-${Date.now()}`,
@@ -212,7 +217,7 @@ app.post('/api/v1/productos', async (req, res) => {
         permiteFracciones: permiteFracciones || false,
         categoriaId: categoriaId || null,
         proveedorId: proveedorId || null,
-        metadatos: unidad ? { unidad } : undefined,
+        metadatos: finalMetadata,
         codigos: codigoBarras ? { create: { codigo: codigoBarras } } : undefined,
       },
       include: { codigos: true, balances: true }
@@ -277,8 +282,13 @@ app.post('/api/v1/productos/:id/stock', async (req, res) => {
 // PUT /api/v1/productos/:id (actualizar)
 app.put('/api/v1/productos/:id', async (req, res) => {
   const { id } = req.params;
-  const { sku, nombre, descripcion, costo, precio, categoriaId, proveedorId, codigoBarras, stock, unidad, permiteFracciones } = req.body;
+  const { sku, nombre, descripcion, costo, precio, categoriaId, proveedorId, codigoBarras, stock, unidad, permiteFracciones, metadatos } = req.body;
   try {
+    const finalMetadata = {
+      ...(metadatos || {}),
+      unidad: unidad || metadatos?.unidad || 'pieza'
+    };
+
     const producto = await prisma.producto.update({
       where: { id },
       data: {
@@ -288,7 +298,7 @@ app.put('/api/v1/productos/:id', async (req, res) => {
         permiteFracciones: permiteFracciones || false,
         categoriaId: categoriaId || null,
         proveedorId: proveedorId || null,
-        metadatos: unidad ? { unidad } : undefined,
+        metadatos: finalMetadata,
       },
       include: { codigos: true, balances: true }
     });
@@ -1569,7 +1579,7 @@ app.post('/api/v1/productos/migrar', async (req, res) => {
       .filter(Boolean) as any[];
 
     // Batch insert products — skip duplicates
-    const resultado = await prisma.producto.createMany({
+    const resultado = await (prisma.producto as any).createMany({
       data: registros,
       skipDuplicates: true
     });
@@ -1586,7 +1596,7 @@ app.post('/api/v1/productos/migrar', async (req, res) => {
 
     let stockCount = 0;
     if (balances.length > 0) {
-      const balResult = await prisma.inventarioBalance.createMany({
+      const balResult = await (prisma.inventarioBalance as any).createMany({
         data: balances,
         skipDuplicates: true
       });
@@ -1693,7 +1703,7 @@ app.post('/api/v1/inventario/migrar', async (req, res) => {
 
     let count = 0;
     if (balances.length > 0) {
-      const result = await prisma.inventarioBalance.createMany({
+      const result = await (prisma.inventarioBalance as any).createMany({
         data: balances,
         skipDuplicates: true
       });
@@ -1784,14 +1794,14 @@ app.post('/api/v1/ventas/migrar', async (req, res) => {
       }
 
       await prisma.$transaction(async (tx) => {
-        const sRes = await tx.venta.createMany({
+        const sRes = await (tx.venta as any).createMany({
           data: salesToInsert,
           skipDuplicates: true
         });
         salesCount += sRes.count;
 
         if (detailsToInsert.length > 0) {
-          const dRes = await tx.detalleVenta.createMany({
+          const dRes = await (tx.detalleVenta as any).createMany({
             data: detailsToInsert,
             skipDuplicates: true
           });
@@ -2649,9 +2659,9 @@ app.get('/api/v1/clientes', async (req, res) => {
         activo: true,
         ...(q ? {
           OR: [
-            { nombre: { contains: String(q), mode: 'insensitive' } },
-            { telefono: { contains: String(q), mode: 'insensitive' } },
-            { rfc: { contains: String(q), mode: 'insensitive' } },
+            { nombre: { contains: String(q) } },
+            { telefono: { contains: String(q) } },
+            { rfc: { contains: String(q) } },
           ]
         } : {})
       },
@@ -3321,52 +3331,67 @@ app.post('/api/v1/presets/load', async (req: any, res: any) => {
 async function applySchema() {
   try {
     console.log('[SCHEMA] Verificando compatibilidad del schema de base de datos...');
-    // SQLite no tiene un tipo ENUM real; usa TEXT con CHECK constraint.
-    // Prisma genera: giro TEXT NOT NULL DEFAULT 'ABARROTES' CHECK (giro IN (...))
-    // Para añadir un nuevo valor de enum a una BD existente sin recrear la tabla,
-    // basta con hacer un test de escritura temporal. Si falla (CHECK violation),
-    // necesitamos recrear la tabla. Pero SQLite en práctica no bloquea si el
-    // valor no estaba en el CHECK original — el CHECK se aplica al INSERT/UPDATE.
-    // La solución real: verificar si la tabla acepta CAFETERIA haciendo un SELECT.
-    // Si la columna giro tiene un CHECK que no incluye CAFETERIA, necesitamos 
-    // recrear la tabla. Usamos PRAGMA para leer el DDL y detectar esto.
+    
+    // SQLite: verify if schema.sql needs to be loaded (first boot)
     const tableInfo = await prisma.$queryRawUnsafe<any[]>(
       `SELECT sql FROM sqlite_master WHERE type='table' AND name='ConfiguracionEmpresa'`
     );
-    if (tableInfo.length > 0) {
-      const ddl: string = tableInfo[0].sql || '';
-      // Si el DDL tiene CHECK y NO incluye CAFETERIA, necesitamos actualizar
-      if (ddl.includes('CHECK') && !ddl.includes('CAFETERIA')) {
-        console.log('[SCHEMA] Detectado enum Giro desactualizado — aplicando actualización de schema...');
-        // SQLite no soporta ALTER COLUMN. Usamos la estrategia de renombrar+recrear.
-        await prisma.$executeRawUnsafe(`PRAGMA foreign_keys = OFF`);
-        await prisma.$executeRawUnsafe(`
-          CREATE TABLE IF NOT EXISTS "ConfiguracionEmpresa_new" (
-            "id"            TEXT NOT NULL PRIMARY KEY,
-            "nombreEmpresa" TEXT NOT NULL,
-            "rfc"           TEXT,
-            "telefono"      TEXT,
-            "direccion"     TEXT,
-            "ciudad"        TEXT,
-            "logo"          TEXT,
-            "giro"          TEXT NOT NULL DEFAULT 'ABARROTES',
-            "moneda"        TEXT NOT NULL DEFAULT 'MXN',
-            "sucursalId"    TEXT NOT NULL,
-            "createdAt"     DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-            "updatedAt"     DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-            CONSTRAINT "ConfiguracionEmpresa_sucursalId_fkey"
-              FOREIGN KEY ("sucursalId") REFERENCES "Sucursal"("id") ON DELETE RESTRICT ON UPDATE CASCADE
-          )
-        `);
-        await prisma.$executeRawUnsafe(`
-          INSERT INTO "ConfiguracionEmpresa_new" SELECT * FROM "ConfiguracionEmpresa"
-        `);
-        await prisma.$executeRawUnsafe(`DROP TABLE "ConfiguracionEmpresa"`);
-        await prisma.$executeRawUnsafe(`ALTER TABLE "ConfiguracionEmpresa_new" RENAME TO "ConfiguracionEmpresa"`);
-        await prisma.$executeRawUnsafe(`PRAGMA foreign_keys = ON`);
-        console.log('[SCHEMA] Schema actualizado correctamente. Ahora acepta CAFETERIA y otros giros.');
+    
+    if (tableInfo.length === 0) {
+      console.log('[SCHEMA] Base de datos vacía detectada. Inicializando tablas desde schema.sql...');
+      const schemaSqlPath = path.resolve(__dirname, './presets/schema.sql');
+      if (fs.existsSync(schemaSqlPath)) {
+        const ddl = fs.readFileSync(schemaSqlPath, 'utf8');
+        // Split DDL by semicolon and execute each statement
+        const statements = ddl.split(';');
+        for (const sql of statements) {
+          const trimmed = sql.trim();
+          if (trimmed && !trimmed.startsWith('--')) {
+            await prisma.$executeRawUnsafe(trimmed);
+          }
+        }
+        console.log('[SCHEMA] Inicialización de tablas completada con éxito.');
       } else {
-        console.log('[SCHEMA] Schema compatible. No se requiere actualización.');
+        console.warn('[SCHEMA] ADVERTENCIA: No se encontró el archivo presets/schema.sql!');
+      }
+    } else {
+      console.log('[SCHEMA] Las tablas ya existen. Verificando compatibilidad de Giro...');
+      const tableInfo = await prisma.$queryRawUnsafe<any[]>(
+        `SELECT sql FROM sqlite_master WHERE type='table' AND name='ConfiguracionEmpresa'`
+      );
+      if (tableInfo.length > 0) {
+        const ddl: string = tableInfo[0].sql || '';
+        if (ddl.includes('CHECK') && !ddl.includes('CAFETERIA')) {
+          console.log('[SCHEMA] Detectado enum Giro desactualizado — aplicando actualización de schema...');
+          await prisma.$executeRawUnsafe(`PRAGMA foreign_keys = OFF`);
+          await prisma.$executeRawUnsafe(`
+            CREATE TABLE IF NOT EXISTS "ConfiguracionEmpresa_new" (
+              "id"            TEXT NOT NULL PRIMARY KEY,
+              "nombreEmpresa" TEXT NOT NULL,
+              "rfc"           TEXT,
+              "telefono"      TEXT,
+              "direccion"     TEXT,
+              "ciudad"        TEXT,
+              "logo"          TEXT,
+              "giro"          TEXT NOT NULL DEFAULT 'ABARROTES',
+              "moneda"        TEXT NOT NULL DEFAULT 'MXN',
+              "sucursalId"    TEXT NOT NULL,
+              "createdAt"     DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+              "updatedAt"     DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+              CONSTRAINT "ConfiguracionEmpresa_sucursalId_fkey"
+                FOREIGN KEY ("sucursalId") REFERENCES "Sucursal"("id") ON DELETE RESTRICT ON UPDATE CASCADE
+            )
+          `);
+          await prisma.$executeRawUnsafe(`
+            INSERT INTO "ConfiguracionEmpresa_new" SELECT * FROM "ConfiguracionEmpresa"
+          `);
+          await prisma.$executeRawUnsafe(`DROP TABLE "ConfiguracionEmpresa"`);
+          await prisma.$executeRawUnsafe(`ALTER TABLE "ConfiguracionEmpresa_new" RENAME TO "ConfiguracionEmpresa"`);
+          await prisma.$executeRawUnsafe(`PRAGMA foreign_keys = ON`);
+          console.log('[SCHEMA] Schema de Giro actualizado correctamente.');
+        } else {
+          console.log('[SCHEMA] Schema compatible. No se requiere actualización.');
+        }
       }
     }
   } catch (err: any) {

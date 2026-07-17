@@ -2474,6 +2474,7 @@ ${articulosTexto}
                           body: JSON.stringify({ giro: giroActual, limpiarExistentes: true })
                         });
                         if (res.ok) {
+                          localStorage.removeItem('pos_products');
                           alert(`✅ Catálogo de ${giroActual.toUpperCase()} cargado con éxito.`);
                           window.location.reload();
                         } else {
@@ -2544,6 +2545,8 @@ ${articulosTexto}
                   const err = await res.json();
                   console.error('Error al precargarPreset:', err);
                   alert(`Error al precargar catálogo: ${err.error || 'Desconocido'}`);
+                } else {
+                  localStorage.removeItem('pos_products');
                 }
               } catch (err) {
                 console.error(err);
@@ -5260,6 +5263,7 @@ ${articulosTexto}
                         body: JSON.stringify({ giro: giroActual, limpiarExistentes: true })
                       });
                       if (res.ok) {
+                        localStorage.removeItem('pos_products');
                         alert(`✅ Catálogo de ${giroActual.toUpperCase()} cargado con éxito.`);
                         window.location.reload();
                       } else {

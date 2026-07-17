@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "tsx watch src/index.ts",
-    "build": "tsc && mkdir -p dist/presets/images && cp -r src/presets/*.json dist/presets/ && cp -r src/presets/images/* dist/presets/images/",
+    "build": "tsc && mkdir -p dist/presets/images && cp -r src/presets/*.json dist/presets/ && cp -r src/presets/*.sql dist/presets/ && cp -r src/presets/images/* dist/presets/images/",
     "start": "node dist/index.js",
     "prisma:generate": "prisma generate"
   },

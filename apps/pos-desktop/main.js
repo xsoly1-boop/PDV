@@ -35,7 +35,8 @@ function startLocalAPI() {
       stdio: 'pipe',
       env: {
         ...process.env,
-        PORT: '3001'
+        PORT: '3001',
+        DATABASE_URL: `file:${path.join(userDataPath, 'dev.db')}`
       }
     });
 
