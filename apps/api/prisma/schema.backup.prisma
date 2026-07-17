@@ -24,6 +24,9 @@ model ConfiguracionEmpresa {
   rfc           String?
   logoUrl       String?
   formatoTicket Json?    // Configuración visual del ticket (secciones, fuentes, logos)
+  habilitarIA   Boolean  @default(false)
+  modeloIA      String   @default("gemma2:2b")
+  limiteRamIA   Int      @default(4)
   creadoAt      DateTime @default(now())
   actualizadoAt DateTime @updatedAt
 }
@@ -430,3 +433,12 @@ model LoteStock {
 
   @@unique([sucursalId, productoId, lote])
 }
+
+model SyncLog {
+  id         String   @id @default(uuid())
+  tabla      String   // 'Producto', 'Cliente', 'Proveedor', 'Categoria', 'Venta', 'KardexMovimiento', 'InventarioBalance'
+  registroId String   // ID del registro afectado
+  accion     String   // 'INSERT', 'UPDATE', 'DELETE'
+  creadoAt   DateTime @default(now())
+}
+
