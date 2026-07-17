@@ -28,3 +28,6 @@ apps/pos-desktop/release/
 # Scratch and test files
 apps/api/scratch/
 *.fdb
+
+# Binarios de Ollama bundleados (distribuidos vía DMG, no via git)
+apps/pos-desktop/resources/ollama/

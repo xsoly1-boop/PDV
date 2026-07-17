@@ -6,9 +6,91 @@ autoUpdater.autoDownload = true;
 const path = require('path');
 const fs = require('fs');
 const os = require('os');
+const { spawn, execSync } = require('child_process');
 
 let mainWindow;
 let apiProcess = null;
+let ollamaProcess = null;
+
+// ─── Arranque del runtime de Ollama bundleado ───────────────────────────────
+function startOllama() {
+  // Solo en la variante Server
+  const isServer = app.name.toLowerCase().includes('server') ||
+                   app.getName().toLowerCase().includes('server') ||
+                   app.getPath('exe').toLowerCase().includes('server');
+  if (!isServer) return;
+
+  // Ruta del binario: en producción viene en extraResources; en dev usamos el del sistema
+  let ollamaBin;
+  if (app.isPackaged) {
+    ollamaBin = path.join(process.resourcesPath, 'ollama', 'ollama');
+  } else {
+    // Desarrollo: buscar binario local primero, luego fallback al sistema
+    const localBin = path.join(__dirname, 'resources', 'ollama', 'darwin-arm64', 'ollama');
+    ollamaBin = fs.existsSync(localBin) ? localBin : 'ollama';
+  }
+
+  // Asegurar permisos de ejecución (macOS)
+  try {
+    if (fs.existsSync(ollamaBin)) {
+      fs.chmodSync(ollamaBin, 0o755);
+    }
+  } catch (e) {
+    console.warn('[ELECTRON-MAIN] No se pudo aplicar chmod al binario de Ollama:', e.message);
+  }
+
+  // Carpeta donde Ollama guardará los modelos (dentro de userData de Vante)
+  const modelsDir = path.join(app.getPath('userData'), 'ollama-models');
+  if (!fs.existsSync(modelsDir)) fs.mkdirSync(modelsDir, { recursive: true });
+
+  const userDataPath = app.getPath('userData');
+  const logPath = path.join(userDataPath, 'local-ollama.log');
+  const logStream = fs.createWriteStream(logPath, { flags: 'a' });
+  logStream.write(`\n\n=== OLLAMA INICIADO: ${new Date().toISOString()} (bin: ${ollamaBin}) ===\n`);
+
+  console.log('[ELECTRON-MAIN] Iniciando Vante AI Engine desde:', ollamaBin);
+  console.log('[ELECTRON-MAIN] Carpeta de modelos:', modelsDir);
+
+  // Directorio del binario (las dylibs están junto al ejecutable)
+  const ollamaDir = path.dirname(ollamaBin);
+
+  ollamaProcess = spawn(ollamaBin, ['serve'], {
+    env: {
+      ...process.env,
+      OLLAMA_MODELS: modelsDir,
+      OLLAMA_HOST: '127.0.0.1:11434',
+      // macOS necesita saber dónde están las dylibs bundleadas
+      DYLD_LIBRARY_PATH: `${ollamaDir}:${process.env.DYLD_LIBRARY_PATH || ''}`,
+    },
+    stdio: 'pipe',
+  });
+
+  ollamaProcess.stdout.on('data', (d) => {
+    const msg = d.toString();
+    console.log('[OLLAMA]', msg.trim());
+    logStream.write(`[STDOUT] ${msg}`);
+  });
+
+  ollamaProcess.stderr.on('data', (d) => {
+    const msg = d.toString();
+    console.warn('[OLLAMA-WARN]', msg.trim());
+    logStream.write(`[STDERR] ${msg}`);
+  });
+
+  ollamaProcess.on('exit', (code) => {
+    console.log(`[ELECTRON-MAIN] Vante AI Engine terminó con código: ${code}`);
+    logStream.write(`[EXIT] Código: ${code}\n`);
+    ollamaProcess = null;
+  });
+
+  ollamaProcess.on('error', (err) => {
+    console.error('[ELECTRON-MAIN] Error al iniciar Vante AI Engine:', err.message);
+    logStream.write(`[ERROR] ${err.message}\n`);
+    // Si el binario no existe o falló, la IA simplemente no estará disponible
+    ollamaProcess = null;
+  });
+}
+
 
 function startLocalAPI() {
   const isServer = app.name.toLowerCase().includes('server') || 
@@ -98,6 +180,7 @@ function createWindow() {
 
 app.whenReady().then(() => {
   startLocalAPI();
+  startOllama();
   createWindow();
 
   // Buscar actualizaciones al iniciar de forma silenciosa en producción
@@ -440,5 +523,9 @@ app.on('will-quit', () => {
   if (apiProcess) {
     console.log('[ELECTRON-MAIN] Finalizando proceso del backend API local...');
     apiProcess.kill();
+  }
+  if (ollamaProcess) {
+    console.log('[ELECTRON-MAIN] Finalizando Vante AI Engine...');
+    ollamaProcess.kill();
   }
 });

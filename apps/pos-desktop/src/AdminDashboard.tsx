@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { 
   LayoutDashboard, Package, Users, TrendingUp, Settings, 
   X, Edit2, Trash2, Search, Building, Save, 
@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import { API_V1 } from './config';
 import { exportKardexCSV } from './services/exportUtils';
+import AISetupWizard from './AISetupWizard';
 
 interface CompanyConfig {
   businessName: string;
@@ -56,6 +57,7 @@ interface CompanyConfig {
   allowVendedorMovilCheckout?: boolean;
   habilitarIA?: boolean;
   modeloIA?: string;
+  limiteRamIA?: number;
 }
 
 interface AdminDashboardProps {
@@ -118,6 +120,31 @@ export default function AdminDashboard({
   const [config, setConfig] = useState<CompanyConfig>(initialConfig);
   const [showTestTicketModal, setShowTestTicketModal] = useState(false);
   const [testTicketContent, setTestTicketContent] = useState('');
+
+  // AI Setup Wizard state
+  const [showAIWizard, setShowAIWizard] = useState(false);
+  const [modeloDescargado, setModeloDescargado] = useState<boolean | null>(null); // null = checking
+
+  // Check if the current AI model is already downloaded
+  const verificarModelo = useCallback(async (modelo: string) => {
+    setModeloDescargado(null);
+    try {
+      const res = await fetch(`${API_V1}/ai/verificar-modelo?modelo=${encodeURIComponent(modelo)}`);
+      const data = await res.json();
+      setModeloDescargado(data.disponible === true);
+    } catch {
+      setModeloDescargado(false);
+    }
+  }, []);
+
+  // Re-verify whenever the configured model changes or IA is enabled
+  useEffect(() => {
+    if (config.habilitarIA) {
+      verificarModelo(config.modeloIA || 'gemma2:2b');
+    } else {
+      setModeloDescargado(null);
+    }
+  }, [config.habilitarIA, config.modeloIA, verificarModelo]);
 
   // Financial Reports state
   const [selectedPeriod, setSelectedPeriod] = useState<'hoy' | 'semana' | 'mes' | 'anio'>('hoy');
@@ -1200,6 +1227,18 @@ export default function AdminDashboard({
       theme === 'dark' ? 'bg-[#0d0e12] text-slate-200' : 'bg-slate-50 text-slate-800'
     }`}>
       
+      {/* AI Setup Wizard — model download overlay */}
+      {showAIWizard && (
+        <AISetupWizard
+          modelo={config.modeloIA || 'gemma2:2b'}
+          onCompleted={() => {
+            setShowAIWizard(false);
+            setModeloDescargado(true);
+          }}
+          onCancel={() => setShowAIWizard(false)}
+        />
+      )}
+
       {/* Header Panel */}
       <header className={`flex items-center justify-between px-8 py-5 border-b shadow-md ${
         theme === 'dark' ? 'bg-[#13151b] border-[#20222b]' : 'bg-white border-slate-200'
@@ -2709,7 +2748,19 @@ export default function AdminDashboard({
 
                   <div className="space-y-4">
                     <div className="flex items-center justify-between pb-2 border-b border-slate-800/40">
-                      <span className="text-xs text-slate-400 font-bold">Activar Vante AI</span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-slate-400 font-bold">Activar Vante AI</span>
+                        {/* Model download status badge */}
+                        {config.habilitarIA && modeloDescargado === null && (
+                          <span className="text-[10px] bg-slate-800 text-slate-400 px-2 py-0.5 rounded-full animate-pulse">Verificando...</span>
+                        )}
+                        {config.habilitarIA && modeloDescargado === false && (
+                          <span className="text-[10px] bg-amber-900/40 text-amber-400 border border-amber-500/30 px-2 py-0.5 rounded-full">⬇ Modelo no descargado</span>
+                        )}
+                        {config.habilitarIA && modeloDescargado === true && (
+                          <span className="text-[10px] bg-emerald-900/30 text-emerald-400 border border-emerald-500/30 px-2 py-0.5 rounded-full">✓ Modelo listo</span>
+                        )}
+                      </div>
                       <label className="relative inline-flex items-center cursor-pointer">
                         <input
                           type="checkbox"
@@ -2718,12 +2769,27 @@ export default function AdminDashboard({
                             const newConf = { ...config, habilitarIA: e.target.checked };
                             setConfig(newConf);
                             onConfigChange(newConf);
+                            // If enabling IA and model not yet downloaded → show wizard
+                            if (e.target.checked && modeloDescargado === false) {
+                              setTimeout(() => setShowAIWizard(true), 300);
+                            }
                           }}
                           className="sr-only peer"
                         />
                         <div className="w-11 h-6 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-slate-400 after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-violet-600 peer-checked:after:bg-white peer-checked:after:border-transparent"></div>
                       </label>
                     </div>
+
+                    {/* Button to download model if not yet available */}
+                    {config.habilitarIA && modeloDescargado === false && (
+                      <button
+                        onClick={() => setShowAIWizard(true)}
+                        className="w-full py-2.5 rounded-xl text-sm font-bold text-white transition-all hover:opacity-90 active:scale-95 flex items-center justify-center gap-2"
+                        style={{ background: 'linear-gradient(135deg, #7c3aed, #4f46e5)' }}
+                      >
+                        <span>⬇</span> Descargar modelo de IA
+                      </button>
+                    )}
 
                     <div>
                       <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5">
@@ -2735,16 +2801,71 @@ export default function AdminDashboard({
                           const newConf = { ...config, modeloIA: e.target.value };
                           setConfig(newConf);
                           onConfigChange(newConf);
+                          // Verify if new model is already downloaded; if not, open wizard
+                          if (config.habilitarIA) {
+                            setModeloDescargado(null);
+                            fetch(`${API_V1}/ai/verificar-modelo?modelo=${encodeURIComponent(e.target.value)}`)
+                              .then(r => r.json())
+                              .then(data => {
+                                setModeloDescargado(data.disponible === true);
+                                if (!data.disponible) setTimeout(() => setShowAIWizard(true), 300);
+                              })
+                              .catch(() => setModeloDescargado(false));
+                          }
                         }}
                         disabled={!config.habilitarIA}
                         className="w-full bg-[#0d0e12] border border-[#20222b] rounded-xl py-3 px-4 text-xs text-white outline-none focus:border-violet-500 transition-colors cursor-pointer disabled:opacity-50"
                       >
-                        <option value="llama3.2:1b">Llama 3.2 1B (Ultra-Ligero, 4GB RAM)</option>
-                        <option value="llama3.2:3b">Llama 3.2 3B (Ligerísimo, 8GB RAM)</option>
-                        <option value="gemma2:2b">Gemma 2 2B (Recomendado CPU, 8GB RAM)</option>
-                        <option value="llama3:8b">Llama 3 8B (Completo, 16GB RAM)</option>
-                        <option value="gemma2:9b">Gemma 2 9B (Alto Rendimiento GPU, 16GB RAM)</option>
+                        <option value="llama3.2:1b">Llama 3.2 1B — Ultra-Ligero (1.2 GB)</option>
+                        <option value="llama3.2:3b">Llama 3.2 3B — Ligerísimo (2.0 GB)</option>
+                        <option value="gemma2:2b">Gemma 2 2B — Recomendado CPU (1.6 GB)</option>
+                        <option value="llama3:8b">Llama 3 8B — Completo (4.7 GB)</option>
+                        <option value="gemma2:9b">Gemma 2 9B — Alto Rendimiento GPU (5.5 GB)</option>
                       </select>
+                    </div>
+
+                    <div>
+                      <div className="flex items-center justify-between mb-1.5">
+                        <label className="block text-xs font-bold uppercase tracking-wider text-slate-400">
+                          Límite de RAM Asignado
+                        </label>
+                        <span className="text-xs font-extrabold text-violet-400 bg-violet-950/40 px-2 py-0.5 rounded border border-violet-500/20">
+                          {config.limiteRamIA || 4} GB RAM
+                        </span>
+                      </div>
+                      <input
+                        type="range"
+                        min="1"
+                        max="16"
+                        step="1"
+                        disabled={!config.habilitarIA}
+                        value={config.limiteRamIA || 4}
+                        onChange={(e) => {
+                          const newConf = { ...config, limiteRamIA: Number(e.target.value) };
+                          setConfig(newConf);
+                          onConfigChange(newConf);
+                        }}
+                        className="w-full h-1.5 bg-[#0d0e12] rounded-lg appearance-none cursor-pointer accent-violet-600 disabled:opacity-40"
+                      />
+                      <div className="flex justify-between text-[9px] text-slate-500 font-semibold px-0.5 mt-1">
+                        <span>1 GB (Min)</span>
+                        <span>4 GB (Med)</span>
+                        <span>8 GB</span>
+                        <span>16 GB (Máx)</span>
+                      </div>
+
+                      {/* Dynamic RAM description */}
+                      {config.habilitarIA && (
+                        <p className="text-[10px] text-slate-400 leading-relaxed mt-3 p-2.5 rounded-xl bg-slate-950/40 border border-slate-800/40">
+                          💡 {(config.limiteRamIA || 4) <= 2 ? (
+                            <span className="text-amber-400/90 font-medium">Modo Ultra-Ligero: Ideal para PCs antiguas. Limita el contexto a 1024 tokens y usa 2 hilos de CPU para evitar sobrecalentamientos.</span>
+                          ) : (config.limiteRamIA || 4) <= 4 ? (
+                            <span className="text-slate-300">Modo Balanceado: Adecuado para la mayoría de computadoras de oficina. Utiliza contexto de 2048 tokens y 4 hilos de CPU.</span>
+                          ) : (
+                            <span className="text-emerald-400/90 font-medium">Modo Rendimiento Máximo: Configurado con 4096 tokens de contexto y 6 hilos de CPU. Ideal para procesar consultas complejas de negocio rápidamente.</span>
+                          )}
+                        </p>
+                      )}
                     </div>
                   </div>
                 </div>

@@ -86,6 +86,7 @@ interface CompanyConfig {
   allowVendedorMovilCheckout?: boolean;
   habilitarIA?: boolean;
   modeloIA?: string;
+  limiteRamIA?: number;
 }
 
 export default function POSInterface() {
@@ -1924,6 +1925,7 @@ ${articulosTexto}
               enableAdvancedInventory: data.formatoTicket?.enableAdvancedInventory === true,
               habilitarIA: data.formatoTicket?.habilitarIA === true,
               modeloIA: data.formatoTicket?.modeloIA || 'gemma2:2b',
+              limiteRamIA: Number(data.formatoTicket?.limiteRamIA) || 4,
               printerCaja: localStorage.getItem('pos_printer_caja') || data.formatoTicket?.printerCaja || '',
               printerCliente: localStorage.getItem('pos_printer_cliente') || data.formatoTicket?.printerCliente || '',
               printerMovil: localStorage.getItem('pos_printer_movil') || data.formatoTicket?.printerMovil || '',
@@ -4225,7 +4227,8 @@ ${articulosTexto}
                   enableAutoUpdates: newConfig.enableAutoUpdates === true,
                   enableAdvancedInventory: newConfig.enableAdvancedInventory === true,
                   habilitarIA: newConfig.habilitarIA === true,
-                  modeloIA: newConfig.modeloIA || 'gemma2:2b'
+                  modeloIA: newConfig.modeloIA || 'gemma2:2b',
+                  limiteRamIA: Number(newConfig.limiteRamIA) || 4
                 })
               });
             } catch (err) {

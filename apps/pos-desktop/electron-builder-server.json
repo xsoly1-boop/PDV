@@ -28,6 +28,10 @@
         "package.json",
         ".env"
       ]
+    },
+    {
+      "from": "resources/ollama/darwin-arm64",
+      "to": "ollama"
     }
   ],
   "mac": {

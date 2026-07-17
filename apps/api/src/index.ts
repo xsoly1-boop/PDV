@@ -927,6 +927,93 @@ app.get('/api/v1/ai/estado-ollama', async (req, res) => {
   }
 });
 
+// GET /api/v1/ai/verificar-modelo — Verificar si un modelo específico ya está descargado
+app.get('/api/v1/ai/verificar-modelo', async (req, res) => {
+  const modelo = (req.query.modelo as string) || 'gemma2:2b';
+  try {
+    const resp = await fetch('http://localhost:11434/api/tags', { signal: AbortSignal.timeout(3000) });
+    if (!resp.ok) return res.json({ disponible: false, razon: 'ollama_no_activo' });
+    const data = (await resp.json()) as any;
+    const modelos: string[] = (data.models || []).map((m: any) => m.name as string);
+    const modeloBase = modelo.split(':')[0];
+    const disponible = modelos.some(m => m === modelo || m.startsWith(modeloBase + ':'));
+    return res.json({ disponible, modelosInstalados: modelos });
+  } catch (e: any) {
+    return res.json({ disponible: false, razon: 'ollama_no_activo' });
+  }
+});
+
+// GET /api/v1/ai/descargar-modelo — Descargar un modelo vía Ollama con streaming SSE del progreso
+app.get('/api/v1/ai/descargar-modelo', async (req, res) => {
+  const modelo = (req.query.modelo as string) || 'gemma2:2b';
+
+  // Configurar SSE
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Connection', 'keep-alive');
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.flushHeaders();
+
+  const sendEvent = (data: object) => {
+    res.write(`data: ${JSON.stringify(data)}\n\n`);
+  };
+
+  try {
+    sendEvent({ status: 'iniciando', mensaje: `Iniciando descarga de ${modelo}...`, progreso: 0 });
+
+    // Llamar a la API de Ollama para hacer pull del modelo
+    const pullResp = await fetch('http://localhost:11434/api/pull', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: modelo, stream: true })
+    });
+
+    if (!pullResp.ok || !pullResp.body) {
+      sendEvent({ status: 'error', mensaje: 'No se pudo conectar con el motor de IA local.' });
+      return res.end();
+    }
+
+    const reader = pullResp.body as any;
+    let buffer = '';
+
+    for await (const chunk of reader) {
+      buffer += chunk.toString();
+      const lines = buffer.split('\n');
+      buffer = lines.pop() || '';
+
+      for (const line of lines) {
+        if (!line.trim()) continue;
+        try {
+          const parsed = JSON.parse(line);
+          // Calcular progreso porcentual
+          let progreso = 0;
+          if (parsed.total && parsed.completed) {
+            progreso = Math.round((parsed.completed / parsed.total) * 100);
+          }
+          sendEvent({
+            status: parsed.status === 'success' ? 'completado' : 'descargando',
+            mensaje: parsed.status || 'Descargando...',
+            progreso,
+            total: parsed.total,
+            completado: parsed.completed
+          });
+
+          if (parsed.status === 'success') {
+            sendEvent({ status: 'listo', mensaje: `¡Modelo ${modelo} listo!`, progreso: 100 });
+            return res.end();
+          }
+        } catch (_) { /* línea incompleta, ignorar */ }
+      }
+    }
+
+    sendEvent({ status: 'listo', mensaje: `¡Modelo ${modelo} descargado exitosamente!`, progreso: 100 });
+    res.end();
+  } catch (e: any) {
+    sendEvent({ status: 'error', mensaje: e.message || 'Error desconocido al descargar el modelo.' });
+    res.end();
+  }
+});
+
 // POST /api/v1/ai/consultar — Consultar al asistente de IA con contexto local SQLite
 app.post('/api/v1/ai/consultar', async (req, res) => {
   const { mensaje, modelo } = req.body;
