@@ -3844,21 +3844,32 @@ app.post('/api/v1/admin/init-schema', async (req: any, res: any) => {
 
     send('connect', true, 'Verificando conexión con Supabase...');
 
+    // Validar si la URL contiene los corchetes de ejemplo [ ]
+    if (databaseUrl.includes('[') || databaseUrl.includes(']')) {
+      send('error', false, 'Error: Tu Connection String contiene corchetes "[" o "]". Asegúrate de borrarlos y dejar solo tu contraseña real.');
+      return res.end();
+    }
+
     // 1. Verificar que la URL es válida intentando conectar
     const env = { ...process.env, DATABASE_URL: databaseUrl, DIRECT_URL: databaseUrl };
     const apiDir = path.resolve(__dirname, '..');
+    const prismaCliPath = path.join(apiDir, 'node_modules/prisma/build/index.js');
 
     send('schema', true, 'Aplicando esquema de tablas Vante POS...');
 
-    // 2. Ejecutar prisma db push --skip-generate --accept-data-loss
+    // 2. Ejecutar prisma db push usando node directamente sobre la librería local
     const result = spawnSync(
-      'npx', ['prisma', 'db', 'push', '--skip-generate', '--accept-data-loss'],
+      'node', [prismaCliPath, 'db', 'push', '--skip-generate', '--accept-data-loss'],
       { env, cwd: apiDir, timeout: 120000, encoding: 'utf8' }
     );
 
     if (result.status !== 0) {
-      const errMsg = result.stderr || result.stdout || 'Error desconocido';
-      send('error', false, `Error aplicando schema: ${errMsg.slice(0, 400)}`);
+      const execError = result.error?.message || '';
+      const stdErrText = result.stderr || '';
+      const stdOutText = result.stdout || '';
+      const errMsg = execError || stdErrText || stdOutText || 'Error de ejecución en el proceso de base de datos.';
+      
+      send('error', false, `Error aplicando schema: ${errMsg.slice(0, 350)}`);
       return res.end();
     }
 
