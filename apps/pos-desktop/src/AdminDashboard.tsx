@@ -2714,7 +2714,11 @@ export default function AdminDashboard({
                         <input
                           type="checkbox"
                           checked={config.habilitarIA || false}
-                          onChange={(e) => onConfigChange({ ...config, habilitarIA: e.target.checked })}
+                          onChange={(e) => {
+                            const newConf = { ...config, habilitarIA: e.target.checked };
+                            setConfig(newConf);
+                            onConfigChange(newConf);
+                          }}
                           className="sr-only peer"
                         />
                         <div className="w-11 h-6 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-slate-400 after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-violet-600 peer-checked:after:bg-white peer-checked:after:border-transparent"></div>
@@ -2727,7 +2731,11 @@ export default function AdminDashboard({
                       </label>
                       <select
                         value={config.modeloIA || 'gemma2:2b'}
-                        onChange={(e) => onConfigChange({ ...config, modeloIA: e.target.value })}
+                        onChange={(e) => {
+                          const newConf = { ...config, modeloIA: e.target.value };
+                          setConfig(newConf);
+                          onConfigChange(newConf);
+                        }}
                         disabled={!config.habilitarIA}
                         className="w-full bg-[#0d0e12] border border-[#20222b] rounded-xl py-3 px-4 text-xs text-white outline-none focus:border-violet-500 transition-colors cursor-pointer disabled:opacity-50"
                       >
