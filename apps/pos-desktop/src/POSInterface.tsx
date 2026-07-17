@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { 
-  Search, Wifi, User, Clock, 
+  Search, Wifi, User, Clock, Cloud,
   Trash2, Plus, Minus, AlertCircle, 
   CarFront, PackageOpen, Printer, Zap,
   Sun, Moon, LayoutDashboard, Bookmark, RotateCw, MessageCircle, CheckCircle2, X, DollarSign,
@@ -2955,6 +2955,7 @@ ${articulosTexto}
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-sky-400 opacity-75"></span>
               <span className="relative inline-flex rounded-full h-2 w-2 bg-sky-500"></span>
             </span>
+            {localStorage.getItem('vante_deployment_mode') === 'HYBRID' && <Cloud className="w-3.5 h-3.5 text-sky-400" />}
             <span>{localStorage.getItem('vante_deployment_mode') === 'HYBRID' ? 'NUBE' : 'LOCAL'}</span>
           </div>
 
