@@ -497,6 +497,7 @@ export default function POSInterface() {
   const [schemaNeeded, setSchemaNeeded] = useState(false);
   const [initProgress, setInitProgress] = useState<string[]>([]);
   const [isInitingSchema, setIsInitingSchema] = useState(false);
+  const [setupDbConnectionString, setSetupDbConnectionString] = useState('');
 
   const handleActivateLicense = async (email: string, key: string) => {
     setLicenseError('');
@@ -595,16 +596,12 @@ export default function POSInterface() {
       return;
     }
 
-    const dbUrl = prompt(
-      'Para inicializar la base de datos, ingresa el Connection String (URI) de tu base de datos Supabase.\n\n' +
-      'Lo encuentras en: Supabase -> Settings -> Database -> Connection string -> URI\n\n' +
-      'Debe incluir la contrasena que elegiste al crear el proyecto.\n\n' +
-      'Ejemplo:\npostgresql://postgres:[TU_PASSWORD]@db.lijgrwqumptfgdofgoiw.supabase.co:5432/postgres\n\n' +
-      'Pega el Connection String completo aqui:'
-    );
+    if (!setupDbConnectionString.trim()) {
+      setSetupError('Ingresa el Connection String (URI) de Supabase.');
+      return;
+    }
 
-    if (!dbUrl || !dbUrl.trim()) return;
-
+    const dbUrl = setupDbConnectionString.trim();
     setIsInitingSchema(true);
     setInitProgress(['Iniciando proceso de conexion...']);
     setSetupError('');
@@ -2497,19 +2494,34 @@ ${articulosTexto}
                       </button>
 
                       {schemaNeeded && (
-                        <button
-                          type="button"
-                          disabled={isInitingSchema}
-                          onClick={handleInitSchema}
-                          className="w-full text-white font-bold py-2.5 rounded-xl text-xs cursor-pointer border-0 shadow-md transition-colors"
-                          style={{
-                            background: isInitingSchema
-                              ? '#334155'
-                              : 'linear-gradient(135deg, #f59e0b, #d97706)'
-                          }}
-                        >
-                          {isInitingSchema ? '⏳ Inicializando tablas...' : '🛠 Inicializar Base de Datos Supabase'}
-                        </button>
+                        <div className="space-y-2 border border-amber-500/20 bg-amber-500/5 p-3 rounded-xl">
+                          <label className="block text-[10px] font-bold uppercase tracking-wider text-amber-400">
+                            Connection String (URI) de Supabase
+                          </label>
+                          <input
+                            type="text"
+                            placeholder="postgresql://postgres:[PASSWORD]@db.xxxx.supabase.co:5432/postgres"
+                            value={setupDbConnectionString}
+                            onChange={(e) => setSetupDbConnectionString(e.target.value)}
+                            className="w-full bg-[#0d0e12] border border-[#20222b] rounded-xl py-2 px-3 text-xs text-white outline-none focus:border-amber-500 font-mono"
+                          />
+                          <p className="text-[9px] text-slate-400 leading-normal">
+                            Lo encuentras en Supabase, seccion Settings, luego Database, Connection string, y finalmente URI. Debe incluir tu contrasena.
+                          </p>
+                          <button
+                            type="button"
+                            disabled={isInitingSchema || !setupDbConnectionString.trim()}
+                            onClick={handleInitSchema}
+                            className="w-full text-white font-bold py-2 rounded-xl text-xs cursor-pointer border-0 shadow-md transition-colors"
+                            style={{
+                              background: isInitingSchema
+                                ? '#334155'
+                                : 'linear-gradient(135deg, #f59e0b, #d97706)'
+                            }}
+                          >
+                            {isInitingSchema ? '⏳ Inicializando tablas...' : '🛠 Inicializar Base de Datos'}
+                          </button>
+                        </div>
                       )}
 
                       {initProgress.length > 0 && (
@@ -5319,19 +5331,34 @@ ${articulosTexto}
                     </button>
 
                     {schemaNeeded && (
-                      <button
-                        type="button"
-                        disabled={isInitingSchema}
-                        onClick={handleInitSchema}
-                        className="w-full text-white font-bold py-2.5 rounded-xl text-xs cursor-pointer border-0 shadow-md transition-colors"
-                        style={{
-                          background: isInitingSchema
-                            ? '#334155'
-                            : 'linear-gradient(135deg, #f59e0b, #d97706)'
-                        }}
-                      >
-                        {isInitingSchema ? '⏳ Inicializando tablas...' : '🛠 Inicializar Base de Datos Supabase'}
-                      </button>
+                      <div className="space-y-2 border border-amber-500/20 bg-amber-500/5 p-3 rounded-xl">
+                        <label className="block text-[10px] font-bold uppercase tracking-wider text-amber-400">
+                          Connection String (URI) de Supabase
+                        </label>
+                        <input
+                          type="text"
+                          placeholder="postgresql://postgres:[PASSWORD]@db.xxxx.supabase.co:5432/postgres"
+                          value={setupDbConnectionString}
+                          onChange={(e) => setSetupDbConnectionString(e.target.value)}
+                          className="w-full bg-[#0d0e12] border border-[#20222b] rounded-xl py-2 px-3 text-xs text-white outline-none focus:border-amber-500 font-mono"
+                        />
+                        <p className="text-[9px] text-slate-400 leading-normal">
+                          Lo encuentras en Supabase, seccion Settings, luego Database, Connection string, y finalmente URI. Debe incluir tu contrasena.
+                        </p>
+                        <button
+                          type="button"
+                          disabled={isInitingSchema || !setupDbConnectionString.trim()}
+                          onClick={handleInitSchema}
+                          className="w-full text-white font-bold py-2 rounded-xl text-xs cursor-pointer border-0 shadow-md transition-colors"
+                          style={{
+                            background: isInitingSchema
+                              ? '#334155'
+                              : 'linear-gradient(135deg, #f59e0b, #d97706)'
+                          }}
+                        >
+                          {isInitingSchema ? '⏳ Inicializando tablas...' : '🛠 Inicializar Base de Datos'}
+                        </button>
+                      </div>
                     )}
 
                     {initProgress.length > 0 && (
