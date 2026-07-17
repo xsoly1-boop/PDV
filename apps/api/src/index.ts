@@ -2096,7 +2096,7 @@ app.post('/api/v1/ventas/migrar', async (req, res) => {
 
     // Map clients
     const dbClients = await prisma.cliente.findMany({ select: { id: true, nombre: true } });
-    const clientMap = new Map(dbClients.map(c => [c.nombre.toLowerCase().trim(), c.id]));
+    const clientMap = new Map<string, string>(dbClients.map(c => [c.nombre.toLowerCase().trim(), c.id]));
 
     // Map products to make sure they exist
     const dbProducts = await prisma.producto.findMany({ select: { sku: true } });
