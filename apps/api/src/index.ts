@@ -1005,6 +1005,28 @@ Si te preguntan por datos financieros o existencias, básate estrictamente en el
 Si te piden hacer una tarea operativa o configurar algo que no esté en el contexto, explícales que eres un asistente de análisis de datos y recomiéndales los pasos adecuados.`;
 
     const modelToUse = modelo || config?.modeloIA || 'gemma2:2b';
+    const limitRam = config?.limiteRamIA || 4;
+    let options: any = {};
+    if (limitRam <= 2) {
+      options = {
+        num_ctx: 1024,
+        num_predict: 256,
+        num_thread: 2
+      };
+    } else if (limitRam <= 4) {
+      options = {
+        num_ctx: 2048,
+        num_predict: 512,
+        num_thread: 4
+      };
+    } else {
+      options = {
+        num_ctx: 4096,
+        num_predict: 1024,
+        num_thread: 6
+      };
+    }
+
     const ollamaResp = await fetch('http://localhost:11434/api/generate', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -1012,7 +1034,8 @@ Si te piden hacer una tarea operativa o configurar algo que no esté en el conte
         model: modelToUse,
         prompt: mensaje,
         system: systemPrompt,
-        stream: false
+        stream: false,
+        options
       })
     });
 
@@ -2413,7 +2436,8 @@ app.post('/api/v1/configuracion-empresa', async (req, res) => {
           rfc: rfc2,
           formatoTicket: data.formatoTicket,
           habilitarIA: req.body.habilitarIA === true,
-          modeloIA: req.body.modeloIA || 'gemma2:2b'
+          modeloIA: req.body.modeloIA || 'gemma2:2b',
+          limiteRamIA: Number(req.body.limiteRamIA) || 4
         }
       });
       res.json(updated);
@@ -2428,7 +2452,8 @@ app.post('/api/v1/configuracion-empresa', async (req, res) => {
           rfc: rfc2,
           formatoTicket: data.formatoTicket,
           habilitarIA: req.body.habilitarIA === true,
-          modeloIA: req.body.modeloIA || 'gemma2:2b'
+          modeloIA: req.body.modeloIA || 'gemma2:2b',
+          limiteRamIA: Number(req.body.limiteRamIA) || 4
         }
       });
       res.json(created);

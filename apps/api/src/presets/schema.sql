@@ -9,6 +9,7 @@ CREATE TABLE "ConfiguracionEmpresa" (
     "formatoTicket" TEXT,
     "habilitarIA" BOOLEAN NOT NULL DEFAULT 0,
     "modeloIA" TEXT NOT NULL DEFAULT 'gemma2:2b',
+    "limiteRamIA" INTEGER NOT NULL DEFAULT 4,
     "creadoAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "actualizadoAt" DATETIME NOT NULL
 );

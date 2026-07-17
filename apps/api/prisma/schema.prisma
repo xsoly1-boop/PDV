@@ -19,6 +19,7 @@ model ConfiguracionEmpresa {
   formatoTicket String?    // Configuración visual del ticket (secciones, fuentes, logos)
   habilitarIA   Boolean  @default(false)
   modeloIA      String   @default("gemma2:2b")
+  limiteRamIA   Int      @default(4)
   creadoAt      DateTime @default(now())
   actualizadoAt DateTime @updatedAt
 }
