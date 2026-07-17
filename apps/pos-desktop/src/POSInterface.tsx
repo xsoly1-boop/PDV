@@ -2715,7 +2715,7 @@ ${articulosTexto}
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-sky-400 opacity-75"></span>
               <span className="relative inline-flex rounded-full h-2 w-2 bg-sky-500"></span>
             </span>
-            <span>DB: {config?.enableCloudBackups ? 'NUBE (Supabase)' : 'LOCAL (SQLite)'}</span>
+            <span>{config?.enableCloudBackups ? 'NUBE' : 'LOCAL'}</span>
           </div>
 
           {/* Badge de Red (Movido del Footer) */}
