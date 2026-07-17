@@ -279,33 +279,47 @@ export default function POSInterface() {
     return saved ? JSON.parse(saved) : [];
   });
 
-  // Sincronizar catálogo local
+  // Sincronizar catálogo local con reintentos
   const sincronizarCatalogoLocal = async () => {
     if (!navigator.onLine) return;
-    try {
-      console.log('[Offline] Iniciando sincronización del catálogo local...');
-      const response = await fetch(`${API_V1}/productos`);
-      if (response.ok) {
-        const data = await response.json();
-        const mapped = data.map((p: any) => ({
-          id: String(p.id),
-          sku: String(p.sku),
-          codigoBarras: p.codigos?.[0]?.codigo || '',
-          nombre: String(p.nombre),
-          categoria: p.categoria?.nombre || 'General',
-          precio: Number(p.precio) || 0,
-          costo: Number(p.costo) || 0,
-          stock: p.balances ? p.balances.reduce((sum: number, b: any) => sum + Number(b.stockReal), 0) : 0,
-          unidad: p.metadatos?.unidad || 'pieza',
-          descripcion: p.descripcion || ''
-        }));
-        await offlineStore.guardarCatalogo(mapped);
-        setProducts(mapped);
-        localStorage.setItem('pos_products', JSON.stringify(mapped));
-        console.log('[Offline] Catálogo local sincronizado correctamente. Total:', mapped.length);
+    
+    let success = false;
+    let retries = 0;
+    const maxRetries = 10;
+    
+    while (!success && retries < maxRetries) {
+      try {
+        console.log(`[Offline] Intentando sincronizar catálogo local (intento ${retries + 1})...`);
+        const response = await fetch(`${API_V1}/productos`);
+        if (response.ok) {
+          const data = await response.json();
+          const mapped = data.map((p: any) => ({
+            id: String(p.id),
+            sku: String(p.sku),
+            codigoBarras: p.codigos?.[0]?.codigo || '',
+            nombre: String(p.nombre),
+            categoria: p.categoria?.nombre || 'General',
+            precio: Number(p.precio) || 0,
+            costo: Number(p.costo) || 0,
+            stock: p.balances ? p.balances.reduce((sum: number, b: any) => sum + Number(b.stockReal), 0) : 0,
+            unidad: p.metadatos?.unidad || 'pieza',
+            descripcion: p.descripcion || ''
+          }));
+          await offlineStore.guardarCatalogo(mapped);
+          setProducts(mapped);
+          localStorage.setItem('pos_products', JSON.stringify(mapped));
+          console.log('[Offline] Catálogo local sincronizado correctamente. Total:', mapped.length);
+          success = true;
+        } else {
+          throw new Error(`Server returned status ${response.status}`);
+        }
+      } catch (err) {
+        console.warn(`[Offline] Intento ${retries + 1} fallido al sincronizar catálogo:`, err);
+        retries++;
+        if (retries < maxRetries) {
+          await new Promise(resolve => setTimeout(resolve, 2000));
+        }
       }
-    } catch (err) {
-      console.warn('[Offline] Error al sincronizar el catálogo local:', err);
     }
   };
 
