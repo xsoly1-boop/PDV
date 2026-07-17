@@ -1658,7 +1658,9 @@ export default function POSInterface() {
       const isHybrid = localStorage.getItem('vante_deployment_mode') === 'HYBRID';
       alert(`Sincronización exitosa: ${res.processed} movimientos cargados ${isHybrid ? 'en la nube' : 'en el servidor local'}.`);
     } else {
-      alert(`Fallo en sincronización: ${res.error}`);
+      const queue = LocalDb.getQueue().filter(i => !i.sincronizado);
+      const sample = queue.length > 0 ? JSON.stringify(queue[0]) : 'Cola vacía';
+      alert(`Fallo en sincronización: ${res.error}\n\nDetalle primer elemento: ${sample}`);
     }
     setPendingCount(LocalDb.getUnsynced().length);
   };
