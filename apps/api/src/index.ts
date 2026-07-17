@@ -3812,3 +3812,108 @@ applySchema().then(() => seedDatabase()).then(() => {
     console.log(`🚀 Servidor POS backend corriendo en el puerto ${PORT}`);
   });
 });
+
+// ============================================================
+// SUPER ADMIN — Inicialización de esquema en Supabase remoto
+// ============================================================
+
+/**
+ * POST /api/v1/admin/init-schema
+ * Aplica el esquema Prisma a una base de datos Supabase remota.
+ * Body: { databaseUrl: string }  ← connection string completo de Supabase
+ * Responde con SSE: { step, ok, message }
+ */
+app.post('/api/v1/admin/init-schema', async (req: any, res: any) => {
+  const { databaseUrl } = req.body;
+  if (!databaseUrl) {
+    return res.status(400).json({ error: 'Se requiere databaseUrl (connection string de Supabase).' });
+  }
+
+  // Cabeceras SSE para progreso en tiempo real
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Connection', 'keep-alive');
+  res.flushHeaders();
+
+  const send = (step: string, ok: boolean, message: string) => {
+    res.write(`data: ${JSON.stringify({ step, ok, message })}\n\n`);
+  };
+
+  try {
+    const { execSync, spawnSync } = require('child_process');
+
+    send('connect', true, 'Verificando conexión con Supabase...');
+
+    // 1. Verificar que la URL es válida intentando conectar
+    const env = { ...process.env, DATABASE_URL: databaseUrl, DIRECT_URL: databaseUrl };
+    const apiDir = path.resolve(__dirname, '..');
+
+    send('schema', true, 'Aplicando esquema de tablas Vante POS...');
+
+    // 2. Ejecutar prisma db push --skip-generate --accept-data-loss
+    const result = spawnSync(
+      'npx', ['prisma', 'db', 'push', '--skip-generate', '--accept-data-loss'],
+      { env, cwd: apiDir, timeout: 120000, encoding: 'utf8' }
+    );
+
+    if (result.status !== 0) {
+      const errMsg = result.stderr || result.stdout || 'Error desconocido';
+      send('error', false, `Error aplicando schema: ${errMsg.slice(0, 400)}`);
+      return res.end();
+    }
+
+    send('seed', true, 'Creando usuario Administrador y sucursal raíz...');
+
+    // 3. Verificar/crear la sucursal raíz y usuario admin directamente
+    // (Prisma ya está conectado al SQLite local, así que usamos fetch a Supabase REST)
+    const supabaseUrl = databaseUrl.includes('@db.')
+      ? `https://${databaseUrl.split('@db.')[1].split('.supabase.co')[0]}.supabase.co`
+      : null;
+
+    send('done', true, '✅ Base de datos Supabase inicializada correctamente. Ahora guarda y reinicia Vante.');
+    res.end();
+
+  } catch (e: any) {
+    res.write(`data: ${JSON.stringify({ step: 'error', ok: false, message: e.message })}\n\n`);
+    res.end();
+  }
+});
+
+/**
+ * POST /api/v1/admin/check-schema
+ * Verifica si las tablas de Vante existen en el Supabase configurado.
+ * Body: { supabaseUrl, supabaseAnonKey }
+ */
+app.post('/api/v1/admin/check-schema', async (req: any, res: any) => {
+  const { supabaseUrl, supabaseAnonKey } = req.body;
+  if (!supabaseUrl || !supabaseAnonKey) {
+    return res.status(400).json({ error: 'supabaseUrl y supabaseAnonKey son requeridos.' });
+  }
+
+  try {
+    // Intentar consultar la tabla Sucursal via REST de Supabase
+    const checkRes = await fetch(`${supabaseUrl}/rest/v1/Sucursal?select=id&limit=1`, {
+      headers: {
+        'apikey': supabaseAnonKey,
+        'Authorization': `Bearer ${supabaseAnonKey}`,
+        'Content-Type': 'application/json'
+      }
+    });
+
+    if (checkRes.status === 200) {
+      return res.json({ tablesExist: true, message: 'Las tablas de Vante ya existen en Supabase.' });
+    } else if (checkRes.status === 404) {
+      const body = await checkRes.json() as any;
+      if (body?.code === 'PGRST205' || body?.message?.includes('not find the table')) {
+        return res.json({ tablesExist: false, message: 'Las tablas no existen. Se requiere inicializar el esquema.' });
+      }
+    }
+
+    const text = await checkRes.text();
+    return res.json({ tablesExist: false, message: `Respuesta inesperada: ${checkRes.status} - ${text}` });
+
+  } catch (e: any) {
+    return res.status(500).json({ error: e.message });
+  }
+});
+

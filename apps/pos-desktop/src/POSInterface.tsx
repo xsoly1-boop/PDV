@@ -494,6 +494,9 @@ export default function POSInterface() {
   const [showNewSucursalInput, setShowNewSucursalInput] = useState(false);
   const [newSucursalName, setNewSucursalName] = useState('');
   const [newSucursalId, setNewSucursalId] = useState('');
+  const [schemaNeeded, setSchemaNeeded] = useState(false);
+  const [initProgress, setInitProgress] = useState<string[]>([]);
+  const [isInitingSchema, setIsInitingSchema] = useState(false);
 
   const handleActivateLicense = async (email: string, key: string) => {
     setLicenseError('');
@@ -542,6 +545,8 @@ export default function POSInterface() {
 
   const handleTestSetupConnection = async () => {
     setSetupError('');
+    setSchemaNeeded(false);
+    setInitProgress([]);
     setIsValidatingSetup(true);
     try {
       const url = `${setupSupabaseUrl.trim().replace(/\/$/, '')}/rest/v1/Sucursal?select=id,nombre`;
@@ -553,9 +558,22 @@ export default function POSInterface() {
       });
       if (!resp.ok) {
         const errText = await resp.text();
-        throw new Error(`Respuesta de error: ${resp.status} - ${errText}`);
+        let parsedErr: any = {};
+        try {
+          parsedErr = JSON.parse(errText);
+        } catch (e) {}
+        
+        // Detectar si la tabla no existe (PGRST205)
+        if (parsedErr?.code === 'PGRST205' || errText.includes('Could not find the table') || errText.includes('public.Sucursal')) {
+          setSchemaNeeded(true);
+          setSetupError('Las tablas de Vante no existen en este proyecto de Supabase. Usa el boton "Inicializar Base de Datos" para crearlas.');
+        } else {
+          throw new Error(`Respuesta de error: ${resp.status} - ${errText}`);
+        }
+        return;
       }
       const data = await resp.json();
+      setSchemaNeeded(false);
       if (data && data.length > 0) {
         setSetupSucursales(data);
         setSetupSucursalId(data[0].id);
@@ -570,6 +588,72 @@ export default function POSInterface() {
       setIsValidatingSetup(false);
     }
   };
+
+  const handleInitSchema = async () => {
+    if (!setupSupabaseUrl.trim() || !setupSupabaseAnonKey.trim()) {
+      setSetupError('Debes ingresar la URL y la Anon Key de Supabase primero.');
+      return;
+    }
+
+    const dbUrl = prompt(
+      'Para inicializar la base de datos, ingresa el Connection String (URI) de tu base de datos Supabase.\n\n' +
+      'Lo encuentras en: Supabase -> Settings -> Database -> Connection string -> URI\n\n' +
+      'Debe incluir la contrasena que elegiste al crear el proyecto.\n\n' +
+      'Ejemplo:\npostgresql://postgres:[TU_PASSWORD]@db.lijgrwqumptfgdofgoiw.supabase.co:5432/postgres\n\n' +
+      'Pega el Connection String completo aqui:'
+    );
+
+    if (!dbUrl || !dbUrl.trim()) return;
+
+    setIsInitingSchema(true);
+    setInitProgress(['Iniciando proceso de conexion...']);
+    setSetupError('');
+
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/v1/admin/init-schema`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ databaseUrl: dbUrl.trim() })
+      });
+
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.error || 'Error al conectar con la API de migracion.');
+      }
+
+      const reader = res.body?.getReader();
+      const decoder = new TextDecoder();
+      if (!reader) throw new Error('No se pudo obtener el stream del progreso.');
+
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        const chunk = decoder.decode(value);
+        const lines = chunk.split('\n').filter(l => l.startsWith('data:'));
+        for (const line of lines) {
+          try {
+            const evt = JSON.parse(line.replace('data: ', ''));
+            const statusIcon = evt.ok ? '✓' : '✗';
+            setInitProgress(prev => [...prev, `${statusIcon} ${evt.message}`]);
+            if (evt.step === 'done') {
+              setSchemaNeeded(false);
+              alert('Base de datos inicializada con éxito.');
+              // Volver a probar conexión para cargar sucursales
+              setTimeout(() => handleTestSetupConnection(), 500);
+            }
+            if (evt.step === 'error') {
+              setSetupError(evt.message);
+            }
+          } catch (e) {}
+        }
+      }
+    } catch (e: any) {
+      setSetupError(`Error de inicializacion: ${e.message}`);
+    } finally {
+      setIsInitingSchema(false);
+    }
+  };
+
 
   const handleSaveSetup = async () => {
     setSetupError('');
@@ -2402,7 +2486,7 @@ ${articulosTexto}
                       />
                     </div>
 
-                    <div className="pt-2">
+                    <div className="pt-2 space-y-2">
                       <button
                         type="button"
                         disabled={isValidatingSetup}
@@ -2411,6 +2495,30 @@ ${articulosTexto}
                       >
                         {isValidatingSetup ? 'Validando conexión...' : '⚡ Probar Conexión Supabase'}
                       </button>
+
+                      {schemaNeeded && (
+                        <button
+                          type="button"
+                          disabled={isInitingSchema}
+                          onClick={handleInitSchema}
+                          className="w-full text-white font-bold py-2.5 rounded-xl text-xs cursor-pointer border-0 shadow-md transition-colors"
+                          style={{
+                            background: isInitingSchema
+                              ? '#334155'
+                              : 'linear-gradient(135deg, #f59e0b, #d97706)'
+                          }}
+                        >
+                          {isInitingSchema ? '⏳ Inicializando tablas...' : '🛠 Inicializar Base de Datos Supabase'}
+                        </button>
+                      )}
+
+                      {initProgress.length > 0 && (
+                        <div className="bg-[#0d0e12] border border-[#20222b] rounded-xl p-3 text-[10px] font-mono text-slate-300 space-y-1 max-h-32 overflow-y-auto mt-2">
+                          {initProgress.map((line, i) => (
+                            <div key={i}>{line}</div>
+                          ))}
+                        </div>
+                      )}
                     </div>
 
                     {setupSucursales.length > 0 && (
