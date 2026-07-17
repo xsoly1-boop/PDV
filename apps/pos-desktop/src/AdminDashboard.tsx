@@ -120,6 +120,8 @@ export default function AdminDashboard({
   const [config, setConfig] = useState<CompanyConfig>(initialConfig);
   const [showTestTicketModal, setShowTestTicketModal] = useState(false);
   const [testTicketContent, setTestTicketContent] = useState('');
+  const [sucursalNombre, setSucursalNombre] = useState(() => localStorage.getItem('vante_sucursal_nombre') || 'Suc. Norte');
+  const [cajaNombre, setCajaNombre] = useState(() => localStorage.getItem('vante_caja_nombre') || 'Caja 01');
 
   // AI Setup Wizard state
   const [showAIWizard, setShowAIWizard] = useState(false);
@@ -383,6 +385,8 @@ export default function AdminDashboard({
   // Save Config
   const handleSaveConfig = (e: React.FormEvent) => {
     e.preventDefault();
+    localStorage.setItem('vante_sucursal_nombre', sucursalNombre.trim());
+    localStorage.setItem('vante_caja_nombre', cajaNombre.trim());
     onConfigChange(config);
     alert('Configuración de la empresa guardada con éxito.');
   };
@@ -1945,6 +1949,34 @@ export default function AdminDashboard({
                         }`}
                         value={config.phone || ''}
                         onChange={e => setConfig({ ...config, phone: e.target.value })}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <div>
+                      <label className="block text-xs font-bold uppercase text-slate-500 mb-2">Nombre de Sucursal (En Pantalla)</label>
+                      <input
+                        type="text"
+                        placeholder="Ej: Suc. Norte"
+                        className={`w-full rounded-xl p-3 border focus:outline-none focus:ring-2 focus:ring-amber-500 ${
+                          theme === 'dark' ? 'bg-[#1a1c24] border-[#262836] text-white' : 'bg-slate-50 border-slate-200'
+                        }`}
+                        value={sucursalNombre}
+                        onChange={e => setSucursalNombre(e.target.value)}
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold uppercase text-slate-550 mb-2">Nombre de Caja (En Pantalla)</label>
+                      <input
+                        type="text"
+                        placeholder="Ej: Caja 01"
+                        className={`w-full rounded-xl p-3 border focus:outline-none focus:ring-2 focus:ring-amber-500 ${
+                          theme === 'dark' ? 'bg-[#1a1c24] border-[#262836] text-white' : 'bg-slate-50 border-slate-200'
+                        }`}
+                        value={cajaNombre}
+                        onChange={e => setCajaNombre(e.target.value)}
                       />
                     </div>
                   </div>

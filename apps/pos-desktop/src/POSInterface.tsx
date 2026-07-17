@@ -2857,7 +2857,9 @@ ${articulosTexto}
           )}
           <div>
             <h1 className={`font-bold text-sm tracking-wide uppercase ${theme === 'dark' ? 'text-slate-100' : 'text-slate-900'}`}>{config.businessName}</h1>
-            <p className="text-xs text-amber-500/80 font-medium">Suc. Norte - Caja 01</p>
+            <p className="text-xs text-amber-500/80 font-medium">
+              {localStorage.getItem('vante_sucursal_nombre') || 'Suc. Norte'} - {localStorage.getItem('vante_caja_nombre') || 'Caja 01'}
+            </p>
           </div>
         </div>
 
