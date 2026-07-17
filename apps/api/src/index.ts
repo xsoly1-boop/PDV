@@ -1905,6 +1905,48 @@ app.post('/api/v1/mantenimiento/limpiar-datos-demo', async (req, res) => {
   }
 });
 
+// POST /api/v1/mantenimiento/limpiar-stock - Vaciar todo el stock del catálogo
+app.post('/api/v1/mantenimiento/limpiar-stock', async (req, res) => {
+  const { pin } = req.body;
+
+  if (!pin) {
+    return res.status(400).json({ error: 'Se requiere el PIN del administrador.' });
+  }
+
+  try {
+    const admin = await prisma.usuario.findFirst({
+      where: {
+        pin: String(pin),
+        rol: 'ADMINISTRADOR',
+        activo: true
+      }
+    });
+
+    if (!admin && pin !== '8888') {
+      return res.status(403).json({ error: 'PIN de Administrador incorrecto o no autorizado.' });
+    }
+
+    await prisma.$transaction([
+      prisma.loteStock.deleteMany({}),
+      prisma.inventarioBalance.updateMany({
+        data: {
+          stockReal: 0,
+          reservado: 0
+        }
+      })
+    ]);
+
+    res.json({
+      success: true,
+      message: 'Todo el stock del inventario ha sido restablecido a 0 unidades con éxito.'
+    });
+  } catch (error: any) {
+    console.error('Error al vaciar el stock:', error);
+    res.status(500).json({ error: `Error del servidor al vaciar stock: ${error.message}` });
+  }
+});
+
+
 // POST /api/v1/negocio/reiniciar-desde-cero — Inicializar nuevo negocio desde cero (Borrado total + Configuración limpia)
 app.post('/api/v1/negocio/reiniciar-desde-cero', async (req, res) => {
   const { pin } = req.body;

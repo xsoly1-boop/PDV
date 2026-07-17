@@ -925,6 +925,44 @@ export default function AdminDashboard({
     }
   };
 
+  const handleClearAllStock = async () => {
+    const confirmPrompt = window.confirm(
+      '⚠️ ADVERTENCIA CRÍTICA\n\n' +
+      'Estás a punto de vaciar TODO el stock de todos los artículos (restablecer a 0 unidades).\n' +
+      'Esta acción no se puede deshacer.\n\n' +
+      '¿Deseas continuar?'
+    );
+    if (!confirmPrompt) return;
+
+    const pinAdmin = window.prompt(
+      '🔑 AUTENTICACIÓN REQUERIDA\n\n' +
+      'Ingresa el PIN del Administrador para autorizar la limpieza de stock:'
+    );
+    if (!pinAdmin) {
+      alert('Operación cancelada. No se ingresó PIN.');
+      return;
+    }
+
+    try {
+      const response = await fetch(`${API_V1}/mantenimiento/limpiar-stock`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ pin: pinAdmin })
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Error al vaciar stock.');
+      }
+
+      alert('✅ Limpieza de stock exitosa.\nTodo el stock del catálogo se ha restablecido a 0.');
+      fetchProducts();
+    } catch (err: any) {
+      alert('Error: ' + err.message);
+    }
+  };
+
   // Fetch current employees (usuarios) from API
   const fetchEmployees = async () => {
     try {
@@ -1512,6 +1550,13 @@ export default function AdminDashboard({
               <div className="flex justify-between items-center">
                 <h2 className="text-lg font-bold uppercase tracking-wider">Catálogo de Artículos</h2>
                 <div className="flex gap-3">
+                  <button 
+                    onClick={handleClearAllStock}
+                    className="bg-rose-500 hover:bg-rose-600 text-white font-bold px-4 py-2.5 rounded-xl shadow-md flex items-center gap-2 border-0 cursor-pointer transition-all active:scale-95"
+                    title="Restablecer el stock de todos los productos a 0 unidades"
+                  >
+                    <Trash2 className="w-5 h-5" /> Vaciar Stock
+                  </button>
                   <button 
                     onClick={() => exportKardexCSV()}
                     className={`font-bold px-4 py-2.5 rounded-xl border flex items-center gap-2 cursor-pointer transition-all active:scale-95 ${
