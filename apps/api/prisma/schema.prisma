@@ -385,3 +385,12 @@ model LoteStock {
 
   @@unique([sucursalId, productoId, lote])
 }
+
+model SyncLog {
+  id         String   @id @default(uuid())
+  tabla      String   // 'Producto', 'Cliente', 'Proveedor', 'Categoria', 'Venta', 'KardexMovimiento', 'InventarioBalance'
+  registroId String   // ID del registro afectado
+  accion     String   // 'INSERT', 'UPDATE', 'DELETE'
+  creadoAt   DateTime @default(now())
+}
+

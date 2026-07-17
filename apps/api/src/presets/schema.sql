@@ -323,3 +323,10 @@ CREATE INDEX "BitacoraAuditoria_usuarioId_idx" ON "BitacoraAuditoria"("usuarioId
 
 CREATE UNIQUE INDEX "LoteStock_sucursalId_productoId_lote_key" ON "LoteStock"("sucursalId", "productoId", "lote");
 
+CREATE TABLE "SyncLog" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "tabla" TEXT NOT NULL,
+    "registroId" TEXT NOT NULL,
+    "accion" TEXT NOT NULL,
+    "creadoAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+);

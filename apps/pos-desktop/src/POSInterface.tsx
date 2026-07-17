@@ -1848,15 +1848,37 @@ ${articulosTexto}
   };
 
   useEffect(() => {
-    // Sincronizar automáticamente al recuperar conexión
-    if (isOnline) {
-      SyncService.syncPendingMovimientos().then(res => {
-        if (res.success && res.processed > 0) {
-          console.log(`[Sync] Sincronizados ${res.processed} movimientos.`);
+    // Sincronizador de fondo periódico (ejecuta cada 30 segundos si hay conexión)
+    let intervalId: any;
+
+    const runBackgroundSync = async () => {
+      if (!isOnline) return;
+      try {
+        // 1. Sincronizar movimientos locales de la terminal a la Caja Principal
+        const resMovs = await SyncService.syncPendingMovimientos();
+        if (resMovs.success && resMovs.processed > 0) {
+          console.log(`[Sync] Sincronizados ${resMovs.processed} movimientos locales.`);
           setPendingCount(LocalDb.getUnsynced().length);
         }
-      });
+
+        // 2. Sincronizar base de datos SQLite de la Caja Principal a Supabase Cloud
+        const resCloud = await SyncService.syncSQLiteToSupabase();
+        if (resCloud.success && resCloud.syncedCount > 0) {
+          console.log(`[Sync-Cloud] Sincronizados ${resCloud.syncedCount} registros a Supabase.`);
+        }
+      } catch (err) {
+        console.error('[Sync-Worker] Error en sincronización de fondo:', err);
+      }
+    };
+
+    if (isOnline) {
+      runBackgroundSync();
+      intervalId = setInterval(runBackgroundSync, 30000);
     }
+
+    return () => {
+      if (intervalId) clearInterval(intervalId);
+    };
   }, [isOnline]);
 
   useEffect(() => {

@@ -37,6 +37,22 @@ app.use(cors());
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
+// Helper de Sincronización para registrar cambios (CDC)
+async function registrarEventoSync(tabla: string, registroId: string, accion: 'INSERT' | 'UPDATE' | 'DELETE') {
+  try {
+    await prisma.syncLog.create({
+      data: {
+        tabla,
+        registroId: String(registroId),
+        accion
+      }
+    });
+  } catch (err: any) {
+    console.error(`[SYNC-CDC] Error al registrar evento para ${tabla} (${registroId}):`, err.message);
+  }
+}
+
+
 const PORT = process.env.PORT || 3001;
 app.get('/health', (_, res) => res.json({ status: 'ok' }));
 
@@ -228,11 +244,14 @@ app.post('/api/v1/productos', async (req, res) => {
     if (stock && stock > 0) {
       const sucursal = await prisma.sucursal.findFirst();
       if (sucursal) {
-        await prisma.inventarioBalance.create({
+        const bal = await prisma.inventarioBalance.create({
           data: { productoId: producto.id, sucursalId: sucursal.id, stockReal: stock }
         });
+        await registrarEventoSync('InventarioBalance', bal.id, 'INSERT');
       }
     }
+
+    await registrarEventoSync('Producto', producto.id, 'INSERT');
 
     res.status(201).json(producto);
   } catch (error: any) {
@@ -308,7 +327,7 @@ app.put('/api/v1/productos/:id', async (req, res) => {
     if (stock !== undefined) {
       const sucursal = await prisma.sucursal.findFirst();
       if (sucursal) {
-        await prisma.inventarioBalance.upsert({
+        const bal = await prisma.inventarioBalance.upsert({
           where: {
             sucursalId_productoId: {
               sucursalId: sucursal.id,
@@ -324,8 +343,11 @@ app.put('/api/v1/productos/:id', async (req, res) => {
             stockReal: Number(stock) || 0
           }
         });
+        await registrarEventoSync('InventarioBalance', bal.id, 'UPDATE');
       }
     }
+
+    await registrarEventoSync('Producto', id, 'UPDATE');
 
     res.json(producto);
   } catch (error: any) {
@@ -340,6 +362,9 @@ app.delete('/api/v1/productos/:id', async (req, res) => {
     await prisma.codigoBarras.deleteMany({ where: { productoId: id } });
     await prisma.inventarioBalance.deleteMany({ where: { productoId: id } });
     await prisma.producto.delete({ where: { id } });
+    
+    await registrarEventoSync('Producto', id, 'DELETE');
+    
     res.json({ success: true });
   } catch (error: any) {
     res.status(500).json({ error: error.message });
@@ -789,6 +814,10 @@ app.post('/api/v1/sync/movimientos', async (req, res) => {
         return { nuevoMov, balance };
       });
 
+      // Registrar eventos de sincronización para replicación
+      await registrarEventoSync('KardexMovimiento', syncResult.nuevoMov.id, 'INSERT');
+      await registrarEventoSync('InventarioBalance', syncResult.balance.id, 'UPDATE');
+
       // 3. Kardex Negativo Alerta
       if (Number(syncResult.balance.stockReal) < 0) {
         console.warn(`[ALERTA INVENTARIO NEGATIVO] Sucursal ${mov.sucursalId}, Producto ${mov.productoId} llegó a ${syncResult.balance.stockReal} unidades.`);
@@ -806,6 +835,77 @@ app.post('/api/v1/sync/movimientos', async (req, res) => {
   } catch (error: any) {
     console.error('Error al procesar lote de sincronización:', error);
     res.status(500).json({ error: 'Fallo al procesar lote de movimientos' });
+  }
+});
+
+// GET /api/v1/sync/pendientes — Obtener cambios pendientes de sincronizar
+app.get('/api/v1/sync/pendientes', async (req, res) => {
+  try {
+    const logs = await prisma.syncLog.findMany({
+      orderBy: { creadoAt: 'asc' },
+      take: 100
+    });
+
+    const pendientes = [];
+    for (const log of logs) {
+      let datos: any = null;
+      try {
+        if (log.accion !== 'DELETE') {
+          if (log.tabla === 'Producto') {
+            datos = await prisma.producto.findUnique({
+              where: { id: log.registroId },
+              include: { codigos: true, balances: true }
+            });
+          } else if (log.tabla === 'Cliente') {
+            datos = await prisma.cliente.findUnique({ where: { id: log.registroId } });
+          } else if (log.tabla === 'Proveedor') {
+            datos = await prisma.proveedor.findUnique({ where: { id: log.registroId } });
+          } else if (log.tabla === 'Categoria') {
+            datos = await prisma.categoria.findUnique({ where: { id: log.registroId } });
+          } else if (log.tabla === 'Venta') {
+            datos = await prisma.venta.findUnique({
+              where: { id: log.registroId },
+              include: { detalles: true }
+            });
+          } else if (log.tabla === 'KardexMovimiento') {
+            datos = await prisma.kardexMovimiento.findUnique({ where: { id: log.registroId } });
+          } else if (log.tabla === 'InventarioBalance') {
+            datos = await prisma.inventarioBalance.findUnique({ where: { id: log.registroId } });
+          }
+        }
+      } catch (err) {
+        console.error(`[SYNC] Error fetching data for ${log.tabla} id ${log.registroId}:`, err);
+      }
+
+      pendientes.push({
+        id: log.id,
+        tabla: log.tabla,
+        registroId: log.registroId,
+        accion: log.accion,
+        creadoAt: log.creadoAt,
+        datos
+      });
+    }
+
+    res.json(pendientes);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// POST /api/v1/sync/completado — Confirmar sincronización exitosa y limpiar cola
+app.post('/api/v1/sync/completado', async (req, res) => {
+  const { ids } = req.body;
+  if (!ids || !Array.isArray(ids)) {
+    return res.status(400).json({ error: 'Falta el arreglo de ids' });
+  }
+  try {
+    await prisma.syncLog.deleteMany({
+      where: { id: { in: ids } }
+    });
+    res.json({ success: true });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
   }
 });
 
@@ -1257,6 +1357,7 @@ app.post('/api/v1/clientes', async (req, res) => {
         saldoDeudor: Number(saldoDeudor) || 0
       }
     });
+    await registrarEventoSync('Cliente', nuevo.id, 'INSERT');
     res.json(nuevo);
   } catch (error: any) {
     res.status(500).json({ error: error.message });
@@ -1278,6 +1379,7 @@ app.put('/api/v1/clientes/:id', async (req, res) => {
         saldoDeudor: saldoDeudor !== undefined ? Number(saldoDeudor) : undefined
       }
     });
+    await registrarEventoSync('Cliente', id, 'UPDATE');
     res.json(actualizado);
   } catch (error: any) {
     res.status(500).json({ error: error.message });
@@ -1291,6 +1393,7 @@ app.delete('/api/v1/clientes/:id', async (req, res) => {
     await prisma.cliente.delete({
       where: { id }
     });
+    await registrarEventoSync('Cliente', id, 'DELETE');
     res.json({ success: true });
   } catch (error: any) {
     res.status(500).json({ error: error.message });
@@ -1335,6 +1438,7 @@ app.post('/api/v1/categorias', async (req, res) => {
   const { nombre } = req.body;
   try {
     const nuevo = await prisma.categoria.create({ data: { nombre } });
+    await registrarEventoSync('Categoria', nuevo.id, 'INSERT');
     res.status(201).json(nuevo);
   } catch (error: any) {
     res.status(500).json({ error: error.message });
@@ -1348,6 +1452,7 @@ app.put('/api/v1/categorias/:id', async (req, res) => {
       where: { id: req.params.id },
       data: { nombre }
     });
+    await registrarEventoSync('Categoria', req.params.id, 'UPDATE');
     res.json(up);
   } catch (error: any) {
     res.status(500).json({ error: error.message });
@@ -1357,6 +1462,7 @@ app.put('/api/v1/categorias/:id', async (req, res) => {
 app.delete('/api/v1/categorias/:id', async (req, res) => {
   try {
     await prisma.categoria.delete({ where: { id: req.params.id } });
+    await registrarEventoSync('Categoria', req.params.id, 'DELETE');
     res.json({ success: true });
   } catch (error: any) {
     res.status(500).json({ error: error.message });
@@ -1379,6 +1485,7 @@ app.post('/api/v1/proveedores', async (req, res) => {
     const nuevo = await prisma.proveedor.create({
       data: { nombre, representante, telefonos, correos, paginaWeb, notas }
     });
+    await registrarEventoSync('Proveedor', nuevo.id, 'INSERT');
     res.status(201).json(nuevo);
   } catch (error: any) {
     res.status(500).json({ error: error.message });
@@ -1392,6 +1499,7 @@ app.put('/api/v1/proveedores/:id', async (req, res) => {
       where: { id: req.params.id },
       data: { nombre, representante, telefonos, correos, paginaWeb, notas }
     });
+    await registrarEventoSync('Proveedor', req.params.id, 'UPDATE');
     res.json(up);
   } catch (error: any) {
     res.status(500).json({ error: error.message });
@@ -1401,6 +1509,7 @@ app.put('/api/v1/proveedores/:id', async (req, res) => {
 app.delete('/api/v1/proveedores/:id', async (req, res) => {
   try {
     await prisma.proveedor.delete({ where: { id: req.params.id } });
+    await registrarEventoSync('Proveedor', req.params.id, 'DELETE');
     res.json({ success: true });
   } catch (error: any) {
     res.status(500).json({ error: error.message });
@@ -2459,6 +2568,8 @@ app.post('/api/v1/ventas', async (req, res) => {
       return newVenta;
     });
 
+    await registrarEventoSync('Venta', venta.id, 'INSERT');
+
     res.json({ success: true, ventaId: venta.id });
   } catch (error: any) {
     if (error.code === 'P2002' && (error.meta?.target?.includes('folio') || error.message?.includes('Unique constraint failed'))) {
@@ -2746,6 +2857,7 @@ app.post('/api/v1/clientes', async (req, res) => {
     const cliente = await prisma.cliente.create({
       data: { nombre, telefono, email, direccion, rfc, razonSocial, regimenFiscal, codigoPostal, direccionFiscal, limiteCredito: Number(limiteCredito || 0) }
     });
+    await registrarEventoSync('Cliente', cliente.id, 'INSERT');
     res.json(cliente);
   } catch (e: any) { res.status(500).json({ error: e.message }); }
 });
@@ -2758,6 +2870,7 @@ app.put('/api/v1/clientes/:id', async (req, res) => {
       where: { id: req.params.id },
       data: { nombre, telefono, email, direccion, rfc, razonSocial, regimenFiscal, codigoPostal, direccionFiscal, limiteCredito: limiteCredito !== undefined ? Number(limiteCredito) : undefined, activo }
     });
+    await registrarEventoSync('Cliente', req.params.id, 'UPDATE');
     res.json(cliente);
   } catch (e: any) { res.status(500).json({ error: e.message }); }
 });
@@ -2766,6 +2879,7 @@ app.put('/api/v1/clientes/:id', async (req, res) => {
 app.delete('/api/v1/clientes/:id', async (req, res) => {
   try {
     await prisma.cliente.update({ where: { id: req.params.id }, data: { activo: false } });
+    await registrarEventoSync('Cliente', req.params.id, 'DELETE');
     res.json({ success: true });
   } catch (e: any) { res.status(500).json({ error: e.message }); }
 });
