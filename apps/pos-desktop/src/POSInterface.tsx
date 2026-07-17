@@ -1016,16 +1016,26 @@ export default function POSInterface() {
           localStorage.setItem('pos_default_user_uuid', defaultUserUuid);
         }
 
+        const defaultProduct = products[0];
+        const defaultProductUuid = defaultProduct ? defaultProduct.id : null;
+
         let modified = false;
         const updatedQueue = queue.map((item: any) => {
-          // 1. Reparar productoId (SKU -> ID de base de datos)
+          // 1. Reparar productoId (SKU -> ID de base de datos, o ID huérfano -> ID por defecto)
           const matchingProduct = products.find((p: any) => 
+            p.id === item.productoId ||
             p.sku === item.productoId || 
             (item.productoId && typeof item.productoId === 'string' && item.productoId.startsWith(p.sku + '-'))
           );
           if (matchingProduct) {
-            console.log(`[Healer] Corrigiendo productoId para movimiento ${item.id}: ${item.productoId} -> ${matchingProduct.id}`);
-            item.productoId = matchingProduct.id;
+            if (matchingProduct.id !== item.productoId) {
+              console.log(`[Healer] Corrigiendo productoId para movimiento ${item.id}: ${item.productoId} -> ${matchingProduct.id}`);
+              item.productoId = matchingProduct.id;
+              modified = true;
+            }
+          } else if (defaultProductUuid) {
+            console.log(`[Healer] Corrigiendo productoId huérfano/borrado para movimiento ${item.id}: ${item.productoId} -> ${defaultProductUuid}`);
+            item.productoId = defaultProductUuid;
             modified = true;
           }
 
