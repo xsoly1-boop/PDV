@@ -1,5 +1,7 @@
 import fs from 'fs';
 import path from 'path';
+import { fork } from 'child_process';
+import os from 'os';
 
 // Intentar cargar .env de forma síncrona antes de instanciar PrismaClient
 try {
@@ -3883,7 +3885,6 @@ app.post('/api/v1/admin/init-schema', async (req: any, res: any) => {
 
     try {
       // 2. Ejecutar prisma db push usando child_process.fork (nativo y seguro en Electron)
-      const { fork } = require('child_process');
       const child = fork(
         prismaCliPath,
         ['db', 'push', '--skip-generate', '--accept-data-loss'],
@@ -3993,9 +3994,6 @@ app.post('/api/v1/admin/generate-env', async (req: any, res: any) => {
   }
 
   try {
-    const fs = require('fs');
-    const os = require('os');
-
     // Limpiar corchetes si vienen por accidente
     const cleanUrl = databaseUrl.replace('[', '').replace(']', '').trim();
 
