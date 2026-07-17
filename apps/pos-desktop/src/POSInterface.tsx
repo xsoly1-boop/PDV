@@ -3073,9 +3073,9 @@ ${articulosTexto}
                         return typeof xCat === 'string' &&
                           xCat.toLowerCase() === selectedVisualCategory.toLowerCase() &&
                           xImg &&
-                          x.metadatos?.enMenuRapido === true;
+                          (x.metadatos?.enMenuRapido === true || x.metadata?.enMenuRapido === true);
                       });
-                      if (hayFlagEnCategoria) return p.metadatos?.enMenuRapido === true;
+                      if (hayFlagEnCategoria) return p.metadatos?.enMenuRapido === true || p.metadata?.enMenuRapido === true;
                       return true; // sin flags configuradas → mostrar todos
                     })
                     .map((p: any) => {

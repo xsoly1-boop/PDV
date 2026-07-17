@@ -64,7 +64,8 @@ app.get('/api/v1/productos/buscar', async (req, res) => {
       } : {},
       include: {
         codigos: true,
-        balances: true
+        balances: true,
+        categoria: true
       },
       take: 20
     });
