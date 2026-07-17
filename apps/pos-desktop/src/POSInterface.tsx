@@ -646,6 +646,32 @@ export default function POSInterface() {
     }
   };
 
+  const handleGenerateEnv = async () => {
+    if (!setupDbConnectionString.trim()) {
+      setSetupError('Ingresa primero el Connection String (URI) de Supabase.');
+      return;
+    }
+
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/v1/admin/generate-env`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ databaseUrl: setupDbConnectionString.trim() })
+      });
+
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.error || 'Error al generar el archivo.');
+      }
+
+      await res.json();
+      alert(`¡Archivo .env generado con éxito en tu Escritorio!\n\nNombre: vante_render.env\n\nPuedes subir este archivo directamente a Render.`);
+    } catch (e: any) {
+      setSetupError(`Error al generar .env: ${e.message}`);
+    }
+  };
+
+
 
   const handleSaveSetup = async () => {
     setSetupError('');
@@ -2503,19 +2529,30 @@ ${articulosTexto}
                           <p className="text-[9px] text-slate-400 leading-normal">
                             Lo encuentras en Supabase, seccion Settings, luego Database, Connection string, y finalmente URI. Debe incluir tu contrasena.
                           </p>
-                          <button
-                            type="button"
-                            disabled={isInitingSchema || !setupDbConnectionString.trim()}
-                            onClick={handleInitSchema}
-                            className="w-full text-white font-bold py-2 rounded-xl text-xs cursor-pointer border-0 shadow-md transition-colors"
-                            style={{
-                              background: isInitingSchema
-                                ? '#334155'
-                                : 'linear-gradient(135deg, #f59e0b, #d97706)'
-                            }}
-                          >
-                            {isInitingSchema ? '⏳ Inicializando tablas...' : '🛠 Inicializar Base de Datos'}
-                          </button>
+                          <div className="flex gap-2">
+                            <button
+                              type="button"
+                              disabled={isInitingSchema || !setupDbConnectionString.trim()}
+                              onClick={handleInitSchema}
+                              className="flex-1 text-white font-bold py-2 rounded-xl text-xs cursor-pointer border-0 shadow-md transition-colors"
+                              style={{
+                                background: isInitingSchema
+                                  ? '#334155'
+                                  : 'linear-gradient(135deg, #f59e0b, #d97706)'
+                              }}
+                            >
+                              {isInitingSchema ? '⏳ Inicializando...' : '🛠 Inicializar BD'}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={handleGenerateEnv}
+                              disabled={!setupDbConnectionString.trim()}
+                              className="bg-slate-700 hover:bg-slate-600 disabled:bg-slate-800 text-slate-200 font-bold py-2 px-3 rounded-xl text-xs cursor-pointer border-0 shadow-md transition-colors"
+                              title="Generar archivo .env para subir a Render"
+                            >
+                              📄 .env Render
+                            </button>
+                          </div>
                         </div>
                       )}
 
@@ -5339,19 +5376,30 @@ ${articulosTexto}
                         <p className="text-[9px] text-slate-400 leading-normal">
                           Lo encuentras en Supabase, seccion Settings, luego Database, Connection string, y finalmente URI. Debe incluir tu contrasena.
                         </p>
-                        <button
-                          type="button"
-                          disabled={isInitingSchema || !setupDbConnectionString.trim()}
-                          onClick={handleInitSchema}
-                          className="w-full text-white font-bold py-2 rounded-xl text-xs cursor-pointer border-0 shadow-md transition-colors"
-                          style={{
-                            background: isInitingSchema
-                              ? '#334155'
-                              : 'linear-gradient(135deg, #f59e0b, #d97706)'
-                          }}
-                        >
-                          {isInitingSchema ? '⏳ Inicializando tablas...' : '🛠 Inicializar Base de Datos'}
-                        </button>
+                        <div className="flex gap-2">
+                          <button
+                            type="button"
+                            disabled={isInitingSchema || !setupDbConnectionString.trim()}
+                            onClick={handleInitSchema}
+                            className="flex-1 text-white font-bold py-2 rounded-xl text-xs cursor-pointer border-0 shadow-md transition-colors"
+                            style={{
+                              background: isInitingSchema
+                                ? '#334155'
+                                : 'linear-gradient(135deg, #f59e0b, #d97706)'
+                            }}
+                          >
+                            {isInitingSchema ? '⏳ Inicializando...' : '🛠 Inicializar BD'}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={handleGenerateEnv}
+                            disabled={!setupDbConnectionString.trim()}
+                            className="bg-slate-700 hover:bg-slate-600 disabled:bg-slate-800 text-slate-200 font-bold py-2 px-3 rounded-xl text-xs cursor-pointer border-0 shadow-md transition-colors"
+                            title="Generar archivo .env para subir a Render"
+                          >
+                            📄 .env Render
+                          </button>
+                        </div>
                       </div>
                     )}
 

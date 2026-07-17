@@ -3981,3 +3981,55 @@ app.post('/api/v1/admin/check-schema', async (req: any, res: any) => {
   }
 });
 
+/**
+ * POST /api/v1/admin/generate-env
+ * Genera un archivo vante_render.env en el Escritorio del usuario.
+ * Body: { databaseUrl: string }
+ */
+app.post('/api/v1/admin/generate-env', async (req: any, res: any) => {
+  const { databaseUrl } = req.body;
+  if (!databaseUrl) {
+    return res.status(400).json({ error: 'databaseUrl es requerido.' });
+  }
+
+  try {
+    const fs = require('fs');
+    const os = require('os');
+
+    // Limpiar corchetes si vienen por accidente
+    const cleanUrl = databaseUrl.replace('[', '').replace(']', '').trim();
+
+    // El URL de base de datos directa (port 5432)
+    // El URL transaction (port 6543)
+    let transactionUrl = cleanUrl;
+    let directUrl = cleanUrl;
+
+    if (cleanUrl.includes(':5432')) {
+      transactionUrl = cleanUrl.replace(':5432', ':6543');
+      if (!transactionUrl.includes('pgbouncer=true')) {
+        transactionUrl += transactionUrl.includes('?') ? '&pgbouncer=true' : '?pgbouncer=true';
+      }
+    } else if (cleanUrl.includes(':6543')) {
+      directUrl = cleanUrl.replace(':6543', ':5432').replace('?pgbouncer=true', '').replace('&pgbouncer=true', '');
+    }
+
+    const envContent = [
+      `# === ARCHIVO .ENV GENERADO PARA DEPLOY EN RENDER ===`,
+      `DATABASE_URL="${transactionUrl}"`,
+      `DIRECT_URL="${directUrl}"`,
+      `PORT=3001`,
+      `NODE_ENV="production"`,
+      `# Copia estas líneas y pégalas en tu dashboard de Render -> Environment Variables`,
+      `# O haz clic en "Import from .env" y sube este archivo vante_render.env`
+    ].join('\n');
+
+    const filePath = path.join(os.homedir(), 'Desktop', 'vante_render.env');
+    fs.writeFileSync(filePath, envContent, 'utf8');
+
+    return res.json({ success: true, path: filePath, content: envContent });
+  } catch (e: any) {
+    return res.status(500).json({ error: e.message });
+  }
+});
+
+
