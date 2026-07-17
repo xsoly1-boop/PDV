@@ -3857,9 +3857,10 @@ app.post('/api/v1/admin/init-schema', async (req: any, res: any) => {
 
     send('schema', true, 'Aplicando esquema de tablas Vante POS...');
 
-    // 2. Ejecutar prisma db push usando node directamente sobre la librería local
+    // 2. Ejecutar prisma db push usando el binario de node actual (resuelve ENOENT en empaquetado)
+    const nodeBinary = process.execPath;
     const result = spawnSync(
-      'node', [prismaCliPath, 'db', 'push', '--skip-generate', '--accept-data-loss'],
+      nodeBinary, [prismaCliPath, 'db', 'push', '--skip-generate', '--accept-data-loss'],
       { env, cwd: apiDir, timeout: 120000, encoding: 'utf8' }
     );
 
