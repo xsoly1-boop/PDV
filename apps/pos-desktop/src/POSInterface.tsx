@@ -5308,7 +5308,7 @@ ${articulosTexto}
                     />
                   </div>
 
-                  <div className="pt-2">
+                  <div className="pt-2 space-y-2">
                     <button
                       type="button"
                       disabled={isValidatingSetup}
@@ -5317,6 +5317,30 @@ ${articulosTexto}
                     >
                       {isValidatingSetup ? 'Validando conexión...' : '⚡ Probar Conexión Supabase'}
                     </button>
+
+                    {schemaNeeded && (
+                      <button
+                        type="button"
+                        disabled={isInitingSchema}
+                        onClick={handleInitSchema}
+                        className="w-full text-white font-bold py-2.5 rounded-xl text-xs cursor-pointer border-0 shadow-md transition-colors"
+                        style={{
+                          background: isInitingSchema
+                            ? '#334155'
+                            : 'linear-gradient(135deg, #f59e0b, #d97706)'
+                        }}
+                      >
+                        {isInitingSchema ? '⏳ Inicializando tablas...' : '🛠 Inicializar Base de Datos Supabase'}
+                      </button>
+                    )}
+
+                    {initProgress.length > 0 && (
+                      <div className="bg-[#0d0e12] border border-[#20222b] rounded-xl p-3 text-[10px] font-mono text-slate-300 space-y-1 max-h-32 overflow-y-auto mt-2">
+                        {initProgress.map((line, i) => (
+                          <div key={i}>{line}</div>
+                        ))}
+                      </div>
+                    )}
                   </div>
 
                   {setupSucursales.length > 0 && (
