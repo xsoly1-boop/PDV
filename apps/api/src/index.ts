@@ -302,6 +302,30 @@ app.put('/api/v1/productos/:id', async (req, res) => {
       },
       include: { codigos: true, balances: true }
     });
+
+    // Actualizar balance de inventario si se proporcionó stock
+    if (stock !== undefined) {
+      const sucursal = await prisma.sucursal.findFirst();
+      if (sucursal) {
+        await prisma.inventarioBalance.upsert({
+          where: {
+            sucursalId_productoId: {
+              sucursalId: sucursal.id,
+              productoId: id
+            }
+          },
+          update: {
+            stockReal: Number(stock) || 0
+          },
+          create: {
+            sucursalId: sucursal.id,
+            productoId: id,
+            stockReal: Number(stock) || 0
+          }
+        });
+      }
+    }
+
     res.json(producto);
   } catch (error: any) {
     res.status(500).json({ error: error.message });

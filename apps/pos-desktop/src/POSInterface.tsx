@@ -2704,11 +2704,23 @@ ${articulosTexto}
           )}
         </div>
 
-        <div className="flex items-center justify-end gap-4 w-fit">
+        <div className="flex items-center justify-end gap-3 w-fit">
           
+          {/* Indicador de Base de Datos Activa (Local SQLite vs Nube Supabase) */}
+          <div 
+            className="flex items-center gap-1.5 text-[11px] font-bold px-3 py-1 rounded-lg border text-sky-400 border-sky-500/25 bg-sky-500/10 cursor-default select-none transition-all shadow-sm"
+            title={config?.enableCloudBackups ? 'Operando con sincronización a Supabase Cloud' : 'Operando localmente en SQLite integrado'}
+          >
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-sky-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-sky-500"></span>
+            </span>
+            <span>DB: {config?.enableCloudBackups ? 'NUBE (Supabase)' : 'LOCAL (SQLite)'}</span>
+          </div>
+
           {/* Badge de Red (Movido del Footer) */}
            {/* Badge de Red y sincronizadores (Solo visibles si la nube está activada) */}
-          {config.enableCloudBackups === true && (
+          {config?.enableCloudBackups === true && (
             <>
               <div 
                 onClick={() => {
