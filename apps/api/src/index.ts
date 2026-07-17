@@ -3740,6 +3740,12 @@ app.post('/api/v1/presets/load', async (req: any, res: any) => {
 // ==========================================
 async function applySchema() {
   try {
+    const dbUrl = process.env.DATABASE_URL || '';
+    if (dbUrl.startsWith('postgres') || dbUrl.startsWith('postgresql') || dbUrl.includes('supabase.com') || dbUrl.includes('pooler')) {
+      console.log('[SCHEMA] Conectado a PostgreSQL/Supabase. Saltando verificación de esquema SQLite.');
+      return;
+    }
+
     console.log('[SCHEMA] Verificando compatibilidad del schema de base de datos...');
     
     // SQLite: verify if schema.sql needs to be loaded (first boot)
