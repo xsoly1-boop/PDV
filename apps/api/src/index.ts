@@ -249,7 +249,7 @@ app.post('/api/v1/productos', async (req, res) => {
         const bal = await prisma.inventarioBalance.create({
           data: { productoId: producto.id, sucursalId: sucursal.id, stockReal: stock }
         });
-        await registrarEventoSync('InventarioBalance', bal.id, 'INSERT');
+        await registrarEventoSync('InventarioBalance', `${bal.sucursalId}_${bal.productoId}`, 'INSERT');
       }
     }
 
@@ -345,7 +345,7 @@ app.put('/api/v1/productos/:id', async (req, res) => {
             stockReal: Number(stock) || 0
           }
         });
-        await registrarEventoSync('InventarioBalance', bal.id, 'UPDATE');
+        await registrarEventoSync('InventarioBalance', `${bal.sucursalId}_${bal.productoId}`, 'UPDATE');
       }
     }
 
@@ -779,6 +779,15 @@ app.post('/api/v1/sync/movimientos', async (req, res) => {
       const delta = mov.cantidad * factor;
 
       const syncResult = await prisma.$transaction(async (tx) => {
+        // Verificar si el movimiento ya existe para garantizar idempotencia
+        const existe = await tx.kardexMovimiento.findUnique({
+          where: { id: mov.id }
+        });
+
+        if (existe) {
+          return { nuevoMov: existe, balance: null, yaExistia: true };
+        }
+
         // 1. Guardar el movimiento en Kardex
         const nuevoMov = await tx.kardexMovimiento.create({
           data: {
@@ -813,20 +822,23 @@ app.post('/api/v1/sync/movimientos', async (req, res) => {
           }
         });
 
-        return { nuevoMov, balance };
+        return { nuevoMov, balance, yaExistia: false };
       });
 
-      // Registrar eventos de sincronización para replicación
-      await registrarEventoSync('KardexMovimiento', syncResult.nuevoMov.id, 'INSERT');
-      await registrarEventoSync('InventarioBalance', syncResult.balance.id, 'UPDATE');
-
-      // 3. Kardex Negativo Alerta
-      if (Number(syncResult.balance.stockReal) < 0) {
-        console.warn(`[ALERTA INVENTARIO NEGATIVO] Sucursal ${mov.sucursalId}, Producto ${mov.productoId} llegó a ${syncResult.balance.stockReal} unidades.`);
-        // Aquí se dispararía un Webhook o se guardaría en una cola de notificaciones
+      if (!syncResult.yaExistia) {
+        // Registrar eventos de sincronización para replicación
+        await registrarEventoSync('KardexMovimiento', syncResult.nuevoMov.id, 'INSERT');
+        if (syncResult.balance) {
+          await registrarEventoSync('InventarioBalance', `${syncResult.balance.sucursalId}_${syncResult.balance.productoId}`, 'UPDATE');
+          
+          // 3. Kardex Negativo Alerta
+          if (Number(syncResult.balance.stockReal) < 0) {
+            console.warn(`[ALERTA INVENTARIO NEGATIVO] Sucursal ${mov.sucursalId}, Producto ${mov.productoId} llegó a ${syncResult.balance.stockReal} unidades.`);
+          }
+        }
       }
 
-      resultados.push(syncResult);
+      resultados.push(syncResult.nuevoMov);
     }
 
     res.json({
