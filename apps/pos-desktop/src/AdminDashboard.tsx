@@ -78,6 +78,7 @@ interface Product {
   costo: number;
   stock: number;
   unidad: string;
+  metadatos?: any;
 }
 
 interface Employee {
@@ -916,6 +917,7 @@ export default function AdminDashboard({
         costo: Number(p.costo) || 0,
         stock: p.balances ? p.balances.reduce((sum: number, b: any) => sum + Number(b.stockReal || 0), 0) : 0,
         unidad: p.metadatos?.unidad || 'pieza',
+        metadatos: p.metadatos || {},
       }));
       onProductsChange(mapped);
     } catch (e) {
@@ -1584,6 +1586,12 @@ export default function AdminDashboard({
                         <td className="py-3 px-6 text-center text-xs text-slate-500 capitalize">{p.unidad}</td>
                         <td className="py-3 px-6 text-center">
                           <div className="flex items-center justify-center gap-2">
+                            {p.metadatos?.imagenUrl && (
+                              <span 
+                                className="w-2 h-2 rounded-full bg-sky-500 shadow-[0_0_8px_#38bdf8] mr-1"
+                                title="Tiene imagen asociada"
+                              />
+                            )}
                             <button 
                               onClick={() => { setCurrentProduct(p); setShowProductModal(true); }}
                               className={`p-1.5 rounded-lg border bg-transparent cursor-pointer hover:border-amber-500 text-slate-450 hover:text-amber-500 transition-all`}
