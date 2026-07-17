@@ -398,8 +398,11 @@ export default function POSInterface() {
         
         let modified = false;
         const updatedQueue = queue.map((item: any) => {
-          // Si el productoId coincide con un SKU de los productos cargados, reemplazarlo por el ID real
-          const matchingProduct = products.find((p: any) => p.sku === item.productoId);
+          // Si el productoId coincide o empieza con el SKU de algún producto cargado, reemplazarlo por el ID real
+          const matchingProduct = products.find((p: any) => 
+            p.sku === item.productoId || 
+            (item.productoId && typeof item.productoId === 'string' && item.productoId.startsWith(p.sku + '-'))
+          );
           if (matchingProduct) {
             console.log(`[Healer] Corrigiendo productoId para movimiento ${item.id}: ${item.productoId} -> ${matchingProduct.id}`);
             item.productoId = matchingProduct.id;
