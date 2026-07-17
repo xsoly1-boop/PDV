@@ -18,6 +18,12 @@ import { API_V1, API_BASE_URL } from './config';
 import OnboardingWizard from './OnboardingWizard';
 import vanteLogo from './vante_logo.png';
 
+// Garantizar que la app opere siempre localmente en localhost
+if (localStorage.getItem('vante_deployment_mode') !== 'LOCAL' || localStorage.getItem('pos_api_base_url') !== 'http://localhost:3001') {
+  localStorage.setItem('vante_deployment_mode', 'LOCAL');
+  localStorage.setItem('pos_api_base_url', 'http://localhost:3001');
+}
+
 async function sha256(message: string): Promise<string> {
   const msgBuffer = new TextEncoder().encode(message);
   const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
@@ -624,24 +630,7 @@ export default function POSInterface() {
     }
   };
 
-  const handleToggleDeploymentMode = () => {
-    const currentMode = localStorage.getItem('vante_deployment_mode') as 'LOCAL' | 'HYBRID' || 'LOCAL';
-    if (currentMode === 'LOCAL') {
-      const savedRenderUrl = localStorage.getItem('backup_render_url') || 'https://pdventa.onrender.com';
-      localStorage.setItem('vante_deployment_mode', 'HYBRID');
-      localStorage.setItem('pos_api_base_url', savedRenderUrl);
-      alert('Cambiando a Modo Híbrido Nube (Remoto)...');
-    } else {
-      const currentRenderUrl = localStorage.getItem('pos_api_base_url') || 'https://pdventa.onrender.com';
-      if (currentRenderUrl !== 'http://localhost:3001') {
-        localStorage.setItem('backup_render_url', currentRenderUrl);
-      }
-      localStorage.setItem('vante_deployment_mode', 'LOCAL');
-      localStorage.setItem('pos_api_base_url', 'http://localhost:3001');
-      alert('Cambiando a Modo Caja Local (localhost)...');
-    }
-    window.location.reload();
-  };
+
 
   // Verificar turno activo de caja (online/offline)
   useEffect(() => {
@@ -2832,38 +2821,6 @@ ${articulosTexto}
             </button>
           )}
 
-          {/* Botón de Alternancia de Red para Super Admin */}
-          {localStorage.getItem('vante_super_admin_active') === 'true' && (
-            <button
-              onClick={handleToggleDeploymentMode}
-              className={`text-xs px-3 py-1.5 rounded-lg font-bold transition-all border cursor-pointer mr-2 flex items-center gap-1.5 ${
-                localStorage.getItem('vante_deployment_mode') === 'HYBRID'
-                  ? 'bg-sky-500/10 border-sky-500/30 text-sky-400 hover:bg-sky-500/20'
-                  : 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/20'
-              }`}
-              title={`Modo de Red Activo: ${
-                localStorage.getItem('vante_deployment_mode') === 'HYBRID' ? 'NUBE / REMOTO' : 'LOCAL'
-              }. Haz clic para cambiar.`}
-            >
-              {localStorage.getItem('vante_deployment_mode') === 'HYBRID' ? (
-                <>
-                  <span className="relative flex h-2 w-2">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-sky-400 opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-2 w-2 bg-sky-500"></span>
-                  </span>
-                  ☁️ Remoto (Render)
-                </>
-              ) : (
-                <>
-                  <span className="relative flex h-2 w-2">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-                  </span>
-                  🔌 Local (SQLite)
-                </>
-              )}
-            </button>
-          )}
 
           {/* Cajero Activo y Botón de Bloqueo */}
           <div className="flex items-center gap-3">

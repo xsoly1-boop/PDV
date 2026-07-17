@@ -3247,17 +3247,7 @@ app.post('/api/v1/presets/load', async (req: any, res: any) => {
     }
 
     const isCafeteria = normalizedGiro === 'CAFETERIA';
-    const productsToProcess = isCafeteria 
-      ? products.filter((p: any) => {
-          const imgUrl = p?.metadatos?.imagenUrl || '';
-          if (imgUrl.startsWith('__PRESET_IMG__/')) {
-            const imgFile = imgUrl.replace('__PRESET_IMG__/', '');
-            const absPath = path.join(presetImagesDir, imgFile);
-            return fs.existsSync(absPath);
-          }
-          return false;
-        })
-      : products;
+    const productsToProcess = products;
 
     // 2. Insertar los productos secuencialmente uno por uno con sus códigos de barra relacionados y stock
     for (const p of productsToProcess) {
