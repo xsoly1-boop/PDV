@@ -19,11 +19,6 @@ import { API_V1, API_BASE_URL } from './config';
 import OnboardingWizard from './OnboardingWizard';
 import vanteLogo from './vante_logo.png';
 
-// Garantizar que la app opere siempre localmente en localhost
-if (localStorage.getItem('vante_deployment_mode') !== 'LOCAL' || localStorage.getItem('pos_api_base_url') !== 'http://localhost:3001') {
-  localStorage.setItem('vante_deployment_mode', 'LOCAL');
-  localStorage.setItem('pos_api_base_url', 'http://localhost:3001');
-}
 
 async function sha256(message: string): Promise<string> {
   const msgBuffer = new TextEncoder().encode(message);
@@ -2853,12 +2848,11 @@ ${articulosTexto}
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-sky-400 opacity-75"></span>
               <span className="relative inline-flex rounded-full h-2 w-2 bg-sky-500"></span>
             </span>
-            <span>{config?.enableCloudBackups ? 'NUBE' : 'LOCAL'}</span>
+            <span>{localStorage.getItem('vante_deployment_mode') === 'HYBRID' ? 'NUBE' : 'LOCAL'}</span>
           </div>
 
-          {/* Badge de Red (Movido del Footer) */}
-           {/* Badge de Red y sincronizadores (Solo visibles si la nube está activada) */}
-          {config?.enableCloudBackups === true && (
+          {/* Badge de Red y sincronizadores (Solo visibles si la nube está activada) */}
+          {localStorage.getItem('vante_deployment_mode') === 'HYBRID' && (
             <>
               <div 
                 onClick={() => {
