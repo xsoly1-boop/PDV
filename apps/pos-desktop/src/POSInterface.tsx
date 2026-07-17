@@ -991,37 +991,75 @@ export default function POSInterface() {
     const saved = localStorage.getItem('pos_products');
     return saved ? JSON.parse(saved) : [];
   });
-  // Reparar cola de sincronización local si hay SKUs en vez de IDs
+  // Reparar cola de sincronización local si hay SKUs o nombres de usuario inválidos en vez de IDs
   useEffect(() => {
     if (!products || products.length === 0) return;
 
-    try {
-      const queue = LocalDb.getQueue();
-      if (queue.length === 0) return;
+    const repairQueue = async () => {
+      try {
+        const queue = LocalDb.getQueue();
+        if (queue.length === 0) return;
 
-      let modified = false;
-      const updatedQueue = queue.map((item: any) => {
-        // Si el productoId coincide o empieza con el SKU de algún producto cargado, reemplazarlo por el ID real
-        const matchingProduct = products.find((p: any) => 
-          p.sku === item.productoId || 
-          (item.productoId && typeof item.productoId === 'string' && item.productoId.startsWith(p.sku + '-'))
-        );
-        if (matchingProduct) {
-          console.log(`[Healer] Corrigiendo productoId para movimiento ${item.id}: ${item.productoId} -> ${matchingProduct.id}`);
-          item.productoId = matchingProduct.id;
-          modified = true;
+        // Cargar usuarios para mapear nombres de usuario ("ADMIN") a su ID real en la base de datos
+        let dbUsers: any[] = [];
+        try {
+          const resp = await fetch(`${API_V1}/usuarios`);
+          if (resp.ok) dbUsers = await resp.json();
+        } catch (err) {
+          console.warn('[Healer] No se pudo obtener la lista de usuarios para la reparación:', err);
         }
-        return item;
-      });
 
-      if (modified) {
-        LocalDb.saveQueue(updatedQueue);
-        setPendingCount(LocalDb.getUnsynced().length);
-        console.log('[Healer] Cola de sincronización reparada correctamente.');
+        const isUuid = (val: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(val);
+        const defaultUser = dbUsers.find((u: any) => u.rol === 'ADMINISTRADOR') || dbUsers[0];
+        const defaultUserUuid = defaultUser ? defaultUser.id : null;
+        if (defaultUserUuid) {
+          localStorage.setItem('pos_default_user_uuid', defaultUserUuid);
+        }
+
+        let modified = false;
+        const updatedQueue = queue.map((item: any) => {
+          // 1. Reparar productoId (SKU -> ID de base de datos)
+          const matchingProduct = products.find((p: any) => 
+            p.sku === item.productoId || 
+            (item.productoId && typeof item.productoId === 'string' && item.productoId.startsWith(p.sku + '-'))
+          );
+          if (matchingProduct) {
+            console.log(`[Healer] Corrigiendo productoId para movimiento ${item.id}: ${item.productoId} -> ${matchingProduct.id}`);
+            item.productoId = matchingProduct.id;
+            modified = true;
+          }
+
+          // 2. Reparar usuarioId (Nombre/Admin -> ID de base de datos)
+          if (item.usuarioId && !isUuid(item.usuarioId)) {
+            const matchingUser = dbUsers.find((u: any) => 
+              u.nombre.toLowerCase().trim() === item.usuarioId.toLowerCase().trim() ||
+              u.usuario?.toLowerCase().trim() === item.usuarioId.toLowerCase().trim()
+            );
+            if (matchingUser) {
+              console.log(`[Healer] Corrigiendo usuarioId para movimiento ${item.id}: ${item.usuarioId} -> ${matchingUser.id}`);
+              item.usuarioId = matchingUser.id;
+              modified = true;
+            } else if (defaultUserUuid) {
+              console.log(`[Healer] Corrigiendo usuarioId por defecto para movimiento ${item.id}: ${item.usuarioId} -> ${defaultUserUuid}`);
+              item.usuarioId = defaultUserUuid;
+              modified = true;
+            }
+          }
+
+          return item;
+        });
+
+        if (modified) {
+          LocalDb.saveQueue(updatedQueue);
+          setPendingCount(LocalDb.getUnsynced().length);
+          console.log('[Healer] Cola de sincronización reparada con éxito.');
+        }
+      } catch (e) {
+        console.error('[Healer] Error al reparar la cola:', e);
       }
-    } catch (e) {
-      console.error('[Healer] Error al reparar la cola:', e);
-    }
+    };
+
+    repairQueue();
   }, [products]);
 
 
@@ -1668,6 +1706,11 @@ export default function POSInterface() {
   const handleCheckout = async (metodoPago: string) => {
     if (cart.length === 0) return;
 
+    const isUuid = (val: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(val);
+    const resolvedUserUuid = currentUser && isUuid(currentUser.id) 
+      ? currentUser.id 
+      : (localStorage.getItem('pos_default_user_uuid') || 'ADMIN');
+
     const availableCredit = Number(activeTab.clienteObj?.limiteCredito || 0) - Number(activeTab.clienteObj?.saldoDeudor || 0);
     if (metodoPago === 'CREDITO' && availableCredit < total && !isCreditAuthorized) {
       setShowAuthorizeCreditModal(true);
@@ -1699,7 +1742,7 @@ export default function POSInterface() {
       SyncService.registrarMovimientoLocal({
         sucursalId: 'suc-norte',
         productoId: item.productoId,
-        usuarioId: currentUser ? ((currentUser as any).id || currentUser.nombre) : 'usr-desconocido',
+        usuarioId: resolvedUserUuid,
         tipo: 'SALIDA_VENTA',
         cantidad: item.cantidad,
         referencia: ticketRef,
@@ -1719,7 +1762,7 @@ export default function POSInterface() {
         body: JSON.stringify({
           folio: ticketRef,
           sucursalId: 'suc-norte',
-          usuarioId: currentUser ? ((currentUser as any).id || currentUser.nombre) : 'ADMIN',
+          usuarioId: resolvedUserUuid,
           clienteId: activeTab.clienteId || null,
           total: total,
           subtotal: subtotal,
@@ -1744,7 +1787,7 @@ export default function POSInterface() {
       
       await offlineStore.encolarVenta({
         folio: ticketRef,
-        usuarioId: currentUser ? ((currentUser as any).id || currentUser.nombre) : 'ADMIN',
+        usuarioId: resolvedUserUuid,
         total: total,
         subtotal: subtotal,
         descuento: discount,
