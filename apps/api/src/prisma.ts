@@ -16,7 +16,7 @@ function parseJson(val: any) {
 export const prisma = prismaClient.$extends({
   query: {
     $allModels: {
-      async $allOperations({ model, operation, args, query }) {
+      async $allOperations({ model, operation, args, query }: any) {
         const anyArgs = args as any;
         
         // 1. Before query: Stringify JSON objects before saving to SQLite
