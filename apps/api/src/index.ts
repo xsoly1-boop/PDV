@@ -3857,19 +3857,37 @@ app.post('/api/v1/admin/init-schema', async (req: any, res: any) => {
 
     send('schema', true, 'Aplicando esquema de tablas Vante POS...');
 
-    // 2. Ejecutar prisma db push usando el binario de node actual (resuelve ENOENT en empaquetado)
-    const nodeBinary = process.execPath;
-    const result = spawnSync(
-      nodeBinary, [prismaCliPath, 'db', 'push', '--skip-generate', '--accept-data-loss'],
-      { env, cwd: apiDir, timeout: 120000, encoding: 'utf8' }
+    // 2. Ejecutar prisma db push usando child_process.fork (nativo y seguro en Electron)
+    const { fork } = require('child_process');
+    const child = fork(
+      prismaCliPath,
+      ['db', 'push', '--skip-generate', '--accept-data-loss'],
+      { env, cwd: apiDir, silent: true }
     );
 
-    if (result.status !== 0) {
-      const execError = result.error?.message || '';
-      const stdErrText = result.stderr || '';
-      const stdOutText = result.stdout || '';
-      const errMsg = execError || stdErrText || stdOutText || 'Error de ejecución en el proceso de base de datos.';
-      
+    let output = '';
+    let errOutput = '';
+
+    child.stdout?.on('data', (chunk: any) => {
+      output += chunk.toString();
+    });
+
+    child.stderr?.on('data', (chunk: any) => {
+      errOutput += chunk.toString();
+    });
+
+    const exitCode = await new Promise((resolve) => {
+      child.on('close', (code: number) => {
+        resolve(code);
+      });
+      child.on('error', (err: any) => {
+        errOutput += `\nError de proceso: ${err.message}`;
+        resolve(-1);
+      });
+    });
+
+    if (exitCode !== 0) {
+      const errMsg = errOutput || output || 'Error de ejecución en el proceso de base de datos.';
       send('error', false, `Error aplicando schema: ${errMsg.slice(0, 350)}`);
       return res.end();
     }
