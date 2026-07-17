@@ -3467,7 +3467,7 @@ app.get('/api/v1/clientes/reportes/antiguedad', async (req, res) => {
 // ==========================================
 // 11. Bitácora de Auditoría
 // ==========================================
-app.post('/api/v1/auditoria', async (req, res) => {
+app.post('/api/v1/auditoria', async (req: any, res: any) => {
   const { usuarioId, accion, tabla, registroId, detalles } = req.body;
   if (!usuarioId || !accion || !detalles) {
     return res.status(400).json({ error: 'Faltan campos obligatorios para registrar la auditoría' });
@@ -3489,7 +3489,7 @@ app.post('/api/v1/auditoria', async (req, res) => {
   }
 });
 
-app.get('/api/v1/auditoria', async (req, res) => {
+app.get('/api/v1/auditoria', async (req: any, res: any) => {
   try {
     const logs = await prisma.bitacoraAuditoria.findMany({
       include: { usuario: { select: { nombre: true, rol: true } } },
@@ -3743,9 +3743,9 @@ async function applySchema() {
     console.log('[SCHEMA] Verificando compatibilidad del schema de base de datos...');
     
     // SQLite: verify if schema.sql needs to be loaded (first boot)
-    const tableInfo = await prisma.$queryRawUnsafe<any[]>(
+    const tableInfo = (await prisma.$queryRawUnsafe(
       `SELECT sql FROM sqlite_master WHERE type='table' AND name='ConfiguracionEmpresa'`
-    );
+    )) as any[];
     
     if (tableInfo.length === 0) {
       console.log('[SCHEMA] Base de datos vacía detectada. Inicializando tablas desde schema.sql...');
@@ -3766,9 +3766,9 @@ async function applySchema() {
       }
     } else {
       console.log('[SCHEMA] Las tablas ya existen. Verificando compatibilidad de Giro...');
-      const tableInfo = await prisma.$queryRawUnsafe<any[]>(
+      const tableInfo = (await prisma.$queryRawUnsafe(
         `SELECT sql FROM sqlite_master WHERE type='table' AND name='ConfiguracionEmpresa'`
-      );
+      )) as any[];
       if (tableInfo.length > 0) {
         const ddl: string = tableInfo[0].sql || '';
         if (ddl.includes('CHECK') && !ddl.includes('CAFETERIA')) {
