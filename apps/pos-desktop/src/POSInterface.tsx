@@ -274,6 +274,10 @@ export default function POSInterface() {
   const [syncingVentas, setSyncingVentas] = useState(false);
   const [offlineQueueSize, setOfflineQueueSize] = useState(0);
   const [pendingCount, setPendingCount] = useState(LocalDb.getUnsynced().length);
+  const [products, setProducts] = useState<any[]>(() => {
+    const saved = localStorage.getItem('pos_products');
+    return saved ? JSON.parse(saved) : [];
+  });
 
   // Sincronizar catálogo local
   const sincronizarCatalogoLocal = async () => {
@@ -296,6 +300,8 @@ export default function POSInterface() {
           descripcion: p.descripcion || ''
         }));
         await offlineStore.guardarCatalogo(mapped);
+        setProducts(mapped);
+        localStorage.setItem('pos_products', JSON.stringify(mapped));
         console.log('[Offline] Catálogo local sincronizado correctamente. Total:', mapped.length);
       }
     } catch (err) {
@@ -987,10 +993,7 @@ export default function POSInterface() {
     };
   }, [currentUser, config.sessionTimeout]);
 
-  const [products, setProducts] = useState<any[]>(() => {
-    const saved = localStorage.getItem('pos_products');
-    return saved ? JSON.parse(saved) : [];
-  });
+
   // Reparar cola de sincronización local si hay SKUs o nombres de usuario inválidos en vez de IDs
   useEffect(() => {
     if (!products || products.length === 0) return;
