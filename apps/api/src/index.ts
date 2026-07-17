@@ -3855,36 +3855,70 @@ app.post('/api/v1/admin/init-schema', async (req: any, res: any) => {
     const apiDir = path.resolve(__dirname, '..');
     const prismaCliPath = path.join(apiDir, 'node_modules/prisma/build/index.js');
 
+    const schemaPath = path.join(apiDir, 'prisma', 'schema.prisma');
+    const backupSchemaPath = path.join(apiDir, 'prisma', 'schema.backup.prisma');
+    const tempSchemaPath = path.join(apiDir, 'prisma', 'schema.sqlite.temp');
+
+    let schemaSwapped = false;
+    try {
+      // Intercambiar esquemas para usar PostgreSQL
+      if (fs.existsSync(backupSchemaPath)) {
+        fs.copyFileSync(schemaPath, tempSchemaPath);
+        fs.copyFileSync(backupSchemaPath, schemaPath);
+        schemaSwapped = true;
+        console.log('[INIT-SCHEMA] Esquema intercambiado a PostgreSQL para la migración.');
+      } else {
+        console.warn('[INIT-SCHEMA] No se encontró schema.backup.prisma. Usando esquema por defecto.');
+      }
+    } catch (e: any) {
+      send('error', false, `Error al preparar esquema: ${e.message}`);
+      return res.end();
+    }
+
     send('schema', true, 'Aplicando esquema de tablas Vante POS...');
 
-    // 2. Ejecutar prisma db push usando child_process.fork (nativo y seguro en Electron)
-    const { fork } = require('child_process');
-    const child = fork(
-      prismaCliPath,
-      ['db', 'push', '--skip-generate', '--accept-data-loss'],
-      { env, cwd: apiDir, silent: true }
-    );
-
+    let exitCode = -1;
     let output = '';
     let errOutput = '';
 
-    child.stdout?.on('data', (chunk: any) => {
-      output += chunk.toString();
-    });
+    try {
+      // 2. Ejecutar prisma db push usando child_process.fork (nativo y seguro en Electron)
+      const { fork } = require('child_process');
+      const child = fork(
+        prismaCliPath,
+        ['db', 'push', '--skip-generate', '--accept-data-loss'],
+        { env, cwd: apiDir, silent: true }
+      );
 
-    child.stderr?.on('data', (chunk: any) => {
-      errOutput += chunk.toString();
-    });
+      child.stdout?.on('data', (chunk: any) => {
+        output += chunk.toString();
+      });
 
-    const exitCode = await new Promise((resolve) => {
-      child.on('close', (code: number) => {
-        resolve(code);
+      child.stderr?.on('data', (chunk: any) => {
+        errOutput += chunk.toString();
       });
-      child.on('error', (err: any) => {
-        errOutput += `\nError de proceso: ${err.message}`;
-        resolve(-1);
+
+      exitCode = await new Promise<number>((resolve) => {
+        child.on('close', (code: number) => {
+          resolve(code);
+        });
+        child.on('error', (err: any) => {
+          errOutput += `\nError de proceso: ${err.message}`;
+          resolve(-1);
+        });
       });
-    });
+    } finally {
+      // RESTAURAR esquema SQLite original siempre
+      if (schemaSwapped && fs.existsSync(tempSchemaPath)) {
+        try {
+          fs.copyFileSync(tempSchemaPath, schemaPath);
+          fs.unlinkSync(tempSchemaPath);
+          console.log('[INIT-SCHEMA] Esquema SQLite original restaurado.');
+        } catch (restoreErr: any) {
+          console.error('[INIT-SCHEMA] Error crítico al restaurar esquema SQLite:', restoreErr.message);
+        }
+      }
+    }
 
     if (exitCode !== 0) {
       const errMsg = errOutput || output || 'Error de ejecución en el proceso de base de datos.';
