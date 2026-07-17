@@ -2514,22 +2514,24 @@ ${articulosTexto}
                         {isValidatingSetup ? 'Validando conexión...' : '⚡ Probar Conexión Supabase'}
                       </button>
 
-                      {schemaNeeded && (
-                        <div className="space-y-2 border border-amber-500/20 bg-amber-500/5 p-3 rounded-xl">
-                          <label className="block text-[10px] font-bold uppercase tracking-wider text-amber-400">
-                            Connection String (URI) de Supabase
-                          </label>
-                          <input
-                            type="text"
-                            placeholder="postgresql://postgres:[PASSWORD]@db.xxxx.supabase.co:5432/postgres"
-                            value={setupDbConnectionString}
-                            onChange={(e) => setSetupDbConnectionString(e.target.value)}
-                            className="w-full bg-[#0d0e12] border border-[#20222b] rounded-xl py-2 px-3 text-xs text-white outline-none focus:border-amber-500 font-mono"
-                          />
-                          <p className="text-[9px] text-slate-400 leading-normal">
-                            Lo encuentras en Supabase, seccion Settings, luego Database, Connection string, y finalmente URI. Debe incluir tu contrasena.
-                          </p>
-                          <div className="flex gap-2">
+                      {/* Siempre visible: Caja para Connection String y generación de .env */}
+                      <div className="space-y-2 border border-[#20222b] bg-[#0d0e12]/40 p-3.5 rounded-xl mt-3">
+                        <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                          Supabase Connection String (URI)
+                        </label>
+                        <input
+                          type="text"
+                          placeholder="postgresql://postgres:[PASSWORD]@db.xxxx.supabase.co:5432/postgres"
+                          value={setupDbConnectionString}
+                          onChange={(e) => setSetupDbConnectionString(e.target.value)}
+                          className="w-full bg-[#0d0e12] border border-[#20222b] rounded-xl py-2 px-3 text-xs text-white outline-none focus:border-amber-500 font-mono"
+                        />
+                        <p className="text-[9px] text-slate-500 leading-normal">
+                          Lo encuentras en Supabase, seccion Settings, luego Database, Connection string, y finalmente URI.
+                        </p>
+                        
+                        <div className="flex gap-2 pt-1">
+                          {schemaNeeded && (
                             <button
                               type="button"
                               disabled={isInitingSchema || !setupDbConnectionString.trim()}
@@ -2543,18 +2545,18 @@ ${articulosTexto}
                             >
                               {isInitingSchema ? '⏳ Inicializando...' : '🛠 Inicializar BD'}
                             </button>
-                            <button
-                              type="button"
-                              onClick={handleGenerateEnv}
-                              disabled={!setupDbConnectionString.trim()}
-                              className="bg-slate-700 hover:bg-slate-600 disabled:bg-slate-800 text-slate-200 font-bold py-2 px-3 rounded-xl text-xs cursor-pointer border-0 shadow-md transition-colors"
-                              title="Generar archivo .env para subir a Render"
-                            >
-                              📄 .env Render
-                            </button>
-                          </div>
+                          )}
+                          <button
+                            type="button"
+                            onClick={handleGenerateEnv}
+                            disabled={!setupDbConnectionString.trim()}
+                            className="flex-1 bg-slate-700 hover:bg-slate-600 disabled:bg-slate-800 text-slate-200 font-bold py-2 rounded-xl text-xs cursor-pointer border-0 shadow-md transition-colors"
+                            title="Generar archivo .env para subir a Render"
+                          >
+                            📄 Generar .env Render
+                          </button>
                         </div>
-                      )}
+                      </div>
 
                       {initProgress.length > 0 && (
                         <div className="bg-[#0d0e12] border border-[#20222b] rounded-xl p-3 text-[10px] font-mono text-slate-300 space-y-1 max-h-32 overflow-y-auto mt-2">
@@ -5361,22 +5363,24 @@ ${articulosTexto}
                       {isValidatingSetup ? 'Validando conexión...' : '⚡ Probar Conexión Supabase'}
                     </button>
 
-                    {schemaNeeded && (
-                      <div className="space-y-2 border border-amber-500/20 bg-amber-500/5 p-3 rounded-xl">
-                        <label className="block text-[10px] font-bold uppercase tracking-wider text-amber-400">
-                          Connection String (URI) de Supabase
-                        </label>
-                        <input
-                          type="text"
-                          placeholder="postgresql://postgres:[PASSWORD]@db.xxxx.supabase.co:5432/postgres"
-                          value={setupDbConnectionString}
-                          onChange={(e) => setSetupDbConnectionString(e.target.value)}
-                          className="w-full bg-[#0d0e12] border border-[#20222b] rounded-xl py-2 px-3 text-xs text-white outline-none focus:border-amber-500 font-mono"
-                        />
-                        <p className="text-[9px] text-slate-400 leading-normal">
-                          Lo encuentras en Supabase, seccion Settings, luego Database, Connection string, y finalmente URI. Debe incluir tu contrasena.
-                        </p>
-                        <div className="flex gap-2">
+                    {/* Siempre visible: Caja para Connection String y generación de .env */}
+                    <div className="space-y-2 border border-[#20222b] bg-[#0d0e12]/40 p-3.5 rounded-xl mt-3">
+                      <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                        Supabase Connection String (URI)
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="postgresql://postgres:[PASSWORD]@db.xxxx.supabase.co:5432/postgres"
+                        value={setupDbConnectionString}
+                        onChange={(e) => setSetupDbConnectionString(e.target.value)}
+                        className="w-full bg-[#0d0e12] border border-[#20222b] rounded-xl py-2 px-3 text-xs text-white outline-none focus:border-amber-500 font-mono"
+                      />
+                      <p className="text-[9px] text-slate-500 leading-normal">
+                        Lo encuentras en Supabase, seccion Settings, luego Database, Connection string, y finalmente URI.
+                      </p>
+                      
+                      <div className="flex gap-2 pt-1">
+                        {schemaNeeded && (
                           <button
                             type="button"
                             disabled={isInitingSchema || !setupDbConnectionString.trim()}
@@ -5390,18 +5394,18 @@ ${articulosTexto}
                           >
                             {isInitingSchema ? '⏳ Inicializando...' : '🛠 Inicializar BD'}
                           </button>
-                          <button
-                            type="button"
-                            onClick={handleGenerateEnv}
-                            disabled={!setupDbConnectionString.trim()}
-                            className="bg-slate-700 hover:bg-slate-600 disabled:bg-slate-800 text-slate-200 font-bold py-2 px-3 rounded-xl text-xs cursor-pointer border-0 shadow-md transition-colors"
-                            title="Generar archivo .env para subir a Render"
-                          >
-                            📄 .env Render
-                          </button>
-                        </div>
+                        )}
+                        <button
+                          type="button"
+                          onClick={handleGenerateEnv}
+                          disabled={!setupDbConnectionString.trim()}
+                          className="flex-1 bg-slate-700 hover:bg-slate-600 disabled:bg-slate-800 text-slate-200 font-bold py-2 rounded-xl text-xs cursor-pointer border-0 shadow-md transition-colors"
+                          title="Generar archivo .env para subir a Render"
+                        >
+                          📄 Generar .env Render
+                        </button>
                       </div>
-                    )}
+                    </div>
 
                     {initProgress.length > 0 && (
                       <div className="bg-[#0d0e12] border border-[#20222b] rounded-xl p-3 text-[10px] font-mono text-slate-300 space-y-1 max-h-32 overflow-y-auto mt-2">
