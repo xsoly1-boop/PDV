@@ -5,7 +5,7 @@ import {
   DollarSign, CheckCircle, Store,
   PlusCircle, FileSpreadsheet,
   Wrench, Database, Download, Upload, Play, RefreshCw, Printer,
-  Truck, Receipt, FileText, Layers, Calendar, Activity
+  Truck, Receipt, FileText, Layers, Calendar, Activity, Brain
 } from 'lucide-react';
 import { API_V1 } from './config';
 import { exportKardexCSV } from './services/exportUtils';
@@ -54,6 +54,8 @@ interface CompanyConfig {
   allowGerenteCheckout?: boolean;
   allowCajeroCheckout?: boolean;
   allowVendedorMovilCheckout?: boolean;
+  habilitarIA?: boolean;
+  modeloIA?: string;
 }
 
 interface AdminDashboardProps {
@@ -2690,6 +2692,53 @@ export default function AdminDashboard({
                       className="hidden" 
                     />
                   </label>
+                </div>
+
+                {/* CARD: VANTE AI (LOCAL CO-PILOT CONFIG) */}
+                <div className={`p-6 rounded-2xl border ${
+                  theme === 'dark' ? 'bg-[#13151b] border-[#20222b]' : 'bg-white border-slate-200 shadow-sm'
+                }`}>
+                  <div className="flex items-center gap-3 mb-6">
+                    <Brain className="w-6 h-6 text-violet-500" />
+                    <h3 className="text-sm font-bold uppercase tracking-wider">Vante AI (Copiloto Local)</h3>
+                  </div>
+
+                  <p className="text-xs text-slate-500 mb-6">
+                    Habilita o deshabilita el asistente de inteligencia artificial local (Ollama) para análisis de datos en tiempo real de tu tienda.
+                  </p>
+
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between pb-2 border-b border-slate-800/40">
+                      <span className="text-xs text-slate-400 font-bold">Activar Vante AI</span>
+                      <label className="relative inline-flex items-center cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={config.habilitarIA || false}
+                          onChange={(e) => onConfigChange({ ...config, habilitarIA: e.target.checked })}
+                          className="sr-only peer"
+                        />
+                        <div className="w-11 h-6 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-slate-400 after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-violet-600 peer-checked:after:bg-white peer-checked:after:border-transparent"></div>
+                      </label>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5">
+                        Modelo de IA Local
+                      </label>
+                      <select
+                        value={config.modeloIA || 'gemma2:2b'}
+                        onChange={(e) => onConfigChange({ ...config, modeloIA: e.target.value })}
+                        disabled={!config.habilitarIA}
+                        className="w-full bg-[#0d0e12] border border-[#20222b] rounded-xl py-3 px-4 text-xs text-white outline-none focus:border-violet-500 transition-colors cursor-pointer disabled:opacity-50"
+                      >
+                        <option value="llama3.2:1b">Llama 3.2 1B (Ultra-Ligero, 4GB RAM)</option>
+                        <option value="llama3.2:3b">Llama 3.2 3B (Ligerísimo, 8GB RAM)</option>
+                        <option value="gemma2:2b">Gemma 2 2B (Recomendado CPU, 8GB RAM)</option>
+                        <option value="llama3:8b">Llama 3 8B (Completo, 16GB RAM)</option>
+                        <option value="gemma2:9b">Gemma 2 9B (Alto Rendimiento GPU, 16GB RAM)</option>
+                      </select>
+                    </div>
+                  </div>
                 </div>
               </div>
 

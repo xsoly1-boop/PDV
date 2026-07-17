@@ -910,6 +910,127 @@ app.post('/api/v1/sync/completado', async (req, res) => {
 });
 
 // ==========================================
+// 4. Módulo de IA Local (Vante AI)
+// ==========================================
+
+// GET /api/v1/ai/estado-ollama — Verificar si Ollama está activo en el localhost
+app.get('/api/v1/ai/estado-ollama', async (req, res) => {
+  try {
+    const resp = await fetch('http://localhost:11434/api/tags', { signal: AbortSignal.timeout(2000) });
+    if (resp.ok) {
+      const data = (await resp.json()) as any;
+      return res.json({ activo: true, modelos: data.models || [] });
+    }
+    res.json({ activo: false, error: 'Ollama respondió con error' });
+  } catch (e: any) {
+    res.json({ activo: false, error: 'No se detectó Ollama ejecutándose en localhost:11434' });
+  }
+});
+
+// POST /api/v1/ai/consultar — Consultar al asistente de IA con contexto local SQLite
+app.post('/api/v1/ai/consultar', async (req, res) => {
+  const { mensaje, modelo } = req.body;
+  if (!mensaje) {
+    return res.status(400).json({ error: 'Mensaje es requerido' });
+  }
+
+  try {
+    const config = await prisma.configuracionEmpresa.findFirst();
+    if (config && !config.habilitarIA) {
+      return res.status(403).json({ error: 'El módulo de IA local está desactivado en la configuración.' });
+    }
+
+    // Extraer resúmenes del negocio para alimentar el contexto
+    const [prodCount, lowStock, totalSales, recentSales, categories] = await Promise.all([
+      prisma.producto.count(),
+      prisma.inventarioBalance.findMany({
+        where: { stockReal: { lte: 5 } },
+        include: { producto: true },
+        take: 15
+      }),
+      prisma.venta.aggregate({
+        _sum: { total: true },
+        _count: { id: true }
+      }),
+      prisma.venta.findMany({
+        orderBy: { creadoAt: 'desc' },
+        take: 10,
+        include: { detalles: { include: { producto: true } } }
+      }),
+      prisma.categoria.findMany()
+    ]);
+
+    const contextData = {
+      empresa: config?.nombreEmpresa || 'Vante POS',
+      giro: config?.giro || 'ABARROTES',
+      inventario: {
+        totalProductos: prodCount,
+        bajoStock: lowStock.map(b => `${b.producto.nombre}: ${Number(b.stockReal)} unidades (sku: ${b.producto.sku})`),
+      },
+      ventasTotalesAcumuladas: {
+        montoTotal: Number(totalSales._sum.total || 0),
+        cantidadTickets: totalSales._count.id
+      },
+      ventasRecientes: recentSales.map(v => ({
+        folio: v.folio.split('|')[0],
+        total: Number(v.total),
+        fecha: v.creadoAt.toISOString().slice(0, 10),
+        articulos: v.detalles.map(d => `${d.producto.nombre} x${Number(d.cantidad)}`)
+      })),
+      categorias: categories.map(c => c.nombre)
+    };
+
+    const systemPrompt = `Eres Vante AI, el copiloto inteligente del punto de venta Vante POS.
+Eres un analista de negocios financiero y de inventarios experto, servicial y directo.
+Tienes acceso privado a los siguientes datos reales del negocio recopilados en tiempo real de la base de datos local SQLite:
+
+=== CONTEXTO DEL NEGOCIO ===
+Nombre: ${contextData.empresa} (Giro: ${contextData.giro})
+Inventario: ${contextData.inventario.totalProductos} productos en catálogo.
+Categorías del catálogo: ${contextData.categorias.join(', ')}
+Productos con bajo stock (menor o igual a 5 unidades):
+${contextData.inventario.bajoStock.join('\n') || 'Ninguno, todo con buen stock.'}
+
+Resumen de ventas histórico acumulado localmente:
+- Ventas totales: $${contextData.ventasTotalesAcumuladas.montoTotal.toFixed(2)} MXN
+- Tickets emitidos: ${contextData.ventasTotalesAcumuladas.cantidadTickets}
+
+Últimas ventas registradas en caja:
+${contextData.ventasRecientes.map(v => `- Ticket ${v.folio} por $${v.total.toFixed(2)} el ${v.fecha} (${v.articulos.join(', ')})`).join('\n') || 'Sin ventas registradas hoy.'}
+============================
+
+Responde a la consulta del usuario de forma profesional, clara, en español.
+Utiliza formato Markdown (negritas, listas, tablas) para que la respuesta sea fácil de leer y se vea premium en la consola.
+Si te preguntan por datos financieros o existencias, básate estrictamente en el contexto provisto anteriormente.
+Si te piden hacer una tarea operativa o configurar algo que no esté en el contexto, explícales que eres un asistente de análisis de datos y recomiéndales los pasos adecuados.`;
+
+    const modelToUse = modelo || config?.modeloIA || 'gemma2:2b';
+    const ollamaResp = await fetch('http://localhost:11434/api/generate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: modelToUse,
+        prompt: mensaje,
+        system: systemPrompt,
+        stream: false
+      })
+    });
+
+    if (!ollamaResp.ok) {
+      const text = await ollamaResp.text();
+      throw new Error(`Ollama respondió con error (${ollamaResp.status}): ${text}`);
+    }
+
+    const resJson = (await ollamaResp.json()) as any;
+    res.json({ respuesta: resJson.response });
+  } catch (e: any) {
+    console.error('[AI-CONSULTA] Error:', e.message);
+    res.status(500).json({ error: `Fallo al procesar consulta con IA local: ${e.message}` });
+  }
+});
+
+
+// ==========================================
 // 3. Módulos Corporativos: CFDI, RBAC, Traspasos
 // ==========================================
 
@@ -2290,7 +2411,9 @@ app.post('/api/v1/configuracion-empresa', async (req, res) => {
           nombreEmpresa,
           giro: mappedGiro,
           rfc: rfc2,
-          formatoTicket: data.formatoTicket
+          formatoTicket: data.formatoTicket,
+          habilitarIA: req.body.habilitarIA === true,
+          modeloIA: req.body.modeloIA || 'gemma2:2b'
         }
       });
       res.json(updated);
@@ -2303,7 +2426,9 @@ app.post('/api/v1/configuracion-empresa', async (req, res) => {
           nombreEmpresa,
           giro: mappedGiro,
           rfc: rfc2,
-          formatoTicket: data.formatoTicket
+          formatoTicket: data.formatoTicket,
+          habilitarIA: req.body.habilitarIA === true,
+          modeloIA: req.body.modeloIA || 'gemma2:2b'
         }
       });
       res.json(created);

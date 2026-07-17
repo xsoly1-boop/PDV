@@ -17,6 +17,8 @@ model ConfiguracionEmpresa {
   rfc           String?
   logoUrl       String?
   formatoTicket String?    // Configuración visual del ticket (secciones, fuentes, logos)
+  habilitarIA   Boolean  @default(false)
+  modeloIA      String   @default("gemma2:2b")
   creadoAt      DateTime @default(now())
   actualizadoAt DateTime @updatedAt
 }

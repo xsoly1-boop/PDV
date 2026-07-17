@@ -4,7 +4,7 @@ import {
   Trash2, Plus, Minus, AlertCircle, 
   CarFront, PackageOpen, Printer, Zap,
   Sun, Moon, LayoutDashboard, Bookmark, RotateCw, MessageCircle, CheckCircle2, X, DollarSign,
-  ClipboardList, Check, TrendingUp, Lock, ShieldCheck, List, MoreVertical, CreditCard, QrCode, Coins
+  ClipboardList, Check, TrendingUp, Lock, ShieldCheck, List, MoreVertical, CreditCard, QrCode, Coins, Brain
 } from 'lucide-react';
 import { LocalDb } from './db/localDb';
 import { SyncService } from './services/SyncService';
@@ -13,6 +13,7 @@ import AdminDashboard from './AdminDashboard';
 import QuotesDashboard from './QuotesDashboard';
 import CRMDashboard from './CRMDashboard';
 import ReportesDashboard from './ReportesDashboard';
+import AIAssistant from './components/AIAssistant';
 import TurnoManager from './TurnoManager';
 import { API_V1, API_BASE_URL } from './config';
 import OnboardingWizard from './OnboardingWizard';
@@ -83,6 +84,8 @@ interface CompanyConfig {
   allowGerenteCheckout?: boolean;
   allowCajeroCheckout?: boolean;
   allowVendedorMovilCheckout?: boolean;
+  habilitarIA?: boolean;
+  modeloIA?: string;
 }
 
 export default function POSInterface() {
@@ -712,7 +715,7 @@ export default function POSInterface() {
     return () => clearTimeout(timer);
   }, []);
 
-  const [currentView, setCurrentView] = useState<'pos' | 'admin' | 'quotes' | 'crm' | 'reports'>('pos');
+  const [currentView, setCurrentView] = useState<'pos' | 'admin' | 'quotes' | 'crm' | 'reports' | 'ai'>('pos');
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [showCheckoutModal, setShowCheckoutModal] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<'EFECTIVO' | 'TARJETA' | 'TRANSFERENCIA' | 'MIXTO' | 'CREDITO'>('EFECTIVO');
@@ -1919,6 +1922,8 @@ ${articulosTexto}
               paymentTerminalDeviceId: data.formatoTicket?.paymentTerminalDeviceId || '',
               enableAutoUpdates: data.formatoTicket?.enableAutoUpdates === true,
               enableAdvancedInventory: data.formatoTicket?.enableAdvancedInventory === true,
+              habilitarIA: data.formatoTicket?.habilitarIA === true,
+              modeloIA: data.formatoTicket?.modeloIA || 'gemma2:2b',
               printerCaja: localStorage.getItem('pos_printer_caja') || data.formatoTicket?.printerCaja || '',
               printerCliente: localStorage.getItem('pos_printer_cliente') || data.formatoTicket?.printerCliente || '',
               printerMovil: localStorage.getItem('pos_printer_movil') || data.formatoTicket?.printerMovil || '',
@@ -3823,6 +3828,17 @@ ${articulosTexto}
             </button>
           )}
 
+          {/* Botón de Vante AI */}
+          {currentUser && config.habilitarIA && (
+            <button 
+              onClick={() => setCurrentView('ai')}
+              className="font-bold px-3 py-1 rounded-lg flex items-center gap-1.5 transition-all text-[10px] border cursor-pointer active:scale-95 bg-violet-950/20 hover:bg-violet-900/40 border-violet-500/30 text-violet-400 shadow-md"
+              title="Abrir Asistente Virtual Vante AI"
+            >
+              <Brain className="w-3.5 h-3.5" /> Vante AI
+            </button>
+          )}
+
           {/* Botón de Reportes */}
           {currentUser && (currentUser.rol === 'Administrador' || currentUser.rol === 'Gerente') && (
             <button 
@@ -4131,6 +4147,21 @@ ${articulosTexto}
         />
       )}
 
+      {/* Asistente Vante AI (Overlay de Pantalla Completa) */}
+      {currentView === 'ai' && currentUser && config.habilitarIA && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 p-8">
+          <div className="w-full max-w-4xl h-[85vh] relative">
+            <button 
+              onClick={() => setCurrentView('pos')}
+              className="absolute -top-3 -right-3 z-50 p-2.5 rounded-full bg-slate-900 border border-slate-800 hover:bg-slate-800 text-slate-400 hover:text-white transition-all shadow-lg border-0 cursor-pointer"
+            >
+              <X className="w-4 h-4" />
+            </button>
+            <AIAssistant theme={theme} />
+          </div>
+        </div>
+      )}
+
       {/* Panel de Administración (Overlay de Pantalla Completa) */}
       {currentView === 'admin' && currentUser && (
         <AdminDashboard 
@@ -4192,7 +4223,9 @@ ${articulosTexto}
                   paymentTerminalProvider: newConfig.paymentTerminalProvider || 'none',
                   paymentTerminalDeviceId: newConfig.paymentTerminalDeviceId || '',
                   enableAutoUpdates: newConfig.enableAutoUpdates === true,
-                  enableAdvancedInventory: newConfig.enableAdvancedInventory === true
+                  enableAdvancedInventory: newConfig.enableAdvancedInventory === true,
+                  habilitarIA: newConfig.habilitarIA === true,
+                  modeloIA: newConfig.modeloIA || 'gemma2:2b'
                 })
               });
             } catch (err) {

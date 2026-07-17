@@ -7,6 +7,8 @@ CREATE TABLE "ConfiguracionEmpresa" (
     "rfc" TEXT,
     "logoUrl" TEXT,
     "formatoTicket" TEXT,
+    "habilitarIA" BOOLEAN NOT NULL DEFAULT 0,
+    "modeloIA" TEXT NOT NULL DEFAULT 'gemma2:2b',
     "creadoAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "actualizadoAt" DATETIME NOT NULL
 );
