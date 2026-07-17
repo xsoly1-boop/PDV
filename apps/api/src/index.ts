@@ -3201,29 +3201,7 @@ app.post('/api/v1/presets/load', async (req: any, res: any) => {
       categoriesMap.set(catName, cat.id);
     }
     
-    // 2. Insertar los productos secuencialmente uno por uno con sus códigos de barra relacionados
-    // Esto evita sobrecargar la conexión con un payload gigante de imágenes en Base64
-    for (const p of products) {
-      const catId = categoriesMap.get(p.categoria) || null;
-      const barcodes = Array.isArray(p.codigos) ? p.codigos.map((code: string) => ({ codigo: code })) : [];
-      
-      await prisma.producto.create({
-        data: {
-          sku: p.sku,
-          nombre: p.nombre,
-          costo: Number(p.costo) || 0,
-          precio: Number(p.precio) || 0,
-          permiteFracciones: p.permiteFracciones || false,
-          categoriaId: catId,
-          metadatos: p.metadatos || {},
-          codigos: {
-            create: barcodes
-          }
-        }
-      });
-    }
-
-    // Garantizar que exista una sucursal raíz y el usuario administrador con PIN 8888
+    // Garantizar que exista una sucursal raíz
     let rootSucursal = await prisma.sucursal.findFirst();
     if (!rootSucursal) {
       rootSucursal = await prisma.sucursal.create({
@@ -3232,6 +3210,69 @@ app.post('/api/v1/presets/load', async (req: any, res: any) => {
           nombre: 'Sucursal Norte'
         }
       });
+    }
+
+    const isCafeteria = normalizedGiro === 'CAFETERIA';
+    const productsToProcess = isCafeteria 
+      ? products.filter((p: any) => {
+          const imgUrl = p?.metadatos?.imagenUrl || '';
+          if (imgUrl.startsWith('__PRESET_IMG__/')) {
+            const imgFile = imgUrl.replace('__PRESET_IMG__/', '');
+            const absPath = path.join(presetImagesDir, imgFile);
+            return fs.existsSync(absPath);
+          }
+          return false;
+        })
+      : products;
+
+    // 2. Insertar los productos secuencialmente uno por uno con sus códigos de barra relacionados y stock
+    for (const p of productsToProcess) {
+      const catId = categoriesMap.get(p.categoria) || null;
+      const barcodes = Array.isArray(p.codigos) ? p.codigos.map((code: string) => ({ codigo: code })) : [];
+      
+      const finalMetadata = p.metadatos || {};
+      if (isCafeteria) {
+        finalMetadata.enMenuRapido = true;
+      }
+      
+      const createdProduct = await prisma.producto.create({
+        data: {
+          sku: p.sku,
+          nombre: p.nombre,
+          costo: Number(p.costo) || 0,
+          precio: Number(p.precio) || 0,
+          permiteFracciones: p.permiteFracciones || false,
+          categoriaId: catId,
+          metadatos: finalMetadata,
+          codigos: {
+            create: barcodes
+          }
+        }
+      });
+
+      // Si es cafetería, agregar stock inicial de 10 unidades
+      if (isCafeteria) {
+        await prisma.inventarioBalance.create({
+          data: {
+            sucursalId: rootSucursal.id,
+            productoId: createdProduct.id,
+            stockReal: 10,
+            reservado: 0
+          }
+        });
+
+        // Registrar el movimiento en Kardex para auditoría
+        await prisma.kardexMovimiento.create({
+          data: {
+            sucursalId: rootSucursal.id,
+            productoId: createdProduct.id,
+            usuarioId: 'ADMIN',
+            tipo: 'ENTRADA_AJUSTE',
+            cantidad: 10,
+            observacion: 'Carga inicial de stock preconfigurado de demostración'
+          }
+        });
+      }
     }
 
     const companyConfig = await prisma.configuracionEmpresa.findFirst();
