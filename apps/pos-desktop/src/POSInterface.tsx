@@ -1008,85 +1008,48 @@ export default function POSInterface() {
   }, [currentUser, config.sessionTimeout]);
 
 
-  // Reparar cola de sincronización local si hay SKUs o nombres de usuario inválidos en vez de IDs
+  // Reparar cola de sincronización local si hay SKUs en vez de IDs
   useEffect(() => {
     if (!products || products.length === 0) return;
 
-    const repairQueue = async () => {
-      try {
-        const queue = LocalDb.getQueue();
-        if (queue.length === 0) return;
+    try {
+      const queue = LocalDb.getQueue();
+      if (queue.length === 0) return;
 
-        // Cargar usuarios para mapear nombres de usuario ("ADMIN") a su ID real en la base de datos
-        let dbUsers: any[] = [];
-        try {
-          const resp = await fetch(`${API_V1}/usuarios`);
-          if (resp.ok) dbUsers = await resp.json();
-        } catch (err) {
-          console.warn('[Healer] No se pudo obtener la lista de usuarios para la reparación:', err);
-        }
+      const defaultProduct = products[0];
+      const defaultProductUuid = defaultProduct ? defaultProduct.id : null;
 
-        const isUuid = (val: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(val);
-        const defaultUser = dbUsers.find((u: any) => u.rol === 'ADMINISTRADOR') || dbUsers[0];
-        const defaultUserUuid = defaultUser ? defaultUser.id : null;
-        if (defaultUserUuid) {
-          localStorage.setItem('pos_default_user_uuid', defaultUserUuid);
-        }
-
-        const defaultProduct = products[0];
-        const defaultProductUuid = defaultProduct ? defaultProduct.id : null;
-
-        let modified = false;
-        const updatedQueue = queue.map((item: any) => {
-          // 1. Reparar productoId (SKU -> ID de base de datos, o ID huérfano -> ID por defecto)
-          const matchingProduct = products.find((p: any) => 
-            p.id === item.productoId ||
-            p.sku === item.productoId || 
-            (item.productoId && typeof item.productoId === 'string' && item.productoId.startsWith(p.sku + '-'))
-          );
-          if (matchingProduct) {
-            if (matchingProduct.id !== item.productoId) {
-              console.log(`[Healer] Corrigiendo productoId para movimiento ${item.id}: ${item.productoId} -> ${matchingProduct.id}`);
-              item.productoId = matchingProduct.id;
-              modified = true;
-            }
-          } else if (defaultProductUuid) {
-            console.log(`[Healer] Corrigiendo productoId huérfano/borrado para movimiento ${item.id}: ${item.productoId} -> ${defaultProductUuid}`);
-            item.productoId = defaultProductUuid;
+      let modified = false;
+      const updatedQueue = queue.map((item: any) => {
+        // 1. Reparar productoId (SKU -> ID de base de datos, o ID huérfano -> ID por defecto)
+        const matchingProduct = products.find((p: any) => 
+          p.id === item.productoId ||
+          p.sku === item.productoId || 
+          (item.productoId && typeof item.productoId === 'string' && item.productoId.startsWith(p.sku + '-'))
+        );
+        if (matchingProduct) {
+          if (matchingProduct.id !== item.productoId) {
+            console.log(`[Healer] Corrigiendo productoId para movimiento ${item.id}: ${item.productoId} -> ${matchingProduct.id}`);
+            item.productoId = matchingProduct.id;
             modified = true;
           }
-
-          // 2. Reparar usuarioId (Nombre/Admin -> ID de base de datos)
-          if (item.usuarioId && !isUuid(item.usuarioId)) {
-            const matchingUser = dbUsers.find((u: any) => 
-              u.nombre.toLowerCase().trim() === item.usuarioId.toLowerCase().trim() ||
-              u.usuario?.toLowerCase().trim() === item.usuarioId.toLowerCase().trim()
-            );
-            if (matchingUser) {
-              console.log(`[Healer] Corrigiendo usuarioId para movimiento ${item.id}: ${item.usuarioId} -> ${matchingUser.id}`);
-              item.usuarioId = matchingUser.id;
-              modified = true;
-            } else if (defaultUserUuid) {
-              console.log(`[Healer] Corrigiendo usuarioId por defecto para movimiento ${item.id}: ${item.usuarioId} -> ${defaultUserUuid}`);
-              item.usuarioId = defaultUserUuid;
-              modified = true;
-            }
-          }
-
-          return item;
-        });
-
-        if (modified) {
-          LocalDb.saveQueue(updatedQueue);
-          setPendingCount(LocalDb.getUnsynced().length);
-          console.log('[Healer] Cola de sincronización reparada con éxito.');
+        } else if (defaultProductUuid) {
+          console.log(`[Healer] Corrigiendo productoId huérfano/borrado para movimiento ${item.id}: ${item.productoId} -> ${defaultProductUuid}`);
+          item.productoId = defaultProductUuid;
+          modified = true;
         }
-      } catch (e) {
-        console.error('[Healer] Error al reparar la cola:', e);
-      }
-    };
 
-    repairQueue();
+        return item;
+      });
+
+      if (modified) {
+        LocalDb.saveQueue(updatedQueue);
+        setPendingCount(LocalDb.getUnsynced().length);
+        console.log('[Healer] Cola de sincronización reparada con éxito.');
+      }
+    } catch (e) {
+      console.error('[Healer] Error al reparar la cola:', e);
+    }
   }, [products]);
 
 
@@ -1725,7 +1688,7 @@ export default function POSInterface() {
     } else {
       const queue = LocalDb.getQueue().filter(i => !i.sincronizado);
       const sample = queue.length > 0 ? JSON.stringify(queue[0]) : 'Cola vacía';
-      alert(`Fallo en sincronización: ${res.error}\n\nDetalle primer elemento: ${sample}`);
+      alert(`Fallo en sincronización: ${res.error}\n\nDetalle primer elemento: ${sample}\n\nCatálogo en memoria: ${products.length} productos (Primero: ${products[0]?.nombre || 'Ninguno'} - ID: ${products[0]?.id || 'Ninguno'})`);
     }
     setPendingCount(LocalDb.getUnsynced().length);
   };
