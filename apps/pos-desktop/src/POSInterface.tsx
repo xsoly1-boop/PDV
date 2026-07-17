@@ -384,6 +384,44 @@ export default function POSInterface() {
     };
   }, []);
 
+  // Reparar cola de sincronización local si hay SKUs en vez de IDs
+  useEffect(() => {
+    const repairSyncQueue = async () => {
+      try {
+        const queue = LocalDb.getQueue();
+        if (queue.length === 0) return;
+
+        // Cargar productos locales para mapear SKU -> ID
+        const resp = await fetch(`${API_V1}/productos`);
+        if (!resp.ok) return;
+        const products = await resp.json();
+        
+        let modified = false;
+        const updatedQueue = queue.map((item: any) => {
+          // Si el productoId coincide con un SKU de los productos cargados, reemplazarlo por el ID real
+          const matchingProduct = products.find((p: any) => p.sku === item.productoId);
+          if (matchingProduct) {
+            console.log(`[Healer] Corrigiendo productoId para movimiento ${item.id}: ${item.productoId} -> ${matchingProduct.id}`);
+            item.productoId = matchingProduct.id;
+            modified = true;
+          }
+          return item;
+        });
+
+        if (modified) {
+          LocalDb.saveQueue(updatedQueue);
+          setPendingCount(LocalDb.getUnsynced().length);
+          console.log('[Healer] Cola de sincronización reparada correctamente.');
+        }
+      } catch (e) {
+        console.error('[Healer] Error al reparar la cola:', e);
+      }
+    };
+
+    // Dar un tiempo a que el servidor arranque antes de reparar
+    setTimeout(repairSyncQueue, 2000);
+  }, []);
+
   // Atajos de teclado estilo eleventa (F3, F12, ESC)
   useEffect(() => {
     const handleGlobalKeyDown = (e: KeyboardEvent) => {
@@ -1663,7 +1701,7 @@ export default function POSInterface() {
     for (const item of cart) {
       SyncService.registrarMovimientoLocal({
         sucursalId: 'suc-norte',
-        productoId: item.sku,
+        productoId: item.productoId,
         usuarioId: currentUser ? ((currentUser as any).id || currentUser.nombre) : 'usr-desconocido',
         tipo: 'SALIDA_VENTA',
         cantidad: item.cantidad,
