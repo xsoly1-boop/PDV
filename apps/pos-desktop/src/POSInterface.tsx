@@ -384,46 +384,6 @@ export default function POSInterface() {
     };
   }, []);
 
-  // Reparar cola de sincronización local si hay SKUs en vez de IDs
-  useEffect(() => {
-    const repairSyncQueue = async () => {
-      try {
-        const queue = LocalDb.getQueue();
-        if (queue.length === 0) return;
-
-        // Cargar productos locales para mapear SKU -> ID
-        const resp = await fetch(`${API_V1}/productos`);
-        if (!resp.ok) return;
-        const products = await resp.json();
-        
-        let modified = false;
-        const updatedQueue = queue.map((item: any) => {
-          // Si el productoId coincide o empieza con el SKU de algún producto cargado, reemplazarlo por el ID real
-          const matchingProduct = products.find((p: any) => 
-            p.sku === item.productoId || 
-            (item.productoId && typeof item.productoId === 'string' && item.productoId.startsWith(p.sku + '-'))
-          );
-          if (matchingProduct) {
-            console.log(`[Healer] Corrigiendo productoId para movimiento ${item.id}: ${item.productoId} -> ${matchingProduct.id}`);
-            item.productoId = matchingProduct.id;
-            modified = true;
-          }
-          return item;
-        });
-
-        if (modified) {
-          LocalDb.saveQueue(updatedQueue);
-          setPendingCount(LocalDb.getUnsynced().length);
-          console.log('[Healer] Cola de sincronización reparada correctamente.');
-        }
-      } catch (e) {
-        console.error('[Healer] Error al reparar la cola:', e);
-      }
-    };
-
-    // Dar un tiempo a que el servidor arranque antes de reparar
-    setTimeout(repairSyncQueue, 2000);
-  }, []);
 
   // Atajos de teclado estilo eleventa (F3, F12, ESC)
   useEffect(() => {
@@ -1027,10 +987,42 @@ export default function POSInterface() {
     };
   }, [currentUser, config.sessionTimeout]);
 
-  const [products, setProducts] = useState(() => {
+  const [products, setProducts] = useState<any[]>(() => {
     const saved = localStorage.getItem('pos_products');
     return saved ? JSON.parse(saved) : [];
   });
+  // Reparar cola de sincronización local si hay SKUs en vez de IDs
+  useEffect(() => {
+    if (!products || products.length === 0) return;
+
+    try {
+      const queue = LocalDb.getQueue();
+      if (queue.length === 0) return;
+
+      let modified = false;
+      const updatedQueue = queue.map((item: any) => {
+        // Si el productoId coincide o empieza con el SKU de algún producto cargado, reemplazarlo por el ID real
+        const matchingProduct = products.find((p: any) => 
+          p.sku === item.productoId || 
+          (item.productoId && typeof item.productoId === 'string' && item.productoId.startsWith(p.sku + '-'))
+        );
+        if (matchingProduct) {
+          console.log(`[Healer] Corrigiendo productoId para movimiento ${item.id}: ${item.productoId} -> ${matchingProduct.id}`);
+          item.productoId = matchingProduct.id;
+          modified = true;
+        }
+        return item;
+      });
+
+      if (modified) {
+        LocalDb.saveQueue(updatedQueue);
+        setPendingCount(LocalDb.getUnsynced().length);
+        console.log('[Healer] Cola de sincronización reparada correctamente.');
+      }
+    } catch (e) {
+      console.error('[Healer] Error al reparar la cola:', e);
+    }
+  }, [products]);
 
 
 
