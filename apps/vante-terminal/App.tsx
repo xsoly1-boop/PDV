@@ -8,7 +8,7 @@ import { StatusBar } from 'expo-status-bar';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // --- Global variables for dynamically updating endpoints ---
-export let API_URL = 'https://pdventa.onrender.com/api/v1';
+export let API_URL = 'https://pdv-cafe.onrender.com/api/v1';
 export let SUPABASE_URL = '';
 export let SUPABASE_ANON_KEY = '';
 
