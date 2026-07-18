@@ -4423,56 +4423,71 @@ ${articulosTexto}
             setConfig(newConfig);
             localStorage.setItem('pos_config', JSON.stringify(newConfig));
             try {
+              const bodyData = {
+                nombre: newConfig.businessName,
+                rfc: newConfig.rfc,
+                telefono: newConfig.phone,
+                direccion: newConfig.address,
+                ciudad: '',
+                giro: newConfig.giro || 'tienda',
+                ticketMessage: newConfig.ticketMessage || '',
+                printerType: newConfig.printerType || 'thermal_80',
+                allowCash: newConfig.allowCash !== false,
+                allowCard: newConfig.allowCard !== false,
+                allowTransfer: newConfig.allowTransfer !== false,
+                allowDrawer: newConfig.allowDrawer !== false,
+                drawerCommand: newConfig.drawerCommand || '',
+                allowScale: newConfig.allowScale || false,
+                scalePort: newConfig.scalePort || '',
+                scaleBaudRate: newConfig.scaleBaudRate || 9600,
+                scaleModel: newConfig.scaleModel || '',
+                sessionTimeout: newConfig.sessionTimeout || 0,
+                businessStartHour: newConfig.businessStartHour || '08:00',
+                businessEndHour: newConfig.businessEndHour || '20:00',
+                allowGerenteLogin: newConfig.allowGerenteLogin !== false,
+                allowCajeroLogin: newConfig.allowCajeroLogin !== false,
+                allowVendedorMovilLogin: newConfig.allowVendedorMovilLogin !== false,
+                restrictGerenteSchedule: newConfig.restrictGerenteSchedule || false,
+                restrictCajeroSchedule: newConfig.restrictCajeroSchedule || false,
+                restrictVendedorMovilSchedule: newConfig.restrictVendedorMovilSchedule !== false,
+                allowGerenteCheckout: newConfig.allowGerenteCheckout !== false,
+                allowCajeroCheckout: newConfig.allowCajeroCheckout !== false,
+                allowVendedorMovilCheckout: newConfig.allowVendedorMovilCheckout || false,
+                cotizacionExpiracionMins: newConfig.cotizacionExpiracionMins || 1440,
+                printerCaja: newConfig.printerCaja || '',
+                printerCliente: newConfig.printerCliente || '',
+                printerMovil: newConfig.printerMovil || '',
+                printerBodega: newConfig.printerBodega || '',
+                showWhatsAppPostSale: newConfig.showWhatsAppPostSale === true,
+                enableCloudBackups: newConfig.enableCloudBackups === true,
+                enableIntegratedPayments: newConfig.enableIntegratedPayments === true,
+                paymentTerminalProvider: newConfig.paymentTerminalProvider || 'none',
+                paymentTerminalDeviceId: newConfig.paymentTerminalDeviceId || '',
+                enableAutoUpdates: newConfig.enableAutoUpdates === true,
+                enableAdvancedInventory: newConfig.enableAdvancedInventory === true,
+                habilitarIA: newConfig.habilitarIA === true,
+                modeloIA: newConfig.modeloIA || 'gemma2:2b',
+                limiteRamIA: Number(newConfig.limiteRamIA) || 4
+              };
+
               await fetch(`${API_V1}/configuracion-empresa`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                  nombre: newConfig.businessName,
-                  rfc: newConfig.rfc,
-                  telefono: newConfig.phone,
-                  direccion: newConfig.address,
-                  ciudad: '',
-                  giro: newConfig.giro || 'tienda',
-                  ticketMessage: newConfig.ticketMessage || '',
-                  printerType: newConfig.printerType || 'thermal_80',
-                  allowCash: newConfig.allowCash !== false,
-                  allowCard: newConfig.allowCard !== false,
-                  allowTransfer: newConfig.allowTransfer !== false,
-                  allowDrawer: newConfig.allowDrawer !== false,
-                  drawerCommand: newConfig.drawerCommand || '',
-                  allowScale: newConfig.allowScale || false,
-                  scalePort: newConfig.scalePort || '',
-                  scaleBaudRate: newConfig.scaleBaudRate || 9600,
-                  scaleModel: newConfig.scaleModel || '',
-                  sessionTimeout: newConfig.sessionTimeout || 0,
-                  businessStartHour: newConfig.businessStartHour || '08:00',
-                  businessEndHour: newConfig.businessEndHour || '20:00',
-                  allowGerenteLogin: newConfig.allowGerenteLogin !== false,
-                  allowCajeroLogin: newConfig.allowCajeroLogin !== false,
-                  allowVendedorMovilLogin: newConfig.allowVendedorMovilLogin !== false,
-                  restrictGerenteSchedule: newConfig.restrictGerenteSchedule || false,
-                  restrictCajeroSchedule: newConfig.restrictCajeroSchedule || false,
-                  restrictVendedorMovilSchedule: newConfig.restrictVendedorMovilSchedule !== false,
-                  allowGerenteCheckout: newConfig.allowGerenteCheckout !== false,
-                  allowCajeroCheckout: newConfig.allowCajeroCheckout !== false,
-                  allowVendedorMovilCheckout: newConfig.allowVendedorMovilCheckout || false,
-                  cotizacionExpiracionMins: newConfig.cotizacionExpiracionMins || 1440,
-                  printerCaja: newConfig.printerCaja || '',
-                  printerCliente: newConfig.printerCliente || '',
-                  printerMovil: newConfig.printerMovil || '',
-                  printerBodega: newConfig.printerBodega || '',
-                  showWhatsAppPostSale: newConfig.showWhatsAppPostSale === true,
-                  enableCloudBackups: newConfig.enableCloudBackups === true,
-                  enableIntegratedPayments: newConfig.enableIntegratedPayments === true,
-                  paymentTerminalProvider: newConfig.paymentTerminalProvider || 'none',
-                  paymentTerminalDeviceId: newConfig.paymentTerminalDeviceId || '',
-                  enableAutoUpdates: newConfig.enableAutoUpdates === true,
-                  enableAdvancedInventory: newConfig.enableAdvancedInventory === true,
-                  habilitarIA: newConfig.habilitarIA === true,
-                  modeloIA: newConfig.modeloIA || 'gemma2:2b',
-                  limiteRamIA: Number(newConfig.limiteRamIA) || 4
-                })
+                body: JSON.stringify(bodyData)
               });
+
+              // Si estamos en modo híbrido, también guardar la configuración localmente
+              if (API_V1.includes('onrender.com') || API_V1.includes('supabase') || !API_V1.includes('localhost') && !API_V1.includes('127.0.0.1')) {
+                try {
+                  await fetch('http://localhost:3001/api/v1/configuracion-empresa', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(bodyData)
+                  });
+                } catch (localErr) {
+                  console.error('Error saving config to local SQLite API:', localErr);
+                }
+              }
             } catch (err) {
               console.error('Error saving config to API:', err);
             }
