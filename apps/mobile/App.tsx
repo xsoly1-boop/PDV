@@ -304,6 +304,9 @@ function LoginScreen({ onLogin }: { onLogin: (user: AuthUser) => void }) {
                       signal: controller.signal 
                     });
                     clearTimeout(timeoutId);
+                    if (!testResp.ok && testResp.status !== 401 && testResp.status !== 403) {
+                      throw new Error(`El servidor respondió con error ${testResp.status}`);
+                    }
                     
                     API_URL = targetUrl;
                     await AsyncStorage.setItem('@vantepos_api_url', targetUrl);
