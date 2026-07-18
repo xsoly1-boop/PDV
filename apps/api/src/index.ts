@@ -630,6 +630,53 @@ app.get('/api/v1/cotizaciones/:id/qr', async (req, res) => {
   }
 });
 
+// ─── Mesas (configuración y estado sincronizado) ──────────────────────────────
+
+// GET /api/v1/mesas — Obtener configuración de mesas desde formatoTicket
+app.get('/api/v1/mesas', async (req, res) => {
+  try {
+    const config = await prisma.configuracionEmpresa.findFirst();
+    const formatoTicket = config?.formatoTicket as any;
+    const tablesRaw = formatoTicket?.vante_tables_data;
+    if (tablesRaw) {
+      const tables = typeof tablesRaw === 'string' ? JSON.parse(tablesRaw) : tablesRaw;
+      return res.json({ mesas: tables });
+    }
+    // Si no hay config guardada, devolver mesas predeterminadas de cafetería
+    const defaultTables: any = {};
+    ['1','2','3','4','5','6','7','8','9','10','11','12'].forEach(n => {
+      defaultTables[`T${n}`] = { name: `Mesa ${n}`, status: 'Free', order: [] };
+    });
+    return res.json({ mesas: defaultTables, isDefault: true });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// POST /api/v1/mesas — Guardar o actualizar configuración de mesas
+app.post('/api/v1/mesas', async (req, res) => {
+  try {
+    const { mesas } = req.body;
+    if (!mesas) return res.status(400).json({ error: 'Se requiere el campo mesas' });
+
+    const mesasJson = typeof mesas === 'string' ? mesas : JSON.stringify(mesas);
+    const config = await prisma.configuracionEmpresa.findFirst();
+    if (!config) return res.status(404).json({ error: 'No hay configuración de empresa. Configura Vante primero.' });
+
+    const currentFormato = (config.formatoTicket as any) || {};
+    const updatedFormato = { ...currentFormato, vante_tables_data: mesasJson };
+
+    await prisma.configuracionEmpresa.update({
+      where: { id: config.id },
+      data: { formatoTicket: updatedFormato }
+    });
+
+    res.json({ ok: true });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // Listar cotizaciones (con opción de ver todas para el dashboard)
 app.get('/api/v1/cotizaciones', async (req, res) => {
   const { all } = req.query;

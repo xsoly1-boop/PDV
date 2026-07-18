@@ -369,34 +369,41 @@ function MainApp({ user, onLogout }: { user: AuthUser; onLogout: () => void }) {
         console.warn('Error al obtener configuracion del negocio:', err);
       }
 
-      // 2. Cargar mesas — sincronizar con configuración del servidor
+      // 2. Cargar mesas — sincronizar con endpoint dedicado del servidor
       try {
-        const saved = await AsyncStorage.getItem('vante_tables_data');
-        const localTables = saved ? JSON.parse(saved) : {};
-
-        // Obtener la lista oficial de mesas desde el servidor (si existe)
-        const serverTablesRaw = configData?.formatoTicket?.vante_tables_data;
-        if (serverTablesRaw) {
-          const serverTables = JSON.parse(serverTablesRaw);
-          // Combinar: estructura oficial del servidor + pedidos activos locales
-          const merged: any = {};
-          Object.keys(serverTables).forEach(key => {
-            merged[key] = {
-              ...serverTables[key],
-              // Preservar pedido y estado local si la mesa ya existe
-              status: localTables[key]?.status || 'Free',
-              order: localTables[key]?.order || [],
-              subtotal: localTables[key]?.subtotal || 0,
-            };
-          });
-          setTablesData(merged);
-          await AsyncStorage.setItem('vante_tables_data', JSON.stringify(merged));
-        } else if (saved) {
-          // Sin configuración en servidor → usar lo que había guardado localmente
-          setTablesData(localTables);
+        const mesasResp = await fetch(`${API_URL}/mesas`);
+        if (mesasResp.ok) {
+          const mesasData = await mesasResp.json();
+          const serverTables = mesasData.mesas;
+          if (serverTables && Object.keys(serverTables).length > 0) {
+            // Leer pedidos activos locales para preservarlos
+            const saved = await AsyncStorage.getItem('vante_tables_data');
+            const localTables = saved ? JSON.parse(saved) : {};
+            // Fusionar: estructura del servidor + pedidos locales activos
+            const merged: any = {};
+            Object.keys(serverTables).forEach(key => {
+              merged[key] = {
+                ...serverTables[key],
+                status: localTables[key]?.status || 'Free',
+                order: localTables[key]?.order || [],
+                subtotal: localTables[key]?.subtotal || 0,
+              };
+            });
+            setTablesData(merged);
+            await AsyncStorage.setItem('vante_tables_data', JSON.stringify(merged));
+          }
+        } else {
+          // Sin respuesta del servidor → usar lo guardado localmente
+          const saved = await AsyncStorage.getItem('vante_tables_data');
+          if (saved) setTablesData(JSON.parse(saved));
         }
       } catch (e) {
-        console.warn('Error loading tables from AsyncStorage:', e);
+        // Error de red → usar lo guardado localmente
+        const saved = await AsyncStorage.getItem('vante_tables_data');
+        if (saved) {
+          try { setTablesData(JSON.parse(saved)); } catch (_) {}
+        }
+        console.warn('Error syncing tables from server:', e);
       }
     };
 

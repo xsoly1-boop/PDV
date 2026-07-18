@@ -395,7 +395,7 @@ export default function AdminDashboard({
   };
 
   // Save Config
-  const handleSaveConfig = (e: React.FormEvent) => {
+  const handleSaveConfig = async (e: React.FormEvent) => {
     e.preventDefault();
     localStorage.setItem('vante_sucursal_nombre', sucursalNombre.trim());
     localStorage.setItem('vante_caja_nombre', cajaNombre.trim());
@@ -437,6 +437,17 @@ export default function AdminDashboard({
       });
       
       localStorage.setItem('vante_tables_data', JSON.stringify(updatedTables));
+
+      // Publicar mesas en el servidor para sincronización con Vante Móvil
+      try {
+        await fetch(`${API_V1}/mesas`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ mesas: updatedTables })
+        });
+      } catch (err) {
+        console.warn('No se pudo publicar mesas en el servidor:', err);
+      }
     } catch (err) {
       console.error('Error al guardar mesas:', err);
     }
