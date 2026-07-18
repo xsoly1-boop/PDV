@@ -135,11 +135,22 @@ export default function POSInterface() {
     }
   }, [tablesData]);
 
-  const [kdsOrders, setKdsOrders] = useState<any[]>([
-    { id: '#101', customer: 'Sofía M.', time: '02:18', items: ['1x Capuchino Grande (Leche Almendra)', '1x Pan Au Chocolat'], status: 'green' },
-    { id: '#102', customer: 'Mesa 4', time: '04:55', items: ['2x Espresso Doble', '1x Avocado Toast'], status: 'orange' },
-    { id: '#103', customer: 'Mesa 7', time: '07:30', items: ['1x Mocha Frio', '1x Croissant'], status: 'red' },
-  ]);
+  const [kdsOrders, setKdsOrders] = useState<any[]>(() => {
+    const saved = localStorage.getItem('vante_kds_orders');
+    if (saved) {
+      try { return JSON.parse(saved); } catch (e) { console.error(e); }
+    }
+    return [
+      { id: '#101', customer: 'Sofía M.', time: '02:18', items: ['1x Capuchino Grande (Leche Almendra)', '1x Pan Au Chocolat'], status: 'green' },
+      { id: '#102', customer: 'Mesa 4', time: '04:55', items: ['2x Espresso Doble', '1x Avocado Toast'], status: 'orange' },
+      { id: '#103', customer: 'Mesa 7', time: '07:30', items: ['1x Mocha Frio', '1x Croissant'], status: 'red' },
+    ];
+  });
+
+  useEffect(() => {
+    localStorage.setItem('vante_kds_orders', JSON.stringify(kdsOrders));
+  }, [kdsOrders]);
+
 
   useEffect(() => {
     const api = (window as any).electronAPI;
@@ -990,6 +1001,80 @@ export default function POSInterface() {
     };
   });
 
+  // Sincronización periódica de Mesas y KDS (cada 10 segundos en modo Cafetería)
+  useEffect(() => {
+    if (config.giro?.toUpperCase() !== 'CAFETERIA') return;
+
+    const fetchTablesAndSyncKds = async () => {
+      try {
+        const response = await fetch(`${API_V1}/mesas`);
+        if (response.ok) {
+          const data = await response.json();
+          const serverTables = data.mesas;
+          if (serverTables && Object.keys(serverTables).length > 0) {
+            setTablesData(serverTables);
+            localStorage.setItem('vante_tables_data', JSON.stringify(serverTables));
+
+            // Extraer bebidas de las mesas para enviar al KDS automáticamente
+            const newKdsItems: any[] = [];
+            Object.entries(serverTables).forEach(([tableId, t]: [string, any]) => {
+              if (t.status === 'Occupied' && Array.isArray(t.order)) {
+                // Filtrar bebidas en el pedido de esta mesa
+                const drinks = t.order.filter((item: any) => {
+                  const name = String(item.name || item.nombre || '').toLowerCase();
+                  const cat = String(item.categoria?.nombre || item.categoria || item.tipo || '').toLowerCase();
+                  return cat.includes('bebida') || cat.includes('café') || cat.includes('cafe') ||
+                         name.includes('café') || name.includes('capuchino') || name.includes('latte') ||
+                         name.includes('espresso') || name.includes('smoothie') || name.includes('frappé') ||
+                         name.includes('infusión') || name.includes('limonada') || name.includes('agua') || name.includes('soda');
+                });
+
+                if (drinks.length > 0) {
+                  // Generar una firma de texto para evitar duplicados si el pedido no cambia
+                  const drinksText = drinks.map((d: any) => `${d.qty || d.cantidad}x ${d.name || d.nombre}`).sort().join(', ');
+                  const orderId = `#Mesa-${tableId.replace('T', '')}`;
+                  
+                  newKdsItems.push({
+                    id: orderId,
+                    customer: t.name || `Mesa ${tableId.replace('T', '')}`,
+                    time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                    items: drinks.map((d: any) => `${d.qty || d.cantidad}x ${d.name || d.nombre}`),
+                    drinksSignature: drinksText,
+                    status: 'green'
+                  });
+                }
+              }
+            });
+
+            if (newKdsItems.length > 0) {
+              setKdsOrders(prev => {
+                const updated = [...prev];
+                newKdsItems.forEach(newItem => {
+                  const exists = updated.find(x => x.customer === newItem.customer && x.drinksSignature === newItem.drinksSignature);
+                  if (!exists) {
+                    // Quitar versión vieja de esta mesa si el pedido cambió
+                    const filtered = updated.filter(x => x.customer !== newItem.customer);
+                    filtered.unshift(newItem);
+                    updated.length = 0;
+                    updated.push(...filtered);
+                  }
+                });
+                return [...updated];
+              });
+            }
+          }
+        }
+      } catch (err) {
+        console.warn('Error en la sincronización automática de mesas:', err);
+      }
+    };
+
+    fetchTablesAndSyncKds();
+    const interval = setInterval(fetchTablesAndSyncKds, 10000);
+    return () => clearInterval(interval);
+  }, [config.giro, API_V1]);
+
+
   // Autolock: Cerrar sesión automática por inactividad
   useEffect(() => {
     if (!currentUser || !config.sessionTimeout || config.sessionTimeout === 0) {
@@ -1746,6 +1831,27 @@ export default function POSInterface() {
     }
 
     const ticketRef = 'TKT-' + ticketNumber;
+
+    // Enviar bebidas al KDS para preparación
+    const drinkItems = cart.filter((item: any) => {
+      const name = String(item.nombre || item.name || '').toLowerCase();
+      const cat = String(item.categoria?.nombre || item.categoria || item.tipo || '').toLowerCase();
+      return cat.includes('bebida') || cat.includes('café') || cat.includes('cafe') ||
+             name.includes('café') || name.includes('capuchino') || name.includes('latte') ||
+             name.includes('espresso') || name.includes('smoothie') || name.includes('frappé');
+    });
+
+    if (drinkItems.length > 0) {
+      const newKdsOrder = {
+        id: '#' + ticketNumber,
+        customer: activeTab.clienteNombre || 'Caja (Llevar)',
+        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        items: drinkItems.map((d: any) => `${d.cantidad}x ${d.nombre}`),
+        drinksSignature: drinkItems.map((d: any) => `${d.cantidad}x ${d.nombre}`).sort().join(', '),
+        status: 'green'
+      };
+      setKdsOrders(prev => [newKdsOrder, ...prev]);
+    }
 
     // Registrar cada producto en la cola del Kardex local
     for (const item of cart) {
@@ -3493,6 +3599,75 @@ ${articulosTexto}
                 
                 {/* Quick Payment Buttons */}
                 <div className="flex-1 flex flex-col justify-end space-y-3.5 pt-4">
+                  {selectedTable && (
+                    <button
+                      disabled={cart.length === 0}
+                      onClick={async () => {
+                        try {
+                          const updatedTables = {
+                            ...tablesData,
+                            [selectedTable]: {
+                              ...tablesData[selectedTable],
+                              status: cart.length > 0 ? 'Occupied' : 'Free',
+                              order: cart.map((item: any) => ({
+                                name: item.nombre,
+                                price: item.precio,
+                                qty: item.cantidad
+                              })),
+                              subtotal: cart.reduce((sum: number, x: any) => sum + x.precio * x.cantidad, 0)
+                            }
+                          };
+                          
+                          setTablesData(updatedTables);
+                          localStorage.setItem('vante_tables_data', JSON.stringify(updatedTables));
+                          
+                          // Publicar en el servidor
+                          await fetch(`${API_V1}/mesas`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ mesas: updatedTables })
+                          });
+                          
+                          // Enviar bebidas al KDS
+                          const drinkItems = cart.filter((item: any) => {
+                            const name = String(item.nombre || item.name || '').toLowerCase();
+                            const cat = String(item.categoria?.nombre || item.categoria || item.tipo || '').toLowerCase();
+                            return cat.includes('bebida') || cat.includes('café') || cat.includes('cafe') ||
+                                   name.includes('café') || name.includes('capuchino') || name.includes('latte') ||
+                                   name.includes('espresso') || name.includes('smoothie') || name.includes('frappé');
+                          });
+
+                          if (drinkItems.length > 0) {
+                            const drinksText = drinkItems.map((d: any) => `${d.cantidad}x ${d.nombre}`).sort().join(', ');
+                            const newKdsOrder = {
+                              id: `#Mesa-${selectedTable.replace('T', '')}`,
+                              customer: tablesData[selectedTable]?.name || `Mesa ${selectedTable.replace('T', '')}`,
+                              time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                              items: drinkItems.map((d: any) => `${d.cantidad}x ${d.nombre}`),
+                              drinksSignature: drinksText,
+                              status: 'green'
+                            };
+                            setKdsOrders(prev => {
+                              const filtered = prev.filter(x => x.customer !== newKdsOrder.customer);
+                              return [newKdsOrder, ...filtered];
+                            });
+                          }
+                          
+                          setSelectedTable(null);
+                          setCart([]);
+                          setCurrentScreen('tables');
+                          alert('Comanda de la mesa guardada y sincronizada correctamente.');
+                        } catch (err) {
+                          console.error(err);
+                          alert('Error al guardar comanda de la mesa.');
+                        }
+                      }}
+                      className="w-full bg-[#3b2b1c] hover:bg-[#4a3623] disabled:bg-slate-900 border border-amber-500/30 hover:border-amber-500/80 rounded-2xl p-4 flex items-center justify-center cursor-pointer transition-all active:scale-[0.98] group disabled:opacity-50 disabled:cursor-not-allowed mb-2.5"
+                    >
+                      <span className="text-xs font-black text-amber-400 tracking-wide uppercase">💾 Guardar Comanda (Mesa)</span>
+                    </button>
+                  )}
+
                   <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest block mb-1">Pago Rápido</span>
                   
                   {/* CASH BUTTON */}
