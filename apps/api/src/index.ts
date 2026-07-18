@@ -1130,6 +1130,23 @@ app.post('/api/v1/ai/consultar', async (req, res) => {
       categorias: categories.map(c => c.nombre)
     };
 
+    // Cargar manual de uso y soporte si existe
+    let manualContext = '';
+    try {
+      const apiDir = path.resolve(__dirname, '..');
+      const manualPath = path.join(apiDir, '..', 'MANUAL_DE_USO.md');
+      if (fs.existsSync(manualPath)) {
+        manualContext = fs.readFileSync(manualPath, 'utf-8');
+      } else {
+        const localManualPath = path.join(apiDir, 'MANUAL_DE_USO.md');
+        if (fs.existsSync(localManualPath)) {
+          manualContext = fs.readFileSync(localManualPath, 'utf-8');
+        }
+      }
+    } catch (e) {
+      console.warn('Error reading MANUAL_DE_USO.md context:', e);
+    }
+
     const systemPrompt = `Eres Vante AI, el copiloto inteligente del punto de venta Vante POS.
 Eres un analista de negocios financiero y de inventarios experto, servicial y directo.
 Tienes acceso privado a los siguientes datos reales del negocio recopilados en tiempo real de la base de datos local SQLite:
@@ -1149,10 +1166,14 @@ Resumen de ventas histórico acumulado localmente:
 ${contextData.ventasRecientes.map(v => `- Ticket ${v.folio} por $${v.total.toFixed(2)} el ${v.fecha} (${v.articulos.join(', ')})`).join('\n') || 'Sin ventas registradas hoy.'}
 ============================
 
+=== MANUAL DE OPERACIÓN Y SOPORTE VANTE POS ===
+${manualContext || 'No disponible temporalmente.'}
+==============================================
+
 Responde a la consulta del usuario de forma profesional, clara, en español.
 Utiliza formato Markdown (negritas, listas, tablas) para que la respuesta sea fácil de leer y se vea premium en la consola.
 Si te preguntan por datos financieros o existencias, básate estrictamente en el contexto provisto anteriormente.
-Si te piden hacer una tarea operativa o configurar algo que no esté en el contexto, explícales que eres un asistente de análisis de datos y recomiéndales los pasos adecuados.`;
+Si el usuario te hace preguntas operativas o de soporte técnico sobre el punto de venta (como errores de PIN, conexión de Vante Móvil, sincronización de mesas, o avisos de turnos abiertos), básate en el manual de soporte provisto anteriormente para responderle de forma guiada y paso a paso.`;
 
     const modelToUse = modelo || config?.modeloIA || 'gemma2:2b';
     const limitRam = config?.limiteRamIA || 4;
