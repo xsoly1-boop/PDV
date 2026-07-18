@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { Send, Brain, AlertCircle, RefreshCw, Terminal, CheckCircle2 } from 'lucide-react';
-import { API_V1 } from '../config';
+import { API_AI_V1 } from '../config';
 
 interface Message {
   sender: 'user' | 'ai';
@@ -32,7 +32,7 @@ export default function AIAssistant({ theme = 'dark' }: AIAssistantProps) {
   const checkOllama = async () => {
     setIsCheckingStatus(true);
     try {
-      const res = await fetch(`${API_V1}/ai/estado-ollama`);
+      const res = await fetch(`${API_AI_V1}/ai/estado-ollama`);
       if (res.ok) {
         const data = await res.json();
         setOllamaStatus(data);
@@ -65,7 +65,7 @@ export default function AIAssistant({ theme = 'dark' }: AIAssistantProps) {
     setIsLoading(true);
 
     try {
-      const response = await fetch(`${API_V1}/ai/consultar`, {
+      const response = await fetch(`${API_AI_V1}/ai/consultar`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ mensaje: queryText })

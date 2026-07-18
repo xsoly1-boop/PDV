@@ -7,7 +7,7 @@ import {
   Wrench, Database, Download, Upload, Play, RefreshCw, Printer,
   Truck, Receipt, FileText, Layers, Calendar, Activity, Brain
 } from 'lucide-react';
-import { API_V1 } from './config';
+import { API_V1, API_AI_V1 } from './config';
 import { exportKardexCSV } from './services/exportUtils';
 import AISetupWizard from './AISetupWizard';
 
@@ -143,7 +143,7 @@ export default function AdminDashboard({
   const verificarModelo = useCallback(async (modelo: string) => {
     setModeloDescargado(null);
     try {
-      const res = await fetch(`${API_V1}/ai/verificar-modelo?modelo=${encodeURIComponent(modelo)}`);
+      const res = await fetch(`${API_AI_V1}/ai/verificar-modelo?modelo=${encodeURIComponent(modelo)}`);
       const data = await res.json();
       setModeloDescargado(data.disponible === true);
     } catch {
@@ -2916,7 +2916,7 @@ export default function AdminDashboard({
                           // Verify if new model is already downloaded; if not, open wizard
                           if (config.habilitarIA) {
                             setModeloDescargado(null);
-                            fetch(`${API_V1}/ai/verificar-modelo?modelo=${encodeURIComponent(e.target.value)}`)
+                            fetch(`${API_AI_V1}/ai/verificar-modelo?modelo=${encodeURIComponent(e.target.value)}`)
                               .then(r => r.json())
                               .then(data => {
                                 setModeloDescargado(data.disponible === true);
