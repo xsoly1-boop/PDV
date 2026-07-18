@@ -150,6 +150,14 @@ export default function POSInterface() {
   useEffect(() => {
     localStorage.setItem('vante_kds_orders', JSON.stringify(kdsOrders));
   }, [kdsOrders]);
+  const [printedSignatures, setPrintedSignatures] = useState<string[]>(() => {
+    const saved = localStorage.getItem('vante_printed_signatures');
+    return saved ? JSON.parse(saved) : [];
+  });
+
+  useEffect(() => {
+    localStorage.setItem('vante_printed_signatures', JSON.stringify(printedSignatures));
+  }, [printedSignatures]);
 
 
   useEffect(() => {
@@ -1017,7 +1025,13 @@ export default function POSInterface() {
 
             // Extraer bebidas de las mesas para enviar al KDS automáticamente
             const newKdsItems: any[] = [];
-            Object.entries(serverTables).forEach(([tableId, t]: [string, any]) => {
+            const electronAPI = (window as any).electronAPI;
+            const targetPrinter = config.printerBodega || localStorage.getItem('pos_printer_bodega') || '';
+            
+            let localPrintedSignatures = [...printedSignatures];
+            let signatureStateChanged = false;
+
+            for (const [tableId, t] of Object.entries(serverTables) as [string, any][]) {
               if (t.status === 'Occupied' && Array.isArray(t.order)) {
                 // Filtrar bebidas en el pedido de esta mesa
                 const drinks = t.order.filter((item: any) => {
@@ -1033,7 +1047,8 @@ export default function POSInterface() {
                   // Generar una firma de texto para evitar duplicados si el pedido no cambia
                   const drinksText = drinks.map((d: any) => `${d.qty || d.cantidad}x ${d.name || d.nombre}`).sort().join(', ');
                   const orderId = `#Mesa-${tableId.replace('T', '')}`;
-                  
+                  const uniqueSignature = `${tableId}-${drinksText}`;
+
                   newKdsItems.push({
                     id: orderId,
                     customer: t.name || `Mesa ${tableId.replace('T', '')}`,
@@ -1042,9 +1057,45 @@ export default function POSInterface() {
                     drinksSignature: drinksText,
                     status: 'green'
                   });
+
+                  // Si NO se ha impreso físicamente esta firma todavía
+                  if (!localPrintedSignatures.includes(uniqueSignature)) {
+                    if (electronAPI && targetPrinter) {
+                      try {
+                        await electronAPI.printTicket({
+                          ticketId: orderId,
+                          cajero: 'Móvil',
+                          items: drinks.map((d: any) => ({
+                            sku: d.sku || '',
+                            nombre: d.name || d.nombre,
+                            precio: Number(d.price || d.precio || 0),
+                            cantidad: Number(d.qty || d.cantidad || 1),
+                            unidad: d.unidad || 'pzas'
+                          })),
+                          total: drinks.reduce((sum: number, x: any) => sum + Number(x.price || x.precio || 0) * Number(x.qty || x.cantidad || 1), 0),
+                          printerTarget: 'bodega',
+                          printerName: targetPrinter,
+                          businessName: `COMANDA: ${t.name || `Mesa ${tableId.replace('T', '')}`}`,
+                          address: 'Estación de Barra (Móvil)',
+                          phone: '',
+                          ticketMessage: 'Pedido recibido desde Vante Móvil.',
+                          printerType: config.printerType
+                        });
+                      } catch (printErr) {
+                        console.warn('Error al imprimir comanda de móvil en barra:', printErr);
+                      }
+                    }
+                    localPrintedSignatures.push(uniqueSignature);
+                    signatureStateChanged = true;
+                  }
                 }
               }
-            });
+            }
+
+            if (signatureStateChanged) {
+              setPrintedSignatures(localPrintedSignatures);
+              localStorage.setItem('vante_printed_signatures', JSON.stringify(localPrintedSignatures));
+            }
 
             if (newKdsItems.length > 0) {
               setKdsOrders(prev => {
@@ -1072,7 +1123,7 @@ export default function POSInterface() {
     fetchTablesAndSyncKds();
     const interval = setInterval(fetchTablesAndSyncKds, 10000);
     return () => clearInterval(interval);
-  }, [config.giro, API_V1]);
+  }, [config.giro, API_V1, printedSignatures]);
 
 
   // Autolock: Cerrar sesión automática por inactividad
@@ -3603,6 +3654,7 @@ ${articulosTexto}
                     <button
                       disabled={cart.length === 0}
                       onClick={async () => {
+                        const electronAPI = (window as any).electronAPI;
                         try {
                           const updatedTables = {
                             ...tablesData,
@@ -3637,8 +3689,42 @@ ${articulosTexto}
                                    name.includes('espresso') || name.includes('smoothie') || name.includes('frappé');
                           });
 
+                          const targetPrinter = config.printerBodega || localStorage.getItem('pos_printer_bodega') || '';
+
                           if (drinkItems.length > 0) {
                             const drinksText = drinkItems.map((d: any) => `${d.cantidad}x ${d.nombre}`).sort().join(', ');
+                            const uniqueSignature = `${selectedTable}-${drinksText}`;
+
+                            // Imprimir físicamente en barra
+                            if (electronAPI && targetPrinter) {
+                              try {
+                                await electronAPI.printTicket({
+                                  ticketId: `#Mesa-${selectedTable.replace('T', '')}`,
+                                  cajero: currentUser?.nombre || 'Mesero',
+                                  items: drinkItems.map((d: any) => ({
+                                    sku: d.sku || '',
+                                    nombre: d.nombre,
+                                    precio: Number(d.precio || 0),
+                                    cantidad: Number(d.cantidad || 1),
+                                    unidad: d.unidad || 'pzas'
+                                  })),
+                                  total: drinkItems.reduce((sum: number, x: any) => sum + x.precio * x.cantidad, 0),
+                                  printerTarget: 'bodega',
+                                  printerName: targetPrinter,
+                                  businessName: `COMANDA: ${tablesData[selectedTable]?.name || 'Mesa'}`,
+                                  address: 'Estación de Barra',
+                                  phone: '',
+                                  ticketMessage: 'Favor de preparar a la brevedad.',
+                                  printerType: config.printerType
+                                });
+                              } catch (printErr) {
+                                console.warn('Error al imprimir comanda en barra:', printErr);
+                              }
+                            }
+
+                            // Añadir a firmas impresas para evitar re-impresión en el polling
+                            setPrintedSignatures(prev => [...prev, uniqueSignature]);
+
                             const newKdsOrder = {
                               id: `#Mesa-${selectedTable.replace('T', '')}`,
                               customer: tablesData[selectedTable]?.name || `Mesa ${selectedTable.replace('T', '')}`,
