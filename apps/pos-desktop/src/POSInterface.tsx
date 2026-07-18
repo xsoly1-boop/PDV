@@ -3023,8 +3023,8 @@ ${articulosTexto}
             </>
           )}
 
-          {/* Botones de Navegación de Pantalla (POS / Mesas / KDS) */}
-          {currentUser && (
+          {/* Botones de Navegación de Pantalla (POS / Mesas / KDS) - Solo en Giro Cafetería */}
+          {currentUser && config.giro?.toUpperCase() === 'CAFETERIA' && (
             <div className="flex items-center gap-1 border-r pr-2 border-[#20222b]">
               <button 
                 onClick={() => { setCurrentScreen('pos'); setCurrentView('pos'); }}
@@ -3326,69 +3326,75 @@ ${articulosTexto}
 
                 {/* Grid of Product Cards */}
                 <div className="grid grid-cols-3 gap-4 overflow-y-auto pr-1">
-                  {products
-                    .filter((p: any) => {
-                      const pCat = p.categoria?.nombre || p.categoria;
-                      const matchesCat = typeof pCat === 'string' && pCat.toLowerCase() === selectedVisualCategory.toLowerCase();
-                      if (!matchesCat) return false;
-                      
-                      // Solo los artículos con imagen aparecen en el front
-                      const imageSrc = p.metadatos?.imagenUrl || p.metadata?.imagenUrl;
-                      if (!imageSrc) return false;
+                  {(() => {
+                    const currentCategoryLower = selectedVisualCategory.toLowerCase();
+                    
+                    // Optimización: calcular hayFlagEnCategoria una sola vez por render de categoría O(N)
+                    const hayFlagEnCategoria = products.some((x: any) => {
+                      const xCat = x.categoria?.nombre || x.categoria;
+                      const xImg = x.metadatos?.imagenUrl || x.metadata?.imagenUrl;
+                      return typeof xCat === 'string' &&
+                        xCat.toLowerCase() === currentCategoryLower &&
+                        xImg &&
+                        (x.metadatos?.enMenuRapido === true || x.metadata?.enMenuRapido === true);
+                    });
 
-                      // Si al menos 1 producto con imagen de esta categoría tiene enMenuRapido definido,
-                      // filtrar solo los marcados. Si ninguno tiene la flag, mostrar todos los que tengan foto.
-                      const hayFlagEnCategoria = products.some((x: any) => {
-                        const xCat = x.categoria?.nombre || x.categoria;
-                        const xImg = x.metadatos?.imagenUrl || x.metadata?.imagenUrl;
-                        return typeof xCat === 'string' &&
-                          xCat.toLowerCase() === selectedVisualCategory.toLowerCase() &&
-                          xImg &&
-                          (x.metadatos?.enMenuRapido === true || x.metadata?.enMenuRapido === true);
-                      });
-                      if (hayFlagEnCategoria) return p.metadatos?.enMenuRapido === true || p.metadata?.enMenuRapido === true;
-                      return true; // sin flags configuradas → mostrar todos
-                    })
-                    .map((p: any) => {
-                      const imageSrc = p.metadatos?.imagenUrl || p.metadata?.imagenUrl;
-                      const cartItem = cart.find((item: any) => item.productoId === p.id || item.sku === p.sku);
-                      const qtyInCart = cartItem ? cartItem.cantidad : 0;
-                      return (
-                        <div
-                          key={p.id}
-                          onClick={() => handleAddToCart(p)}
-                          className={`group bg-[#13151b] border-2 rounded-2xl overflow-hidden cursor-pointer transition-all shadow-lg flex flex-col justify-between min-h-[190px] relative select-none ${
-                            qtyInCart > 0 ? 'border-amber-500 shadow-[0_0_15px_rgba(245,158,11,0.2)]' : 'border-[#20222b] hover:border-amber-500/50'
-                          }`}
-                        >
-                          {qtyInCart > 0 && (
-                            <div className="absolute top-2.5 right-2.5 bg-slate-800 border border-[#20222b] text-white text-[10px] font-black w-5 h-5 rounded-full flex items-center justify-center shadow-md z-10">
-                              {qtyInCart}
-                            </div>
-                          )}
-                          {imageSrc ? (
-                            <div className="w-full h-24 overflow-hidden relative">
-                              <img src={imageSrc} alt={p.nombre} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
-                            </div>
-                          ) : (
-                            <div className="w-full h-24 bg-[#090a0d] flex items-center justify-center text-3xl">
-                              {selectedVisualCategory === 'Bebidas' ? '☕' : selectedVisualCategory === 'Alimentos' ? '🥪' : '🍰'}
-                            </div>
-                          )}
-                          <div className="p-3 flex-1 flex flex-col justify-between">
-                            <div>
-                              <span className="text-xs font-black text-slate-100 line-clamp-1 group-hover:text-amber-400 transition-colors leading-snug">{p.nombre}</span>
-                              <span className="text-[10px] text-slate-500 line-clamp-2 mt-1 leading-normal">
-                                {p.descripcion || `${p.nombre} premium de nuestra barra preparado al momento.`}
-                              </span>
-                            </div>
-                            <div className="flex justify-between items-center mt-3 pt-2 border-t border-[#20222b]/50">
-                              <span className="text-xs font-extrabold text-[#f59e0b]">${Number(p.precio).toFixed(2)}</span>
+                    return products
+                      .filter((p: any) => {
+                        const pCat = p.categoria?.nombre || p.categoria;
+                        const matchesCat = typeof pCat === 'string' && pCat.toLowerCase() === currentCategoryLower;
+                        if (!matchesCat) return false;
+                        
+                        // Solo los artículos con imagen aparecen en el front
+                        const imageSrc = p.metadatos?.imagenUrl || p.metadata?.imagenUrl;
+                        if (!imageSrc) return false;
+
+                        if (hayFlagEnCategoria) {
+                          return p.metadatos?.enMenuRapido === true || p.metadata?.enMenuRapido === true;
+                        }
+                        return true; // sin flags configuradas → mostrar todos
+                      })
+                      .map((p: any) => {
+                        const imageSrc = p.metadatos?.imagenUrl || p.metadata?.imagenUrl;
+                        const cartItem = cart.find((item: any) => item.productoId === p.id || item.sku === p.sku);
+                        const qtyInCart = cartItem ? cartItem.cantidad : 0;
+                        return (
+                          <div
+                            key={p.id}
+                            onClick={() => handleAddToCart(p)}
+                            className={`group bg-[#13151b] border-2 rounded-2xl overflow-hidden cursor-pointer transition-all shadow-lg flex flex-col justify-between min-h-[190px] relative select-none ${
+                              qtyInCart > 0 ? 'border-amber-500 shadow-[0_0_15px_rgba(245,158,11,0.2)]' : 'border-[#20222b] hover:border-amber-500/50'
+                            }`}
+                          >
+                            {qtyInCart > 0 && (
+                              <div className="absolute top-2.5 right-2.5 bg-slate-800 border border-[#20222b] text-white text-[10px] font-black w-5 h-5 rounded-full flex items-center justify-center shadow-md z-10">
+                                {qtyInCart}
+                              </div>
+                            )}
+                            {imageSrc ? (
+                              <div className="w-full h-24 overflow-hidden relative">
+                                <img src={imageSrc} alt={p.nombre} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                              </div>
+                            ) : (
+                              <div className="w-full h-24 bg-[#090a0d] flex items-center justify-center text-3xl">
+                                {selectedVisualCategory === 'Bebidas' ? '☕' : selectedVisualCategory === 'Alimentos' ? '🥪' : '🍰'}
+                              </div>
+                            )}
+                            <div className="p-3 flex-1 flex flex-col justify-between">
+                              <div>
+                                <span className="text-xs font-black text-slate-100 line-clamp-1 group-hover:text-amber-400 transition-colors leading-snug">{p.nombre}</span>
+                                <span className="text-[10px] text-slate-500 line-clamp-2 mt-1 leading-normal">
+                                  {p.descripcion || `${p.nombre} premium de nuestra barra preparado al momento.`}
+                                </span>
+                              </div>
+                              <div className="flex justify-between items-center mt-3 pt-2 border-t border-[#20222b]/50">
+                                <span className="text-xs font-extrabold text-[#f59e0b]">${Number(p.precio).toFixed(2)}</span>
+                              </div>
                             </div>
                           </div>
-                        </div>
-                      );
-                    })}
+                        );
+                      });
+                  })()}
                 </div>
               </section>
 
