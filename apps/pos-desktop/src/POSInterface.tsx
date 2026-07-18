@@ -321,7 +321,9 @@ export default function POSInterface() {
             costo: Number(p.costo) || 0,
             stock: p.balances ? p.balances.reduce((sum: number, b: any) => sum + Number(b.stockReal), 0) : 0,
             unidad: p.metadatos?.unidad || 'pieza',
-            descripcion: p.descripcion || ''
+            descripcion: p.descripcion || '',
+            metadatos: p.metadatos || null,
+            metadata: p.metadatos || {}
           }));
           await offlineStore.guardarCatalogo(mapped);
           setProducts(mapped);
