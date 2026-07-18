@@ -39,7 +39,7 @@ const toBase64 = (str: string) => {
 };
 
 // ─── Constants ────────────────────────────────────────────────────────────
-export let API_URL = 'https://pdventa.onrender.com/api/v1';
+export let API_URL = 'https://pdv-cafe.onrender.com/api/v1';
 const STORAGE_USER_KEY = '@vantepos_user';
 
 // ─── Interfaces ───────────────────────────────────────────────────────────
@@ -328,7 +328,132 @@ function LoginScreen({ onLogin }: { onLogin: (user: AuthUser) => void }) {
 
 // ─── Main App ──────────────────────────────────────────────────────────────
 function MainApp({ user, onLogout }: { user: AuthUser; onLogout: () => void }) {
-  const [currentView, setCurrentView] = useState<'catalog' | 'scanner' | 'cart' | 'result' | 'inventory' | 'printer'>('catalog');
+  const [config, setConfig] = useState<any>(null);
+  const [giro, setGiro] = useState<string>('ABARROTES');
+  const [selectedTable, setSelectedTable] = useState<string | null>(null);
+  const [tablesData, setTablesData] = useState<any>({
+    T1: { name: 'Mesa 1', status: 'Free', order: [] },
+    T2: { name: 'Mesa 2', status: 'Free', order: [] },
+    T3: { name: 'Mesa 3', status: 'Free', order: [] },
+    T4: { name: 'Mesa 4', status: 'Free', order: [] },
+    T5: { name: 'Mesa 5', status: 'Free', order: [] },
+    T7: { name: 'Mesa 7', status: 'Occupied', order: [{ product: { id: 'default-1', sku: 'CAF-LAT', nombre: 'Café Latte', categoria: 'Bebidas', precio: 55, stock: 10, unidad: 'pieza' }, quantity: 1 }], subtotal: 55 },
+    T12: { name: 'Mesa 12', status: 'Occupied', order: [{ product: { id: 'default-2', sku: 'CAF-ESP', nombre: 'Espresso Doble', categoria: 'Bebidas', precio: 45, stock: 10, unidad: 'pieza' }, quantity: 2 }], subtotal: 90 },
+    T15: { name: 'Mesa 15', status: 'BillReq', order: [{ product: { id: 'default-3', sku: 'CAF-MOC', nombre: 'Mocha Frio', categoria: 'Bebidas', precio: 70, stock: 10, unidad: 'pieza' }, quantity: 1 }], subtotal: 70 },
+  });
+
+  // Cargar configuración de la empresa y mesas al montar
+  useEffect(() => {
+    const initializeData = async () => {
+      // 1. Obtener giro de la empresa
+      try {
+        const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+        if (user.token) headers['Authorization'] = `Bearer ${user.token}`;
+        const response = await fetch(`${API_URL}/configuracion-empresa`, { headers });
+        if (response.ok) {
+          const data = await response.json();
+          setConfig(data);
+          const normalizedGiro = String(data.giro ?? 'ABARROTES').toUpperCase();
+          setGiro(normalizedGiro);
+          if (normalizedGiro === 'CAFETERIA') {
+            setCurrentView('tables'); // Ir a mesas por defecto
+          }
+        }
+      } catch (err) {
+        console.warn('Error al obtener configuracion del negocio:', err);
+      }
+
+      // 2. Cargar mesas locales
+      try {
+        const saved = await AsyncStorage.getItem('vante_tables_data');
+        if (saved) {
+          setTablesData(JSON.parse(saved));
+        }
+      } catch (e) {
+        console.warn('Error loading tables from AsyncStorage:', e);
+      }
+    };
+
+    initializeData();
+  }, [user.token]);
+
+  // Guardar mesas locales
+  const saveTablesData = async (newData: any) => {
+    try {
+      setTablesData(newData);
+      await AsyncStorage.setItem('vante_tables_data', JSON.stringify(newData));
+    } catch (e) {
+      console.warn('Error saving tables to AsyncStorage:', e);
+    }
+  };
+
+  const handleSelectTable = (key: string) => {
+    setSelectedTable(key);
+    const table = tablesData[key];
+    if (table && Array.isArray(table.order)) {
+      setCart(table.order);
+    } else {
+      setCart([]);
+    }
+    setClientName(table ? table.name : '');
+    setCurrentView('catalog'); // Ir al catálogo para comandar
+  };
+
+  const handleSaveTable = async () => {
+    if (!selectedTable) return;
+    
+    const nextStatus = cart.length > 0 ? 'Occupied' : 'Free';
+    const updatedTables = {
+      ...tablesData,
+      [selectedTable]: {
+        ...tablesData[selectedTable],
+        status: nextStatus,
+        order: cart,
+        subtotal: cart.reduce((sum, item) => sum + (item.product.precio * item.quantity), 0)
+      }
+    };
+    
+    await saveTablesData(updatedTables);
+    setSelectedTable(null);
+    setCart([]);
+    setClientName('');
+    setCurrentView('tables');
+    Alert.alert('Mesa Guardada', 'La comanda de la mesa se ha actualizado localmente.');
+  };
+
+  const handleClearTable = async () => {
+    if (!selectedTable) return;
+    
+    Alert.alert(
+      'Liberar Mesa',
+      `¿Estás seguro de limpiar y liberar la ${tablesData[selectedTable].name}?`,
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        {
+          text: 'Liberar',
+          style: 'destructive',
+          onPress: async () => {
+            const updatedTables = {
+              ...tablesData,
+              [selectedTable]: {
+                ...tablesData[selectedTable],
+                status: 'Free',
+                order: [],
+                subtotal: 0
+              }
+            };
+            await saveTablesData(updatedTables);
+            setSelectedTable(null);
+            setCart([]);
+            setClientName('');
+            setCurrentView('tables');
+          }
+        }
+      ]
+    );
+  };
+
+  const [currentView, setCurrentView] = useState<'catalog' | 'scanner' | 'cart' | 'result' | 'inventory' | 'printer' | 'tables'>('catalog');
   const [searchQuery, setSearchQuery] = useState('');
   const [products, setProducts] = useState<Product[]>([]);   // ← starts empty, no demo data
   const [cart, setCart] = useState<CartItem[]>([]);
@@ -467,6 +592,16 @@ function MainApp({ user, onLogout }: { user: AuthUser; onLogout: () => void }) {
       const headers: Record<string, string> = { 'Content-Type': 'application/json' };
       if (user.token) headers['Authorization'] = `Bearer ${user.token}`;
 
+      // Modificar clienteNombre según giro y mesero/vendedor
+      let finalClientName = clientName.trim() || 'Cliente General';
+      if (giro?.toUpperCase() === 'CAFETERIA') {
+        const tableLabel = selectedTable ? (tablesData[selectedTable]?.name || clientName) : clientName;
+        finalClientName = `${tableLabel} (Mesero: ${user.nombre})`;
+      } else {
+        const baseClient = clientName.trim() || 'Cliente General';
+        finalClientName = `${baseClient} (Vendedor: ${user.nombre})`;
+      }
+
       const response = await fetch(`${API_URL}/cotizaciones`, {
         method: 'POST',
         headers,
@@ -474,7 +609,7 @@ function MainApp({ user, onLogout }: { user: AuthUser; onLogout: () => void }) {
           sucursalId: 'suc-norte',
           usuarioId: user.id,
           vendedorNombre: user.nombre,
-          clienteNombre: clientName.trim() || 'Cliente General',
+          clienteNombre: finalClientName,
           items: cart.map(item => ({
             productoId: item.product.id,
             cantidad: item.quantity,
@@ -485,9 +620,25 @@ function MainApp({ user, onLogout }: { user: AuthUser; onLogout: () => void }) {
       if (!response.ok) throw new Error('Error al registrar cotización');
 
       const result = await response.json();
+      
+      // Si era comanda de mesa, marcar la mesa como esperando cuenta ("BillReq")
+      if (selectedTable) {
+        const updatedTables = {
+          ...tablesData,
+          [selectedTable]: {
+            ...tablesData[selectedTable],
+            status: 'BillReq',
+            order: cart,
+            subtotal: cart.reduce((sum, item) => sum + (item.product.precio * item.quantity), 0)
+          }
+        };
+        await saveTablesData(updatedTables);
+      }
+
       setQuoteResult({ codigoCorto: result.codigoCorto, folio: result.folio });
       setCart([]);
       setClientName('');
+      setSelectedTable(null);
       setCurrentView('result');
     } catch (e: any) {
       Alert.alert('Error de Red', 'No se pudo sincronizar el pedido con la caja central. Intenta de nuevo.');
@@ -805,7 +956,10 @@ function MainApp({ user, onLogout }: { user: AuthUser; onLogout: () => void }) {
       <View style={styles.header}>
         <View style={{ flex: 1 }}>
           <Text style={styles.headerTitle}>VANTE MÓVIL</Text>
-          <Text style={styles.headerSubtitle}>👤 {user.nombre} · {user.role.toUpperCase()}</Text>
+          <Text style={styles.headerSubtitle}>
+            👤 {user.nombre} · {user.role.toUpperCase()}
+            {selectedTable && ` · 🪑 ${tablesData[selectedTable]?.name}`}
+          </Text>
         </View>
         <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}>
           {(user.role === 'admin' || user.role === 'gerente') && (
@@ -867,41 +1021,43 @@ function MainApp({ user, onLogout }: { user: AuthUser; onLogout: () => void }) {
             />
           )}
 
-          <View style={styles.bottomNav}>
-            <TouchableOpacity
-              style={[styles.navButton, { backgroundColor: '#1a1c24', borderWidth: 1, borderColor: '#20222b' }]}
-              onPress={async () => {
-                setScanned(false);
-                if (!hasPermission) {
-                  const ok = await requestCameraPermission();
-                  if (!ok) { Alert.alert('Permiso requerido', 'Se requiere acceso a la cámara.'); return; }
-                }
-                setCurrentView('scanner');
-              }}
-            >
-              <Text style={[styles.navButtonText, { color: '#fff' }]}>📷 ESCANEAR</Text>
-            </TouchableOpacity>
-
-            {(user.role === 'admin' || user.role === 'gerente') && (
+          {giro?.toUpperCase() !== 'CAFETERIA' && (
+            <View style={styles.bottomNav}>
               <TouchableOpacity
-                style={[styles.navButton, { backgroundColor: '#1e3a8a', borderWidth: 1, borderColor: '#3b82f644' }]}
+                style={[styles.navButton, { backgroundColor: '#1a1c24', borderWidth: 1, borderColor: '#20222b' }]}
                 onPress={async () => {
                   setScanned(false);
                   if (!hasPermission) {
                     const ok = await requestCameraPermission();
                     if (!ok) { Alert.alert('Permiso requerido', 'Se requiere acceso a la cámara.'); return; }
                   }
-                  setCurrentView('inventory');
+                  setCurrentView('scanner');
                 }}
               >
-                <Text style={[styles.navButtonText, { color: '#fff' }]}>📦 INVENTARIO</Text>
+                <Text style={[styles.navButtonText, { color: '#fff' }]}>📷 ESCANEAR</Text>
               </TouchableOpacity>
-            )}
 
-            <TouchableOpacity style={styles.navButton} onPress={() => setCurrentView('cart')}>
-              <Text style={styles.navButtonText}>🛒 PEDIDO ({cart.length})</Text>
-            </TouchableOpacity>
-          </View>
+              {(user.role === 'admin' || user.role === 'gerente') && (
+                <TouchableOpacity
+                  style={[styles.navButton, { backgroundColor: '#1e3a8a', borderWidth: 1, borderColor: '#3b82f644' }]}
+                  onPress={async () => {
+                    setScanned(false);
+                    if (!hasPermission) {
+                      const ok = await requestCameraPermission();
+                      if (!ok) { Alert.alert('Permiso requerido', 'Se requiere acceso a la cámara.'); return; }
+                    }
+                    setCurrentView('inventory');
+                  }}
+                >
+                  <Text style={[styles.navButtonText, { color: '#fff' }]}>📦 INVENTARIO</Text>
+                </TouchableOpacity>
+              )}
+
+              <TouchableOpacity style={styles.navButton} onPress={() => setCurrentView('cart')}>
+                <Text style={styles.navButtonText}>🛒 PEDIDO ({cart.length})</Text>
+              </TouchableOpacity>
+            </View>
+          )}
         </View>
       )}
 
@@ -1038,13 +1194,31 @@ function MainApp({ user, onLogout }: { user: AuthUser; onLogout: () => void }) {
                 <ActivityIndicator color="#f59e0b" style={{ marginVertical: 12 }} />
               ) : (
                 <View style={{ gap: 8 }}>
-                  <TouchableOpacity style={[styles.checkoutBtn, { backgroundColor: '#f59e0b' }]} onPress={handleCreateQuote}>
-                    <Text style={styles.checkoutBtnText}>📤 ENVIAR A CAJA CENTRAL</Text>
-                  </TouchableOpacity>
-                  {(user.role === 'admin' || user.role === 'gerente') && (
-                    <TouchableOpacity style={[styles.checkoutBtn, { backgroundColor: '#10b981' }]} onPress={() => setShowCheckoutModal(true)}>
-                      <Text style={styles.checkoutBtnText}>💰 COBRAR VENTA</Text>
-                    </TouchableOpacity>
+                  {giro?.toUpperCase() === 'CAFETERIA' ? (
+                    <>
+                      <TouchableOpacity style={[styles.checkoutBtn, { backgroundColor: '#f59e0b' }]} onPress={handleSaveTable}>
+                        <Text style={styles.checkoutBtnText}>💾 GUARDAR MESA (COMANDA)</Text>
+                      </TouchableOpacity>
+                      
+                      <TouchableOpacity style={[styles.checkoutBtn, { backgroundColor: '#10b981' }]} onPress={handleCreateQuote}>
+                        <Text style={styles.checkoutBtnText}>📤 ENVIAR A CAJA CENTRAL</Text>
+                      </TouchableOpacity>
+
+                      <TouchableOpacity style={[styles.checkoutBtn, { backgroundColor: '#ef4444' }]} onPress={handleClearTable}>
+                        <Text style={styles.checkoutBtnText}>🗑️ LIBERAR / LIMPIAR MESA</Text>
+                      </TouchableOpacity>
+                    </>
+                  ) : (
+                    <>
+                      <TouchableOpacity style={[styles.checkoutBtn, { backgroundColor: '#f59e0b' }]} onPress={handleCreateQuote}>
+                        <Text style={styles.checkoutBtnText}>📤 ENVIAR A CAJA CENTRAL</Text>
+                      </TouchableOpacity>
+                      {(user.role === 'admin' || user.role === 'gerente') && (
+                        <TouchableOpacity style={[styles.checkoutBtn, { backgroundColor: '#10b981' }]} onPress={() => setShowCheckoutModal(true)}>
+                          <Text style={styles.checkoutBtnText}>💰 COBRAR VENTA</Text>
+                        </TouchableOpacity>
+                      )}
+                    </>
                   )}
                 </View>
               )}
@@ -1097,8 +1271,141 @@ function MainApp({ user, onLogout }: { user: AuthUser; onLogout: () => void }) {
       {/* PRINTER CONFIG VIEW */}
       {currentView === 'printer' && (
         <AuthGuard user={user} allowedRoles={['admin', 'gerente']}>
-          <PrinterConfigView theme="dark" onBack={() => setCurrentView('catalog')} />
+          <PrinterConfigView theme="dark" onBack={() => setCurrentView(giro?.toUpperCase() === 'CAFETERIA' ? 'tables' : 'catalog')} />
         </AuthGuard>
+      )}
+
+      {/* TABLES VIEW */}
+      {currentView === 'tables' && (
+        <View style={styles.content}>
+          <Text style={styles.sectionTitle}>Mesas Activas</Text>
+          <FlatList
+            data={Object.keys(tablesData || {})}
+            keyExtractor={item => item}
+            numColumns={2}
+            renderItem={({ item }) => {
+              const table = tablesData[item];
+              const isOccupied = table.status === 'Occupied';
+              const isBillReq = table.status === 'BillReq';
+              const isFree = table.status === 'Free' || (!isOccupied && !isBillReq);
+              
+              let statusText = 'LIBRE';
+              let statusColor = '#374151';
+              let textColor = '#aaa';
+              if (isOccupied) {
+                statusText = 'OCUPADA';
+                statusColor = '#f59e0b';
+                textColor = '#000';
+              } else if (isBillReq) {
+                statusText = 'CUENTA';
+                statusColor = '#10b981';
+                textColor = '#000';
+              }
+              
+              return (
+                <TouchableOpacity
+                  style={[styles.tableCard, { borderColor: isOccupied ? '#f59e0b' : isBillReq ? '#10b981' : '#20222b' }]}
+                  onPress={() => handleSelectTable(item)}
+                >
+                  <View style={styles.tableHeaderRow}>
+                    <Text style={styles.tableNameText}>{table.name}</Text>
+                    <View style={[styles.statusBadge, { backgroundColor: statusColor }]}>
+                      <Text style={[styles.statusBadgeText, { color: textColor }]}>{statusText}</Text>
+                    </View>
+                  </View>
+                  
+                  <View style={styles.tableBody}>
+                    {(isOccupied || isBillReq) ? (
+                      <>
+                        <Text style={styles.tableSubtotal}>${(table.subtotal || 0).toFixed(2)}</Text>
+                        <Text style={styles.tableItemsCount}>{table.order?.length || 0} pzs en comanda</Text>
+                      </>
+                    ) : (
+                      <Text style={styles.tableFreeText}>Disponible</Text>
+                    )}
+                  </View>
+                </TouchableOpacity>
+              );
+            }}
+          />
+        </View>
+      )}
+
+      {/* Barra de Navegación Inferior Cafetería */}
+      {giro?.toUpperCase() === 'CAFETERIA' && currentView !== 'scanner' && currentView !== 'inventory' && (
+        <View style={{
+          flexDirection: 'row',
+          height: 60,
+          borderTopWidth: 1,
+          borderTopColor: '#20222b',
+          backgroundColor: '#13151b',
+          alignItems: 'center',
+          justifyContent: 'space-around',
+          paddingBottom: Platform.OS === 'ios' ? 10 : 0
+        }}>
+          <TouchableOpacity 
+            style={{ alignItems: 'center', flex: 1, opacity: currentView === 'tables' ? 1 : 0.4 }} 
+            onPress={() => setCurrentView('tables')}
+          >
+            <Text style={{ fontSize: 20 }}>🪑</Text>
+            <Text style={{ color: '#fff', fontSize: 10, fontWeight: 'bold', marginTop: 2 }}>Mesas</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity 
+            style={{ alignItems: 'center', flex: 1, opacity: currentView === 'catalog' ? 1 : 0.4 }} 
+            onPress={() => {
+              if (!selectedTable) {
+                Alert.alert('Selecciona una Mesa', 'Por favor, selecciona primero una mesa desde la pantalla de Mesas para tomar una comanda.');
+                setCurrentView('tables');
+              } else {
+                setCurrentView('catalog');
+              }
+            }}
+          >
+            <Text style={{ fontSize: 20 }}>☕</Text>
+            <Text style={{ color: '#fff', fontSize: 10, fontWeight: 'bold', marginTop: 2 }}>Comandar</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity 
+            style={{ alignItems: 'center', flex: 1, opacity: currentView === 'cart' ? 1 : 0.4 }} 
+            onPress={() => {
+              if (!selectedTable) {
+                Alert.alert('Selecciona una Mesa', 'Por favor, selecciona primero una mesa desde la pantalla de Mesas para ver sus consumos.');
+                setCurrentView('tables');
+              } else {
+                setCurrentView('cart');
+              }
+            }}
+          >
+            <View>
+              <Text style={{ fontSize: 20 }}>📋</Text>
+              {cart.length > 0 && (
+                <View style={{
+                  position: 'absolute',
+                  top: -4,
+                  right: -8,
+                  backgroundColor: '#f59e0b',
+                  borderRadius: 8,
+                  width: 16,
+                  height: 16,
+                  justifyContent: 'center',
+                  alignItems: 'center'
+                }}>
+                  <Text style={{ color: '#000', fontSize: 9, fontWeight: 'black' }}>{cart.length}</Text>
+                </View>
+              )}
+            </View>
+            <Text style={{ color: '#fff', fontSize: 10, fontWeight: 'bold', marginTop: 2 }}>Cuentas</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity 
+            style={{ alignItems: 'center', flex: 1, opacity: currentView === 'printer' ? 1 : 0.4 }} 
+            onPress={() => setCurrentView('printer')}
+          >
+            <Text style={{ fontSize: 20 }}>⚙️</Text>
+            <Text style={{ color: '#fff', fontSize: 10, fontWeight: 'bold', marginTop: 2 }}>Ajustes</Text>
+          </TouchableOpacity>
+        </View>
       )}
 
       {/* Checkout Modal for Admin/Gerente */}
@@ -1757,6 +2064,55 @@ const styles = StyleSheet.create({
   whatsappInput: { flex: 1, backgroundColor: '#0d0e12', color: '#fff', borderWidth: 1, borderColor: '#20222b', borderRadius: 8, paddingHorizontal: 12, paddingVertical: 8, fontSize: 12 },
   whatsappBtn: { backgroundColor: '#10b981', borderRadius: 8, justifyContent: 'center', paddingHorizontal: 16 },
   whatsappBtnText: { color: '#fff', fontSize: 12, fontWeight: 'bold' },
+  tableCard: {
+    backgroundColor: '#13151b',
+    borderWidth: 2,
+    borderRadius: 16,
+    padding: 16,
+    margin: 8,
+    flex: 1,
+    minHeight: 120,
+    justifyContent: 'space-between',
+  },
+  tableHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  tableNameText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '900',
+  },
+  statusBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+  },
+  statusBadgeText: {
+    fontSize: 9,
+    fontWeight: '900',
+  },
+  tableBody: {
+    justifyContent: 'flex-end',
+  },
+  tableSubtotal: {
+    color: '#f59e0b',
+    fontSize: 18,
+    fontWeight: '900',
+  },
+  tableItemsCount: {
+    color: '#666',
+    fontSize: 10,
+    fontWeight: 'bold',
+    marginTop: 2,
+  },
+  tableFreeText: {
+    color: '#555',
+    fontSize: 12,
+    fontWeight: 'bold',
+  },
 });
 
 const modalStyles = StyleSheet.create({

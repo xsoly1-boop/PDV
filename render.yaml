@@ -5,7 +5,7 @@ services:
     repo: https://github.com/xsoly1-boop/PDV.git
     region: oregon
     branch: main
-    buildCommand: npm install && npx prisma generate && npm run build
+    buildCommand: npm install && npx prisma generate --schema=apps/api/prisma/schema.backup.prisma && npm run build
     startCommand: npm run start
     envVars:
       - key: DATABASE_URL
