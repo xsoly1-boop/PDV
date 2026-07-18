@@ -4475,7 +4475,8 @@ ${articulosTexto}
                 enableAdvancedInventory: newConfig.enableAdvancedInventory === true,
                 habilitarIA: newConfig.habilitarIA === true,
                 modeloIA: newConfig.modeloIA || 'gemma2:2b',
-                limiteRamIA: Number(newConfig.limiteRamIA) || 4
+                limiteRamIA: Number(newConfig.limiteRamIA) || 4,
+                vante_tables_data: (newConfig as any).vante_tables_data || ''
               };
 
               await fetch(`${API_V1}/configuracion-empresa`, {

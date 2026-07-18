@@ -441,7 +441,11 @@ export default function AdminDashboard({
       console.error('Error al guardar mesas:', err);
     }
 
-    onConfigChange(config);
+    const updatedConfig = {
+      ...config,
+      vante_tables_data: JSON.stringify(updatedTables)
+    };
+    onConfigChange(updatedConfig);
     alert('Configuración de la empresa guardada con éxito. Reiniciando terminal para aplicar cambios...');
     window.location.reload();
   };

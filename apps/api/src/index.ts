@@ -2522,7 +2522,8 @@ app.post('/api/v1/configuracion-empresa', async (req, res) => {
         paymentTerminalProvider: req.body.paymentTerminalProvider || 'none',
         paymentTerminalDeviceId: req.body.paymentTerminalDeviceId || '',
         enableAutoUpdates: req.body.enableAutoUpdates === true,
-        enableAdvancedInventory: req.body.enableAdvancedInventory === true
+        enableAdvancedInventory: req.body.enableAdvancedInventory === true,
+        vante_tables_data: req.body.vante_tables_data || ''
       } as any,
     };
 
