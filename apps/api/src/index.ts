@@ -1037,7 +1037,9 @@ app.post('/api/v1/ai/consultar', async (req, res) => {
 
   try {
     const config = await prisma.configuracionEmpresa.findFirst();
-    if (config && !config.habilitarIA) {
+    // Si la base de datos es local SQLite (en el ordenador del cliente), no bloqueamos la consulta local para evitar desincronizaciones en modo híbrido.
+    const esSQLite = !process.env.DATABASE_URL || process.env.DATABASE_URL.includes('sqlite') || process.env.DATABASE_URL.includes('dev.db');
+    if (!esSQLite && config && !config.habilitarIA) {
       return res.status(403).json({ error: 'El módulo de IA local está desactivado en la configuración.' });
     }
 
