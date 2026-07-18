@@ -16,7 +16,7 @@ export default function AIAssistant({ theme = 'dark' }: AIAssistantProps) {
   const [messages, setMessages] = useState<Message[]>([
     {
       sender: 'ai',
-      text: '¡Hola! Soy **Vante AI**, tu copiloto de negocios local y privado. Puedo ayudarte a analizar tus niveles de stock, resumir las últimas ventas, detectar alertas críticas o responder dudas operativas. \n\n¿De qué te gustaría hablar hoy?',
+      text: '¡Hola! Soy **Vante AI**, tu copiloto de negocios local y privado. Además de analizar ventas y stock, tengo cargado el **Manual de Operación y Soporte** de Vante POS.\n\nPuedes preguntarme dudas sobre:\n* *¿Cómo conecto Vante Móvil?*\n* *¿Qué significa la alerta de turno abierto?*\n* *¿Cuáles son los límites del modo Demo?*\n\n¿De qué te gustaría hablar hoy?',
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
     }
   ]);

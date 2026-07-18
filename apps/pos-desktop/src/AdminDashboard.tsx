@@ -400,6 +400,7 @@ export default function AdminDashboard({
     localStorage.setItem('vante_sucursal_nombre', sucursalNombre.trim());
     localStorage.setItem('vante_caja_nombre', cajaNombre.trim());
 
+    let updatedTables: any = {};
     // Guardar configuración de mesas
     try {
       const currentSaved = localStorage.getItem('vante_tables_data');
@@ -410,7 +411,7 @@ export default function AdminDashboard({
         .map(name => name.trim())
         .filter(name => name.length > 0);
         
-      const updatedTables: any = {};
+      updatedTables = {};
       newNames.forEach((name, index) => {
         // Buscar si ya existía una mesa con ese nombre, o ID similar
         const existingKey = Object.keys(currentTables).find(key => 
