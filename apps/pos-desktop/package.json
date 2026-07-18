@@ -9,8 +9,8 @@
     "preview": "vite preview",
     "electron:start": "electron .",
     "electron:dev": "concurrently \"npm run dev\" \"electron .\"",
-    "electron:build:server": "npm run build && electron-builder --config electron-builder-server.json",
-    "electron:build:client": "npm run build && electron-builder --config electron-builder-client.json"
+    "electron:build:server": "npx prisma generate --schema=../api/prisma/schema.prisma && npm run build && electron-builder --config electron-builder-server.json",
+    "electron:build:client": "npx prisma generate --schema=../api/prisma/schema.prisma && npm run build && electron-builder --config electron-builder-client.json"
   },
   "dependencies": {
     "@punto-de-venta/shared-types": "*",
