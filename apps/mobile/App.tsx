@@ -1759,41 +1759,7 @@ function RootApp() {
         setIsLoadingIntro(false);
       }, 3000);
 
-      // 4. Buscar actualizaciones en segundo plano
-      try {
-        const checkResp = await fetch(`${API_URL}/versiones`);
-        if (checkResp.ok) {
-          const data = await checkResp.json();
-          if (data.mobile && data.mobile !== CURRENT_VERSION) {
-            const serverVer = data.mobile.split('.').map(Number);
-            const localVer = CURRENT_VERSION.split('.').map(Number);
-            
-            let hasNew = false;
-            for (let i = 0; i < 3; i++) {
-              if (serverVer[i] > localVer[i]) {
-                hasNew = true;
-                break;
-              } else if (serverVer[i] < localVer[i]) {
-                break;
-              }
-            }
-            
-            if (hasNew) {
-              Alert.alert(
-                'Actualización Disponible',
-                `Hay una nueva versión de Vante POS Móvil (v${data.mobile}) disponible. ¿Deseas descargarla ahora?`,
-                [
-                  { text: 'Cancelar', style: 'cancel' },
-                  { text: 'Descargar', onPress: () => Linking.openURL(data.mobileUrl) }
-                ]
-              );
-            }
-          }
-        }
-      } catch (err) {
-        console.log('Error checking updates:', err);
-      }
-
+      // 4. Buscar actualizaciones desactivado temporalmente
       return () => clearTimeout(timer);
     };
 
