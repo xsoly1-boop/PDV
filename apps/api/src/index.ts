@@ -1236,8 +1236,8 @@ app.get('/api/v1/inventario/balance-global', async (req, res) => {
 app.get('/api/v1/versiones', (req, res) => {
   res.json({
     desktop: '2.0.0',
-    mobile: '1.1.2',
-    mobileUrl: 'https://pdventa.onrender.com/downloads/vante_pos_movil.apk'
+    mobile: '1.1.1',
+    mobileUrl: 'https://expo.dev/accounts/miyagisteam/projects/apex-pos-mobile/builds/a194c633-5d07-48d5-b717-f0e51f7e7c9b'
   });
 });
 
