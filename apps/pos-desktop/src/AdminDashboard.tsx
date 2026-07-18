@@ -122,6 +122,18 @@ export default function AdminDashboard({
   const [testTicketContent, setTestTicketContent] = useState('');
   const [sucursalNombre, setSucursalNombre] = useState(() => localStorage.getItem('vante_sucursal_nombre') || 'Suc. Norte');
   const [cajaNombre, setCajaNombre] = useState(() => localStorage.getItem('vante_caja_nombre') || 'Caja 01');
+  const [mesasListText, setMesasListText] = useState(() => {
+    const saved = localStorage.getItem('vante_tables_data');
+    if (saved) {
+      try {
+        const data = JSON.parse(saved);
+        return Object.values(data).map((t: any) => t.name || t.id.replace('T', 'Mesa ')).join(', ');
+      } catch (e) {
+        console.error(e);
+      }
+    }
+    return 'Mesa 1, Mesa 2, Mesa 3, Mesa 4, Mesa 5, Mesa 7, Mesa 12, Mesa 15';
+  });
 
   // AI Setup Wizard state
   const [showAIWizard, setShowAIWizard] = useState(false);
@@ -387,8 +399,51 @@ export default function AdminDashboard({
     e.preventDefault();
     localStorage.setItem('vante_sucursal_nombre', sucursalNombre.trim());
     localStorage.setItem('vante_caja_nombre', cajaNombre.trim());
+
+    // Guardar configuración de mesas
+    try {
+      const currentSaved = localStorage.getItem('vante_tables_data');
+      const currentTables = currentSaved ? JSON.parse(currentSaved) : {};
+      
+      const newNames = mesasListText
+        .split(',')
+        .map(name => name.trim())
+        .filter(name => name.length > 0);
+        
+      const updatedTables: any = {};
+      newNames.forEach((name, index) => {
+        // Buscar si ya existía una mesa con ese nombre, o ID similar
+        const existingKey = Object.keys(currentTables).find(key => 
+          currentTables[key].name === name || 
+          key === name ||
+          (key.startsWith('T') && key.replace('T', 'Mesa ') === name) ||
+          (currentTables[key].name && currentTables[key].name.toLowerCase() === name.toLowerCase())
+        );
+        
+        if (existingKey) {
+          updatedTables[existingKey] = {
+            ...currentTables[existingKey],
+            name: name
+          };
+        } else {
+          // Generar ID único para mesa nueva usando el índice
+          const id = name.match(/^\d+$/) ? `T${name}` : `T_${name.toLowerCase().replace(/\s+/g, '-')}_${index}_${Date.now()}`;
+          updatedTables[id] = {
+            name: name,
+            status: 'Free',
+            order: []
+          };
+        }
+      });
+      
+      localStorage.setItem('vante_tables_data', JSON.stringify(updatedTables));
+    } catch (err) {
+      console.error('Error al guardar mesas:', err);
+    }
+
     onConfigChange(config);
-    alert('Configuración de la empresa guardada con éxito.');
+    alert('Configuración de la empresa guardada con éxito. Reiniciando terminal para aplicar cambios...');
+    window.location.reload();
   };
 
   const centerText = (text: string, width: number) => {
@@ -2006,6 +2061,31 @@ export default function AdminDashboard({
                         onChange={handleLogoChange}
                         className="text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-amber-500 file:text-[#0d0e12] file:cursor-pointer transition-all active:scale-95"
                       />
+                    </div>
+                  </div>
+                </div>
+
+                {/* CARD 3: CONFIGURACIÓN DEL SALÓN (MESAS) */}
+                <div className={`p-6 rounded-2xl border ${
+                  theme === 'dark' ? 'bg-[#13151b] border-[#20222b]' : 'bg-white border-slate-200 shadow-sm'
+                }`}>
+                  <h3 className="text-sm font-bold uppercase tracking-wider mb-4 text-slate-400">Distribución de Mesas (Cafetería / Restaurante)</h3>
+                  
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-xs font-bold uppercase text-slate-500 mb-2">Mesas Habilitadas (Separadas por comas)</label>
+                      <textarea
+                        rows={3}
+                        placeholder="Ej: 1, 2, 3, 4, 5, 7, 12, 15, Barra, Terraza 1"
+                        className={`w-full rounded-xl p-3 border focus:outline-none focus:ring-2 focus:ring-amber-500 font-mono text-xs ${
+                          theme === 'dark' ? 'bg-[#1a1c24] border-[#262836] text-white' : 'bg-slate-50 border-slate-200'
+                        }`}
+                        value={mesasListText}
+                        onChange={e => setMesasListText(e.target.value)}
+                      />
+                      <p className="text-[10px] text-slate-500 mt-1 leading-normal">
+                        Escribe el nombre o número de cada una de tus mesas separadas por comas. Las mesas que ya tengan consumos activos conservarán su estado y cuenta.
+                      </p>
                     </div>
                   </div>
                 </div>

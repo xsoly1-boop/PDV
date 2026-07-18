@@ -106,16 +106,34 @@ export default function POSInterface() {
 
   const [currentScreen, setCurrentScreen] = useState<'pos' | 'tables' | 'kds'>('pos');
   const [selectedTable, setSelectedTable] = useState<string | null>(null);
-  const [tablesData, setTablesData] = useState<any>({
-    T1: { status: 'Free', order: [] },
-    T2: { status: 'Free', order: [] },
-    T3: { status: 'Free', order: [] },
-    T4: { status: 'Free', order: [] },
-    T5: { status: 'Free', order: [] },
-    T7: { status: 'Occupied', order: [{ name: 'Capuchino Grande (Almendra)', price: 77, qty: 1 }], subtotal: 77 },
-    T12: { status: 'Occupied', order: [{ name: 'Espresso Doble', price: 45, qty: 2 }], subtotal: 90 },
-    T15: { status: 'BillReq', order: [{ name: 'Mocha Frio', price: 70, qty: 1 }], subtotal: 70 },
+  const [tablesData, setTablesData] = useState<any>(() => {
+    const saved = localStorage.getItem('vante_tables_data');
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (e) {
+        console.error('Error parsing vante_tables_data:', e);
+      }
+    }
+    const defaultTables = {
+      T1: { name: 'Mesa 1', status: 'Free', order: [] },
+      T2: { name: 'Mesa 2', status: 'Free', order: [] },
+      T3: { name: 'Mesa 3', status: 'Free', order: [] },
+      T4: { name: 'Mesa 4', status: 'Free', order: [] },
+      T5: { name: 'Mesa 5', status: 'Free', order: [] },
+      T7: { name: 'Mesa 7', status: 'Occupied', order: [{ name: 'Capuchino Grande (Almendra)', price: 77, qty: 1 }], subtotal: 77 },
+      T12: { name: 'Mesa 12', status: 'Occupied', order: [{ name: 'Espresso Doble', price: 45, qty: 2 }], subtotal: 90 },
+      T15: { name: 'Mesa 15', status: 'BillReq', order: [{ name: 'Mocha Frio', price: 70, qty: 1 }], subtotal: 70 },
+    };
+    localStorage.setItem('vante_tables_data', JSON.stringify(defaultTables));
+    return defaultTables;
   });
+
+  useEffect(() => {
+    if (tablesData && Object.keys(tablesData).length > 0) {
+      localStorage.setItem('vante_tables_data', JSON.stringify(tablesData));
+    }
+  }, [tablesData]);
 
   const [kdsOrders, setKdsOrders] = useState<any[]>([
     { id: '#101', customer: 'Sofía M.', time: '02:18', items: ['1x Capuchino Grande (Leche Almendra)', '1x Pan Au Chocolat'], status: 'green' },
@@ -3081,7 +3099,7 @@ ${articulosTexto}
               theme === 'dark' ? 'text-slate-300 border-[#20222b]' : 'text-slate-600 border-slate-200'
             }`}>
               <User className="w-4 h-4 text-amber-500" /> 
-              <span>{currentUser.nombre} <span className="text-[10px] text-slate-400">({currentUser.rol})</span>{selectedTable ? <span className="ml-2 bg-amber-500/20 text-amber-500 px-2 py-0.5 rounded text-[10px] font-bold">Mesa {selectedTable.replace('T', '')}</span> : ''}</span>
+              <span>{currentUser.nombre} <span className="text-[10px] text-slate-400">({currentUser.rol})</span>{selectedTable ? <span className="ml-2 bg-amber-500/20 text-amber-500 px-2 py-0.5 rounded text-[10px] font-bold">{tablesData[selectedTable]?.name || selectedTable.replace('T', 'Mesa ')}</span> : ''}</span>
             </div>
             <button 
               onClick={() => { 
@@ -3167,7 +3185,7 @@ ${articulosTexto}
                     {t.status === 'Free' ? '🟢' : t.status === 'Occupied' ? '🔴' : '🔔'}
                   </span>
                   <div className="text-center mt-2">
-                    <span className="text-lg font-black tracking-tight text-white">{id.replace('T', 'Mesa ')}</span>
+                    <span className="text-lg font-black tracking-tight text-white">{t.name || id.replace('T', 'Mesa ')}</span>
                     <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider mt-0.5">
                       {t.status === 'Free' ? 'Disponible' : t.status === 'Occupied' ? 'Consumiendo' : 'Pide Cuenta'}
                     </p>
