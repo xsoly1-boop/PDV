@@ -3213,7 +3213,7 @@ ${articulosTexto}
                     : 'bg-transparent text-slate-400 hover:text-slate-200'
                 }`}
               >
-                📋 KDS Barra
+                📋 Cocina, Barista
               </button>
             </div>
           )}
@@ -3368,8 +3368,8 @@ ${articulosTexto}
           <div className="flex-1 flex flex-col p-6 overflow-y-auto bg-[#0d0e12]">
             <div className="flex justify-between items-center mb-6">
               <div>
-                <h2 className="text-xl font-black text-white">📋 Pantalla KDS - Estación Barista</h2>
-                <p className="text-xs text-slate-400">Órdenes de bebidas en cola de preparación. Haz clic en "Listo" para archivar.</p>
+                <h2 className="text-xl font-black text-white">📋 Cocina, Barista</h2>
+                <p className="text-xs text-slate-400">Órdenes de cocina y bebidas en cola de preparación. Haz clic en "Listo" para archivar.</p>
               </div>
               <span className="px-3 py-1 bg-amber-500/10 border border-amber-500/30 text-amber-500 text-xs font-bold rounded-lg">
                 Órdenes Activas: {kdsOrders.length}
