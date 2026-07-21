@@ -161,7 +161,7 @@ export default function AdminDashboard({
   }, [config.habilitarIA, config.modeloIA, verificarModelo]);
 
   // Financial Reports state
-  const [selectedPeriod, setSelectedPeriod] = useState<'hoy' | 'semana' | 'mes' | 'anio'>('hoy');
+  const [selectedPeriod, setSelectedPeriod] = useState<'hoy' | 'semana' | 'mes' | 'anio' | 'todo'>('todo');
   const [finanzasReport, setFinanzasReport] = useState<any>({
     hoy: { ventas: 0, costo: 0, ganancia: 0, count: 0 },
     semana: { ventas: 0, costo: 0, ganancia: 0, count: 0 },
@@ -1522,7 +1522,7 @@ export default function AdminDashboard({
                   <p className="text-xs text-slate-500 mt-1">Monitoreo de ingresos, costos y utilidad por periodo de tiempo.</p>
                 </div>
                 <div className="flex bg-[#0d0e12] rounded-xl p-1 border border-[#20222b] gap-1">
-                  {(['hoy', 'semana', 'mes', 'anio'] as const).map((period) => (
+                  {(['hoy', 'semana', 'mes', 'anio', 'todo'] as const).map((period) => (
                     <button
                       key={period}
                       onClick={() => setSelectedPeriod(period)}
@@ -1532,7 +1532,7 @@ export default function AdminDashboard({
                           : 'text-slate-400 hover:text-white bg-transparent'
                       }`}
                     >
-                      {period === 'hoy' ? 'Día' : period === 'semana' ? 'Semana' : period === 'mes' ? 'Mes' : 'Año'}
+                      {period === 'hoy' ? 'Día' : period === 'semana' ? 'Semana' : period === 'mes' ? 'Mes' : period === 'anio' ? 'Año' : 'Histórico'}
                     </button>
                   ))}
                 </div>

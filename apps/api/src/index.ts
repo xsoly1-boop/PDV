@@ -357,13 +357,14 @@ app.put('/api/v1/productos/:id', async (req, res) => {
   }
 });
 
-// DELETE /api/v1/productos/:id
+// DELETE /api/v1/productos/:id (Soft Delete)
 app.delete('/api/v1/productos/:id', async (req, res) => {
   const { id } = req.params;
   try {
-    await prisma.codigoBarras.deleteMany({ where: { productoId: id } });
-    await prisma.inventarioBalance.deleteMany({ where: { productoId: id } });
-    await prisma.producto.delete({ where: { id } });
+    await prisma.producto.update({
+      where: { id },
+      data: { activo: false }
+    });
     
     await registrarEventoSync('Producto', id, 'DELETE');
     
@@ -1701,19 +1702,6 @@ app.put('/api/v1/clientes/:id', async (req, res) => {
   }
 });
 
-// Eliminar un cliente
-app.delete('/api/v1/clientes/:id', async (req, res) => {
-  const { id } = req.params;
-  try {
-    await prisma.cliente.delete({
-      where: { id }
-    });
-    await registrarEventoSync('Cliente', id, 'DELETE');
-    res.json({ success: true });
-  } catch (error: any) {
-    res.status(500).json({ error: error.message });
-  }
-});
 
 // Registrar abono
 app.post('/api/v1/clientes/:id/abono', async (req, res) => {
@@ -1995,6 +1983,8 @@ app.post('/api/v1/productos/migrar', async (req, res) => {
     return res.status(400).json({ error: 'Formato de productos inválido' });
   }
   try {
+    const esSQLite = !process.env.DATABASE_URL || process.env.DATABASE_URL.includes('sqlite') || process.env.DATABASE_URL.includes('dev.db');
+
     // Fetch category and supplier maps for linking
     const allCats = await prisma.categoria.findMany();
     const allProvs = await prisma.proveedor.findMany();
@@ -2027,12 +2017,6 @@ app.post('/api/v1/productos/migrar', async (req, res) => {
       })
       .filter(Boolean) as any[];
 
-    // Batch insert products — skip duplicates
-    const resultado = await (prisma.producto as any).createMany({
-      data: registros,
-      skipDuplicates: true
-    });
-
     // Create InventarioBalance records for initial stock
     const balances = productos
       .map((p: any) => {
@@ -2043,16 +2027,57 @@ app.post('/api/v1/productos/migrar', async (req, res) => {
       })
       .filter(Boolean) as any[];
 
+    let productCount = 0;
     let stockCount = 0;
-    if (balances.length > 0) {
-      const balResult = await (prisma.inventarioBalance as any).createMany({
-        data: balances,
+
+    if (esSQLite) {
+      for (const reg of registros) {
+        try {
+          const ext = await prisma.producto.findUnique({ where: { id: reg.id } });
+          if (ext) {
+            await prisma.producto.update({ where: { id: reg.id }, data: reg });
+          } else {
+            await prisma.producto.create({ data: reg });
+          }
+          productCount++;
+        } catch (e: any) {
+          console.warn('[MIGRAR-PRODUCTO-ITEM]', e.message);
+        }
+      }
+
+      for (const bal of balances) {
+        try {
+          const ext = await prisma.inventarioBalance.findFirst({
+            where: { productoId: bal.productoId, sucursalId: bal.sucursalId }
+          });
+          if (ext) {
+            await prisma.inventarioBalance.update({
+              where: { id: ext.id },
+              data: { stockReal: bal.stockReal }
+            });
+          } else {
+            await prisma.inventarioBalance.create({ data: bal });
+          }
+          stockCount++;
+        } catch (e: any) {}
+      }
+    } else {
+      const resultado = await (prisma.producto as any).createMany({
+        data: registros,
         skipDuplicates: true
       });
-      stockCount = balResult.count;
+      productCount = resultado.count;
+
+      if (balances.length > 0) {
+        const balResult = await (prisma.inventarioBalance as any).createMany({
+          data: balances,
+          skipDuplicates: true
+        });
+        stockCount = balResult.count;
+      }
     }
 
-    res.json({ success: true, count: resultado.count, total_enviados: registros.length, stock_registros: stockCount });
+    res.json({ success: true, count: productCount, total_enviados: registros.length, stock_registros: stockCount });
   } catch (error: any) {
     console.error('[MIGRAR-PRODUCTOS] Error:', error.message);
     res.status(500).json({ error: error.message });
@@ -2128,6 +2153,7 @@ app.post('/api/v1/inventario/migrar', async (req, res) => {
     return res.status(400).json({ error: 'Formato de inventario inválido' });
   }
   try {
+    const esSQLite = !process.env.DATABASE_URL || process.env.DATABASE_URL.includes('sqlite') || process.env.DATABASE_URL.includes('dev.db');
     const sucursal = await prisma.sucursal.findFirst();
     const sucursalId = sucursal?.id || 'suc-norte';
 
@@ -2152,11 +2178,20 @@ app.post('/api/v1/inventario/migrar', async (req, res) => {
 
     let count = 0;
     if (balances.length > 0) {
-      const result = await (prisma.inventarioBalance as any).createMany({
-        data: balances,
-        skipDuplicates: true
-      });
-      count = result.count;
+      if (esSQLite) {
+        for (const item of balances) {
+          try {
+            await prisma.inventarioBalance.create({ data: item });
+            count++;
+          } catch (e: any) {}
+        }
+      } else {
+        const result = await (prisma.inventarioBalance as any).createMany({
+          data: balances,
+          skipDuplicates: true
+        });
+        count = result.count;
+      }
     }
 
     res.json({ success: true, count });
@@ -2173,6 +2208,7 @@ app.post('/api/v1/ventas/migrar', async (req, res) => {
     return res.status(400).json({ error: 'Formato de ventas inválido' });
   }
   try {
+    const esSQLite = !process.env.DATABASE_URL || process.env.DATABASE_URL.includes('sqlite') || process.env.DATABASE_URL.includes('dev.db');
     const sucursal = await prisma.sucursal.findFirst();
     const sucursalId = sucursal?.id || 'suc-norte';
 
@@ -2199,64 +2235,115 @@ app.post('/api/v1/ventas/migrar', async (req, res) => {
       });
     }
 
-    const batchSize = 1000;
     let salesCount = 0;
     let detailsCount = 0;
 
-    for (let i = 0; i < ventas.length; i += batchSize) {
-      const chunk = ventas.slice(i, i + batchSize);
-      const salesToInsert: any[] = [];
-      const detailsToInsert: any[] = [];
-
-      for (const v of chunk) {
+    if (esSQLite) {
+      for (const v of ventas) {
         let clienteId: string | null = null;
         if (v.clienteNombre) {
           clienteId = clientMap.get(v.clienteNombre.toLowerCase().trim()) || null;
         }
 
-        salesToInsert.push({
-          id: v.id,
-          folio: v.folio,
-          sucursalId,
-          usuarioId,
-          clienteId,
-          total: v.total,
-          subtotal: v.subtotal,
-          descuento: v.descuento || 0,
-          esOffline: false,
-          creadoAt: new Date(v.creadoAt)
-        });
+        try {
+          const extV = await prisma.venta.findUnique({ where: { id: v.id } });
+          if (!extV) {
+            await prisma.venta.create({
+              data: {
+                id: v.id,
+                folio: v.folio,
+                sucursalId,
+                usuarioId,
+                clienteId,
+                total: Number(v.total) || 0,
+                subtotal: Number(v.subtotal) || 0,
+                descuento: Number(v.descuento) || 0,
+                esOffline: false,
+                creadoAt: new Date(v.creadoAt)
+              }
+            });
+            salesCount++;
+          }
 
-        if (v.detalles && Array.isArray(v.detalles)) {
-          for (const d of v.detalles) {
-            if (existingSkus.has(d.productoId)) {
-              detailsToInsert.push({
-                ventaId: v.id,
-                productoId: d.productoId,
-                cantidad: d.cantidad,
-                precioUnitario: d.precioUnitario,
-                subtotal: d.subtotal
-              });
+          if (v.detalles && Array.isArray(v.detalles)) {
+            for (const d of v.detalles) {
+              if (existingSkus.has(d.productoId)) {
+                try {
+                  await prisma.detalleVenta.create({
+                    data: {
+                      ventaId: v.id,
+                      productoId: d.productoId,
+                      cantidad: Number(d.cantidad) || 1,
+                      precioUnitario: Number(d.precioUnitario) || 0,
+                      subtotal: Number(d.subtotal) || 0
+                    }
+                  });
+                  detailsCount++;
+                } catch (e: any) {}
+              }
+            }
+          }
+        } catch (e: any) {
+          console.warn('[MIGRAR-VENTA-ITEM] Error:', e.message);
+        }
+      }
+    } else {
+      const batchSize = 1000;
+      for (let i = 0; i < ventas.length; i += batchSize) {
+        const chunk = ventas.slice(i, i + batchSize);
+        const salesToInsert: any[] = [];
+        const detailsToInsert: any[] = [];
+
+        for (const v of chunk) {
+          let clienteId: string | null = null;
+          if (v.clienteNombre) {
+            clienteId = clientMap.get(v.clienteNombre.toLowerCase().trim()) || null;
+          }
+
+          salesToInsert.push({
+            id: v.id,
+            folio: v.folio,
+            sucursalId,
+            usuarioId,
+            clienteId,
+            total: Number(v.total) || 0,
+            subtotal: Number(v.subtotal) || 0,
+            descuento: Number(v.descuento) || 0,
+            esOffline: false,
+            creadoAt: new Date(v.creadoAt)
+          });
+
+          if (v.detalles && Array.isArray(v.detalles)) {
+            for (const d of v.detalles) {
+              if (existingSkus.has(d.productoId)) {
+                detailsToInsert.push({
+                  ventaId: v.id,
+                  productoId: d.productoId,
+                  cantidad: Number(d.cantidad) || 1,
+                  precioUnitario: Number(d.precioUnitario) || 0,
+                  subtotal: Number(d.subtotal) || 0
+                });
+              }
             }
           }
         }
-      }
 
-      await prisma.$transaction(async (tx) => {
-        const sRes = await (tx.venta as any).createMany({
-          data: salesToInsert,
-          skipDuplicates: true
-        });
-        salesCount += sRes.count;
-
-        if (detailsToInsert.length > 0) {
-          const dRes = await (tx.detalleVenta as any).createMany({
-            data: detailsToInsert,
+        await prisma.$transaction(async (tx) => {
+          const sRes = await (tx.venta as any).createMany({
+            data: salesToInsert,
             skipDuplicates: true
           });
-          detailsCount += dRes.count;
-        }
-      });
+          salesCount += sRes.count;
+
+          if (detailsToInsert.length > 0) {
+            const dRes = await (tx.detalleVenta as any).createMany({
+              data: detailsToInsert,
+              skipDuplicates: true
+            });
+            detailsCount += dRes.count;
+          }
+        });
+      }
     }
 
     res.json({ success: true, sales_count: salesCount, details_count: detailsCount });
@@ -2453,7 +2540,8 @@ app.get('/api/v1/reportes/finanzas', async (req, res) => {
       hoy: { ventas: 0, costo: 0, ganancia: 0, count: 0 },
       semana: { ventas: 0, costo: 0, ganancia: 0, count: 0 },
       mes: { ventas: 0, costo: 0, ganancia: 0, count: 0 },
-      anio: { ventas: 0, costo: 0, ganancia: 0, count: 0 }
+      anio: { ventas: 0, costo: 0, ganancia: 0, count: 0 },
+      todo: { ventas: 0, costo: 0, ganancia: 0, count: 0 }
     };
     
     // Helper time frames
@@ -2469,11 +2557,21 @@ app.get('/api/v1/reportes/finanzas', async (req, res) => {
       
       // Calculate cost
       let cost = 0;
-      for (const d of sale.detalles) {
-        cost += Number(d.producto.costo) * Number(d.cantidad);
+      if (sale.detalles && Array.isArray(sale.detalles)) {
+        for (const d of sale.detalles) {
+          if (d.producto) {
+            cost += Number(d.producto.costo || 0) * Number(d.cantidad || 0);
+          }
+        }
       }
       const profit = total - cost;
       
+      // Histórico Total
+      reports.todo.ventas += total;
+      reports.todo.costo += cost;
+      reports.todo.ganancia += profit;
+      reports.todo.count++;
+
       // Hoy
       if (saleDate >= startOfToday) {
         reports.hoy.ventas += total;
