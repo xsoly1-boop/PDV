@@ -166,7 +166,8 @@ export default function AdminDashboard({
     hoy: { ventas: 0, costo: 0, ganancia: 0, count: 0 },
     semana: { ventas: 0, costo: 0, ganancia: 0, count: 0 },
     mes: { ventas: 0, costo: 0, ganancia: 0, count: 0 },
-    anio: { ventas: 0, costo: 0, ganancia: 0, count: 0 }
+    anio: { ventas: 0, costo: 0, ganancia: 0, count: 0 },
+    todo: { ventas: 0, costo: 0, ganancia: 0, count: 0 }
   });
 
   const [categoriesList, setCategoriesList] = useState<any[]>([]);
@@ -338,6 +339,7 @@ export default function AdminDashboard({
   };
 
   React.useEffect(() => {
+    fetchProducts();
     fetchFinanzasReport();
     fetchCategoriesAndSuppliers();
     if (activeTab === 'gastos') {
