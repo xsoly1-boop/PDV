@@ -23,7 +23,6 @@
       "filter": [
         "dist/**/*",
         "node_modules/**/*",
-        "!node_modules/@punto-de-venta/**/*",
         "prisma/**/*",
         "package.json",
         ".env"

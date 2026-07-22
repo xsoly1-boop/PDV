@@ -158,6 +158,129 @@ app.post('/api/v1/productos/revertir-codigos-sku', async (req, res) => {
   }
 });
 
+// Helper para buscar código de barras en internet usando UPCitemdb
+async function fetchBarcodeFromInternet(sku: string): Promise<string | null> {
+  try {
+    const url = `https://api.upcitemdb.com/prod/trial/search?q=${encodeURIComponent(sku)}`;
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+        'Accept': 'application/json'
+      }
+    });
+
+    if (response.ok) {
+      const data: any = await response.json();
+      if (data && Array.isArray(data.items) && data.items.length > 0) {
+        const item = data.items[0];
+        if (item.ean || item.upc) {
+          return String(item.ean || item.upc);
+        }
+      }
+    }
+  } catch (e: any) {
+    console.warn(`[Lookup] No se pudo encontrar en internet para el SKU "${sku}":`, e.message);
+  }
+  return null;
+}
+
+// POST /api/v1/productos/buscar-codigos-automatico - Busca códigos de barra ÚNICAMENTE en Internet filtrado por Giro
+app.post('/api/v1/productos/buscar-codigos-automatico', async (req, res) => {
+  try {
+    // 1. Obtener el giro configurado por el usuario
+    const companyConfig = await prisma.configuracionEmpresa.findFirst();
+    const giro = companyConfig?.giro ? companyConfig.giro.toLowerCase().trim() : 'abarrotes';
+
+    // 2. Cargar los SKUs y Nombres válidos para este giro desde los presets de Vante
+    const presetSkus = new Set<string>();
+    const presetNames = new Set<string>();
+    const presetPath = path.join(__dirname, 'presets', `${giro}.json`);
+
+    if (fs.existsSync(presetPath)) {
+      try {
+        const content = fs.readFileSync(presetPath, 'utf8');
+        const data = JSON.parse(content);
+        if (Array.isArray(data)) {
+          for (const item of data) {
+            if (item.sku) presetSkus.add(String(item.sku).toUpperCase());
+            if (item.nombre) presetNames.add(String(item.nombre).trim().toLowerCase());
+          }
+        }
+      } catch (e) {
+        console.warn(`Error al leer el archivo de presets del giro ${giro}:`, e);
+      }
+    }
+
+    const products = await prisma.producto.findMany({
+      include: { codigos: true }
+    });
+
+    const toInsert: Array<{ codigo: string; productoId: string }> = [];
+    const matchedProducts: Array<{ sku: string; nombre: string; codigo: string; origen: string }> = [];
+    const existingCodigos = new Set((await prisma.codigoBarras.findMany({ select: { codigo: true } })).map(c => c.codigo));
+
+    let countInternet = 0;
+    const maxWebQueries = 30; // Límite de seguridad por ejecución para evitar bloqueos de IP
+
+    for (const p of products) {
+      const hasRealBarcode = p.codigos.some(c => c.codigo !== p.sku);
+      if (hasRealBarcode) continue;
+
+      // SALTAR PRODUCTOS A GRANEL (permiteFracciones) O CON SKU INVÁLIDO/CORTO
+      if (p.permiteFracciones || !p.sku || p.sku.trim().length < 3) continue;
+
+      // FILTRADO POR GIRO: El producto debe existir en los presets del giro configurado
+      const belongsToActiveGiro = presetSkus.has(p.sku.toUpperCase()) || presetNames.has(p.nombre.trim().toLowerCase());
+      if (!belongsToActiveGiro) continue;
+
+      if (countInternet >= maxWebQueries) break;
+
+      // Espera de 800ms para respetar límites de la API
+      await new Promise(resolve => setTimeout(resolve, 800));
+      const barcodeWeb = await fetchBarcodeFromInternet(p.sku);
+
+      if (barcodeWeb && !existingCodigos.has(barcodeWeb)) {
+        toInsert.push({ codigo: barcodeWeb, productoId: p.id });
+        existingCodigos.add(barcodeWeb);
+        matchedProducts.push({
+          sku: p.sku,
+          nombre: p.nombre,
+          codigo: barcodeWeb,
+          origen: 'Internet'
+        });
+        countInternet++;
+      }
+    }
+
+    if (toInsert.length > 0) {
+      const chunkSize = 1000;
+      for (let i = 0; i < toInsert.length; i += chunkSize) {
+        const chunk = toInsert.slice(i, i + chunkSize);
+        await (prisma.codigoBarras as any).createMany({
+          data: chunk,
+          skipDuplicates: true
+        });
+      }
+    }
+
+    res.json({
+      success: true,
+      totalImported: toInsert.length,
+      countEleventa: 0,
+      countPresets: 0,
+      countInternet,
+      message: `Se importaron ${toInsert.length} códigos de barras encontrados en Internet para el giro ${giro.toUpperCase()}.`,
+      details: matchedProducts
+    });
+  } catch (error: any) {
+    console.error('Error al realizar búsqueda en internet de códigos de barra:', error);
+    res.status(500).json({ error: error.message || 'Error interno en la búsqueda de internet' });
+  }
+});
+
+
+
 // GET /api/v1/productos/escanear/:codigo
 app.get('/api/v1/productos/escanear/:codigo', async (req, res) => {
   const { codigo } = req.params;
@@ -204,13 +327,26 @@ app.get('/api/v1/productos/escanear/:codigo', async (req, res) => {
   }
 });
 
-// GET /api/v1/productos (listar todos)
+// GET /api/v1/productos (listar todos con opción de paginación)
 app.get('/api/v1/productos', async (req, res) => {
   try {
+    const limit = req.query.limit ? parseInt(req.query.limit as string) : undefined;
+    const offset = req.query.offset ? parseInt(req.query.offset as string) : undefined;
+    const page = req.query.page ? parseInt(req.query.page as string) : undefined;
+
+    const skip = offset !== undefined ? offset : (page && limit ? (page - 1) * limit : undefined);
+
+    const totalCount = await prisma.producto.count();
+
     const productos = await prisma.producto.findMany({
+      take: limit,
+      skip: skip,
       include: { codigos: true, balances: true, categoria: true, proveedor: true },
       orderBy: { nombre: 'asc' }
     });
+
+    res.setHeader('X-Total-Count', String(totalCount));
+    res.setHeader('Access-Control-Expose-Headers', 'X-Total-Count');
     res.json(productos);
   } catch (error: any) {
     res.status(500).json({ error: error.message });
@@ -2603,6 +2739,47 @@ app.get('/api/v1/reportes/finanzas', async (req, res) => {
     }
     
     res.json(reports);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Reporte de Valuación de Inventario (Servidor)
+app.get('/api/v1/reportes/inventario', async (req, res) => {
+  try {
+    const productos = await prisma.producto.findMany({
+      select: {
+        costo: true,
+        precio: true,
+        metadatos: true,
+        balances: { select: { stockReal: true } }
+      }
+    });
+
+    let totalArticulos = 0;
+    let costoValuado = 0;
+    let utilidadEstimada = 0;
+
+    for (const p of productos) {
+      const costo = Number(p.costo || 0);
+      const precio = Number(p.precio || 0);
+      const hasBalances = Array.isArray(p.balances) && p.balances.length > 0;
+      const stock = hasBalances
+        ? p.balances.reduce((s, b) => s + Number(b.stockReal || 0), 0)
+        : Number((p.metadatos as any)?.stock ?? 0);
+
+      const qty = stock > 0 ? stock : 1;
+      totalArticulos += stock > 0 ? stock : 1;
+      costoValuado += costo * qty;
+      utilidadEstimada += (precio - costo) * qty;
+    }
+
+    res.json({
+      totalArticulos,
+      totalProductos: productos.length,
+      costoValuado,
+      utilidadEstimada
+    });
   } catch (error: any) {
     res.status(500).json({ error: error.message });
   }

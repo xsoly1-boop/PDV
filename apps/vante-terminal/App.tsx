@@ -386,9 +386,14 @@ function MainTerminal({ user, onLogout }: { user: AuthUser; onLogout: () => void
     try {
       const ventaData = {
         folio: `VNT-${Date.now()}`,
-        clienteId: null,
-        sucursalId: 'suc-norte',
+        sucursalId: user.sucursalId || 'default',
         usuarioId: user.id,
+        detalles: cart.map(item => ({
+          productoId: item.product.id,
+          cantidad: item.quantity,
+          precioUnitario: item.product.precio,
+          subtotal: item.product.precio * item.quantity
+        })),
         items: cart.map(item => ({
           productoId: item.product.id,
           cantidad: item.quantity,
@@ -398,6 +403,7 @@ function MainTerminal({ user, onLogout }: { user: AuthUser; onLogout: () => void
         total: getCartTotal(),
         subtotal: getCartTotal(),
         descuento: 0,
+        metodo: paymentType.toUpperCase(),
         metodoPago: paymentType.toUpperCase(),
         efectivoRecibido: paymentType === 'cash' ? Number(cashReceived) : 0,
       };

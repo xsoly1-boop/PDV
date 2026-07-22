@@ -338,7 +338,9 @@ export default function POSInterface() {
             categoria: p.categoria?.nombre || 'General',
             precio: Number(p.precio) || 0,
             costo: Number(p.costo) || 0,
-            stock: p.balances ? p.balances.reduce((sum: number, b: any) => sum + Number(b.stockReal), 0) : 0,
+            stock: (Array.isArray(p.balances) && p.balances.length > 0)
+              ? p.balances.reduce((sum: number, b: any) => sum + Number(b.stockReal || 0), 0)
+              : Number(p.stock !== undefined && p.stock !== null ? p.stock : (p.metadatos?.stock !== undefined ? p.metadatos.stock : 0)),
             unidad: p.metadatos?.unidad || 'pieza',
             descripcion: p.descripcion || '',
             metadatos: p.metadatos || null,
@@ -1465,7 +1467,9 @@ export default function POSInterface() {
             categoria: p.categoria?.nombre || p.categoria || 'General',
             precio: Number(p.precio) || 0,
             costo: Number(p.costo) || 0,
-            stock: p.balances ? p.balances.reduce((sum: number, b: any) => sum + Number(b.stockReal), 0) : 0,
+            stock: (Array.isArray(p.balances) && p.balances.length > 0)
+              ? p.balances.reduce((sum: number, b: any) => sum + Number(b.stockReal || 0), 0)
+              : Number(p.stock !== undefined && p.stock !== null ? p.stock : (p.metadatos?.stock !== undefined ? p.metadatos.stock : 0)),
             unidad: p.metadatos?.unidad || 'pieza',
             metadata: p.metadatos || {}
           }));
@@ -4146,21 +4150,23 @@ ${articulosTexto}
               <div className="space-y-4">
                 <div className="flex justify-between items-center pb-2 border-b border-[#20222b]">
                   <h3 className="text-sm font-black text-white">📋 Menú Rápido</h3>
-                  <div className="flex gap-1.5">
-                    {['Bebidas', 'Alimentos', 'Postres'].map(cat => (
-                      <button
-                        key={cat}
-                        onClick={() => setSelectedVisualCategory(cat)}
-                        className={`px-2.5 py-1 rounded-lg text-[10px] font-bold border cursor-pointer transition-colors ${
-                          selectedVisualCategory === cat
-                            ? 'bg-amber-500 border-transparent text-slate-950 font-black'
-                            : 'bg-transparent border-[#20222b] text-slate-400 hover:text-slate-200'
-                        }`}
-                      >
-                        {cat === 'Bebidas' ? '☕ Bebidas' : cat === 'Alimentos' ? '🥪 Alimentos' : '🍰 Postres'}
-                      </button>
-                    ))}
-                  </div>
+                  {(config.giro?.toLowerCase() === 'cafeteria') && (
+                    <div className="flex gap-1.5">
+                      {['Bebidas', 'Alimentos', 'Postres'].map(cat => (
+                        <button
+                          key={cat}
+                          onClick={() => setSelectedVisualCategory(cat)}
+                          className={`px-2.5 py-1 rounded-lg text-[10px] font-bold border cursor-pointer transition-colors ${
+                            selectedVisualCategory === cat
+                              ? 'bg-amber-500 border-transparent text-slate-950 font-black'
+                              : 'bg-transparent border-[#20222b] text-slate-400 hover:text-slate-200'
+                          }`}
+                        >
+                          {cat === 'Bebidas' ? '☕ Bebidas' : cat === 'Alimentos' ? '🥪 Alimentos' : '🍰 Postres'}
+                        </button>
+                      ))}
+                    </div>
+                  )}
                 </div>
 
                 <div className="grid grid-cols-2 gap-3.5">

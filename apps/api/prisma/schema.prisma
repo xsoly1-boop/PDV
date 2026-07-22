@@ -71,12 +71,15 @@ model Producto {
   costo              Decimal             
   precio             Decimal             
   permiteFracciones  Boolean             @default(false)
+  activo             Boolean             @default(true)
+  stockMinimo        Decimal?            @default("0")
+  stockMaximo        Decimal?            @default("0")
   categoriaId        String?
   proveedorId        String?
   metadatos          String?
   
-  categoria          Categoria?          @relation(fields: [categoriaId], references: [id])
-  proveedor          Proveedor?          @relation(fields: [proveedorId], references: [id])
+  categoria          Categoria?          @relation(fields: [categoriaId], references: [id], onDelete: SetNull)
+  proveedor          Proveedor?          @relation(fields: [proveedorId], references: [id], onDelete: SetNull)
   codigos            CodigoBarras[]
   balances           InventarioBalance[]
   movimientos        KardexMovimiento[]
@@ -262,20 +265,24 @@ model FacturaCFDI {
 }
 
 model Cliente {
-  id              String               @id @default(uuid())
-  nombre          String
-  telefono        String?
-  email           String?
-  direccion       String?
-  limiteCredito   Decimal               @default("0")
-  saldoDeudor     Decimal               @default("0")
-  rfc             String?
-  razonSocial     String?
-  regimenFiscal   String?
-  codigoPostal    String?
-  direccionFiscal String?
-  activo          Boolean              @default(true)
-  creadoAt        DateTime             @default(now())
+  id                  String               @id @default(uuid())
+  nombre              String
+  telefono            String?
+  email               String?
+  direccion           String?
+  limiteCredito       Decimal              @default("0")
+  saldoDeudor         Decimal              @default("0")
+  diasCredito         Int                  @default(0)
+  descuentoPorcentaje Decimal              @default("0")
+  curp                String?
+  notas               String?
+  rfc                 String?
+  razonSocial         String?
+  regimenFiscal       String?
+  codigoPostal        String?
+  direccionFiscal     String?
+  activo              Boolean              @default(true)
+  creadoAt            DateTime             @default(now())
   
   ventas          Venta[]
   cotizaciones    Cotizacion[]

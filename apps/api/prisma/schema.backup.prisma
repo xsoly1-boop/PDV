@@ -102,12 +102,15 @@ model Producto {
   costo              Decimal             @db.Decimal(10, 2)
   precio             Decimal             @db.Decimal(10, 2)
   permiteFracciones  Boolean             @default(false)
+  activo             Boolean             @default(true)
+  stockMinimo        Decimal?            @db.Decimal(10, 2) @default(0)
+  stockMaximo        Decimal?            @db.Decimal(10, 2) @default(0)
   categoriaId        String?
   proveedorId        String?
   metadatos          Json?
   
-  categoria          Categoria?          @relation(fields: [categoriaId], references: [id])
-  proveedor          Proveedor?          @relation(fields: [proveedorId], references: [id])
+  categoria          Categoria?          @relation(fields: [categoriaId], references: [id], onDelete: SetNull)
+  proveedor          Proveedor?          @relation(fields: [proveedorId], references: [id], onDelete: SetNull)
   codigos            CodigoBarras[]
   balances           InventarioBalance[]
   movimientos        KardexMovimiento[]

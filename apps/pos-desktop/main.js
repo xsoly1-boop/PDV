@@ -39,56 +39,64 @@ function startOllama() {
     console.warn('[ELECTRON-MAIN] No se pudo aplicar chmod al binario de Ollama:', e.message);
   }
 
-  // Carpeta donde Ollama guardará los modelos (dentro de userData de Vante)
-  const modelsDir = path.join(app.getPath('userData'), 'ollama-models');
-  if (!fs.existsSync(modelsDir)) fs.mkdirSync(modelsDir, { recursive: true });
+  let logStream = null;
+  try {
+    // Carpeta donde Ollama guardará los modelos (dentro de userData de Vante)
+    const modelsDir = path.join(app.getPath('userData'), 'ollama-models');
+    if (!fs.existsSync(modelsDir)) fs.mkdirSync(modelsDir, { recursive: true });
 
-  const userDataPath = app.getPath('userData');
-  const logPath = path.join(userDataPath, 'local-ollama.log');
-  const logStream = fs.createWriteStream(logPath, { flags: 'a' });
-  logStream.write(`\n\n=== OLLAMA INICIADO: ${new Date().toISOString()} (bin: ${ollamaBin}) ===\n`);
+    const userDataPath = app.getPath('userData');
+    const logPath = path.join(userDataPath, 'local-ollama.log');
+    logStream = fs.createWriteStream(logPath, { flags: 'a' });
+    logStream.write(`\n\n=== OLLAMA INICIADO: ${new Date().toISOString()} (bin: ${ollamaBin}) ===\n`);
 
-  console.log('[ELECTRON-MAIN] Iniciando Vante AI Engine desde:', ollamaBin);
-  console.log('[ELECTRON-MAIN] Carpeta de modelos:', modelsDir);
+    console.log('[ELECTRON-MAIN] Iniciando Vante AI Engine desde:', ollamaBin);
+    console.log('[ELECTRON-MAIN] Carpeta de modelos:', modelsDir);
 
-  // Directorio del binario (las dylibs están junto al ejecutable)
-  const ollamaDir = path.dirname(ollamaBin);
+    // Directorio del binario (las dylibs están junto al ejecutable)
+    const ollamaDir = path.dirname(ollamaBin);
 
-  ollamaProcess = spawn(ollamaBin, ['serve'], {
-    env: {
-      ...process.env,
-      OLLAMA_MODELS: modelsDir,
-      OLLAMA_HOST: '127.0.0.1:11434',
-      // macOS necesita saber dónde están las dylibs bundleadas
-      DYLD_LIBRARY_PATH: `${ollamaDir}:${process.env.DYLD_LIBRARY_PATH || ''}`,
-    },
-    stdio: 'pipe',
-  });
+    ollamaProcess = spawn(ollamaBin, ['serve'], {
+      env: {
+        ...process.env,
+        OLLAMA_MODELS: modelsDir,
+        OLLAMA_HOST: '127.0.0.1:11434',
+        // macOS necesita saber dónde están las dylibs bundleadas
+        DYLD_LIBRARY_PATH: `${ollamaDir}:${process.env.DYLD_LIBRARY_PATH || ''}`,
+      },
+      stdio: 'pipe',
+    });
+  } catch (e) {
+    console.warn('[ELECTRON-MAIN] Error al inicializar Ollama AI Engine:', e.message);
+    return;
+  }
 
-  ollamaProcess.stdout.on('data', (d) => {
-    const msg = d.toString();
-    console.log('[OLLAMA]', msg.trim());
-    logStream.write(`[STDOUT] ${msg}`);
-  });
+  if (ollamaProcess) {
+    ollamaProcess.stdout.on('data', (d) => {
+      const msg = d.toString();
+      console.log('[OLLAMA]', msg.trim());
+      if (logStream) logStream.write(`[STDOUT] ${msg}`);
+    });
 
-  ollamaProcess.stderr.on('data', (d) => {
-    const msg = d.toString();
-    console.warn('[OLLAMA-WARN]', msg.trim());
-    logStream.write(`[STDERR] ${msg}`);
-  });
+    ollamaProcess.stderr.on('data', (d) => {
+      const msg = d.toString();
+      console.warn('[OLLAMA-WARN]', msg.trim());
+      if (logStream) logStream.write(`[STDERR] ${msg}`);
+    });
 
-  ollamaProcess.on('exit', (code) => {
-    console.log(`[ELECTRON-MAIN] Vante AI Engine terminó con código: ${code}`);
-    logStream.write(`[EXIT] Código: ${code}\n`);
-    ollamaProcess = null;
-  });
+    ollamaProcess.on('exit', (code) => {
+      console.log(`[ELECTRON-MAIN] Vante AI Engine terminó con código: ${code}`);
+      if (logStream) logStream.write(`[EXIT] Código: ${code}\n`);
+      ollamaProcess = null;
+    });
 
-  ollamaProcess.on('error', (err) => {
-    console.error('[ELECTRON-MAIN] Error al iniciar Vante AI Engine:', err.message);
-    logStream.write(`[ERROR] ${err.message}\n`);
-    // Si el binario no existe o falló, la IA simplemente no estará disponible
-    ollamaProcess = null;
-  });
+    ollamaProcess.on('error', (err) => {
+      console.error('[ELECTRON-MAIN] Error al iniciar Vante AI Engine:', err.message);
+      if (logStream) logStream.write(`[ERROR] ${err.message}\n`);
+      // Si el binario no existe o falló, la IA simplemente no estará disponible
+      ollamaProcess = null;
+    });
+  }
 }
 
 
